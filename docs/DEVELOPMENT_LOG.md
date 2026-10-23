@@ -4,9 +4,9 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 
 | Milestone | Status | Evidence / next step |
 |---|---|---|
-| Initial repository scaffold | Pushed on feature branch; PR open | [PR #2](https://github.com/DVDWK812/Finscope/pull/2); remote initial commit `7614590` preserved |
+| Initial repository scaffold | PR #2 merged by user; main-only workflow active | Merge `6ae8e00`; complete Phase 1 work preserved on main; merged feature branches deleted |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 36 passed locally; updated CI success verified for `5f99533` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39981319191); unit tests and CLI dry run passed |
+| Offline adapter unit tests | 36 passed locally on synchronized main; main push CI verified for `f432102` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39983651007); later documentation requires exact-head CI |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
 | Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
@@ -90,3 +90,13 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Pushed `2ce44d6` (review fixes) and `5f99533` (NLP/rights evidence and Phase 2 gates) to the existing PR branch. Verified remote feature head equals local `5f995338fb88e57e8e72ac4c7776aded6f8853f8`; remote `main` remained `7614590`.
 - Submitted a [COMMENT review on PR #2](https://github.com/DVDWK812/Finscope/pull/2#pullrequestreview-5630804704) describing findings, fixes, review scope and remaining feasibility gates. This is a Codex-assisted review, not an independent approval. Updated [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) with NO-GO, current skips, offline NLP metrics, corrected permission interpretation and the pending one-shot retest.
 - Verified [GitHub Actions run 39981319191](https://github.com/DVDWK812/Finscope/actions/runs/39981319191) completed successfully for head `5f99533`. This following documentation-only record triggers its own checks, to be verified separately. PR remains unmerged; different-day GDELT evidence remains pending.
+
+## 2026-10-24 — Main-only synchronization and branch cleanup milestone
+
+- Initial working tree was clean. Verified through GitHub that PR #2 was merged by the user on 2026-10-23T16:03:24Z as `6ae8e00b7984181697c3bd16ac65e7e91587a88e`; no attempt was made to change its merged state. The later instruction to keep it unmerged cannot describe the verified current state, so no further PR/merge action was taken.
+- Fetched origin, switched safely to existing local main and ran `git pull --ff-only origin main`, fast-forwarding to `f43210275141ae7a5dd44cd2a276b29847e73394`. Preserved the user's newer main-only changes to AGENTS.md, CODEX_TASK.md and README.md; configured main to track origin/main. No force push, reset, discarded work, new branch or new PR.
+- Verified `1ef306a` is an ancestor of main and the old branch has zero unique commits. Compared all Phase 1 source/test/CI/evidence/dependency/ignore/licence files with the old head: no differences. Deleted the merged local branch with `git branch -d` and remote branch with normal `git push origin --delete`; remote ref inspection confirmed only main remains.
+- Re-ran all 36 offline tests and benchmark dry run successfully on main, with zero provider requests. Verified PUSH-triggered Actions run [39983651007](https://github.com/DVDWK812/Finscope/actions/runs/39983651007) succeeded for full main SHA `f43210275141ae7a5dd44cd2a276b29847e73394`. Queried push runs directly because the PR-specific workflow helper excludes them.
+- Updated the existing one-shot automation in place, preserving its name, active status and 25 October 09:00 Sydney schedule. Its prompt now uses main only, prohibits new branches/PRs, checks prior execution evidence, retains at most the previously authorized one GDELT request, forbids extra optional-provider calls, and requires exact metrics/skips, all-gate reassessment and exact-main CI. Missing report/intent evidence cannot justify a repeat request.
+- As of this handover (24 October Sydney / 23 October UTC), the scheduled time is still future and no execution report was found. No one-shot HTTP status, latency, records or new NLP text can be reported yet. This is pending, not a cooldown skip. Saved cooldowns and ignored reports are preserved; no live API calls were made. Phase 2 remains NO-GO and GDELT provisional.
+- Updated API_EVALUATION.md and DECISIONS.md to distinguish verified merge/main status, pending task execution and actual provider evidence. Issue #1 and this documentation's publication/CI status are updated after commit and push.

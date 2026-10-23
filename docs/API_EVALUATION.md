@@ -146,3 +146,22 @@ Official terms were reread on 24 October. The following is the project's evidenc
 Before clearing a keyed provider, obtain plan-specific written terms covering the exact endpoint, title/description fields, anonymous public display, local retention period, derived inference results and any training use. Do not equate inference permission with model training permission. No provider was contacted and no new permission was granted during this review.
 
 **Phase 2 recommendation: NO-GO.** GDELT remains provisional. Different-day availability, financially relevant usable input and publication-time scope are unresolved; alternatives lack local credentials and a cleared public-use basis. A scheduled test is not completed evidence. See DECISIONS.md and Issue #1 for release gates.
+
+## Main-only handover and pre-run execution audit — 2026-10-24
+
+Verified that the user merged PR #2 as `6ae8e00`. Main at `f432102` contains the complete Phase 1 implementation, tests, CI, cooldown logic and evidence documents; its only differences from the former feature head are the user's main-only workflow updates in AGENTS.md, CODEX_TASK.md and README.md. Local and remote feature branches were removed after confirming zero unique commits. Future changes, including scheduled-task evidence, go directly to main after safe synchronization and testing.
+
+The automation remains scheduled for **25 October 2026, 09:00 Sydney**. At the 24 October audit, that time is still in the future, its saved schedule is active, and no new execution report exists. The schedule alone proves no execution. No provider request was made during this handover.
+
+| Audit field | Verified current status |
+|---|---|
+| Scheduled one-shot execution | Not yet due; no observed execution report |
+| Requests made by this handover | 0 |
+| One-shot HTTP status / latency | Unobserved / not applicable; no response to assess |
+| One-shot raw / normalized / sampled records | Unobserved; do not label this an empty successful response |
+| One-shot available NLP text | No new observed title/description; original sample metrics remain unchanged |
+| Cooldown skip | Not observed: task has not executed. Existing hold remains unchanged through 2026-10-24T15:09:44.173494+00:00 |
+
+The saved one-shot instructions now require main-only development and evidence-based execution auditing. They retain only the previously authorized one-request GDELT check, forbid extra optional-provider calls, and prevent a second attempt if a prior execution/attempt marker is found. A marker without result evidence is unknown execution, not proof of an HTTP request or success. After execution, record exact attempts versus received responses, HTTP status, latency, raw/normalized/sample counts, title lengths, descriptions, relevance and timestamp semantics. A hold is skipped/provider_cooldown; no HTTP 429 is retried. No catch-up call is authorized merely because execution evidence is absent.
+
+All 36 offline tests and the dry run pass on synchronized main. [Push-triggered Actions run 39983651007](https://github.com/DVDWK812/Finscope/actions/runs/39983651007) passed for `f432102`; publication of this documentation needs exact-head verification. Phase 2 remains **NO-GO** across all release gates, independent of merge status or a future isolated HTTP 200.
