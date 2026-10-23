@@ -4,9 +4,9 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 
 | Milestone | Status | Evidence / next step |
 |---|---|---|
-| Initial repository scaffold | Committed locally; remote verified, publication in progress | Public `DVDWK812/Finscope`; remote initial commit `7614590` is being preserved |
+| Initial repository scaffold | Pushed on feature branch; PR open | [PR #2](https://github.com/DVDWK812/Finscope/pull/2); remote initial commit `7614590` preserved |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | Verified locally (27 passed) | `python -m unittest discover -s tests -v`; dry run passed; CI not run |
+| Offline adapter unit tests | 27 passed locally; GitHub Actions success verified for `44ba4bc` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39977138588); dry run passed locally |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
 | Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
@@ -59,3 +59,10 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Added canonical `origin` and fetched remote history. Remote initial commit contains README.md and an MIT LICENSE. Reconciled the two README versions into the existing detailed Phase 1 README, preserved the remote licence, and joined the previously unrelated histories on `phase1/api-evaluation`. No force push or remote-main replacement.
 - Re-ran all 27 offline tests and the dry run successfully before reconciliation; no new news-API calls were made and optional credentials remain absent.
 - Created [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) with actual local test/live outcomes and remaining rate-limit, credential, rights and evidence gates. Updated repository instructions and decision status. Push/PR and CI verification follow; no CI pass claimed yet.
+
+## 2026-10-24 — Verified publication and CI milestone
+
+- Pushed reconciliation commit [`44ba4bc`](https://github.com/DVDWK812/Finscope/commit/44ba4bcc1989d7efb152350a195e47ba13321fef) and its four local milestone ancestors to `origin/phase1/api-evaluation`. Verified the remote feature SHA exactly matched local HEAD using `git ls-remote`; remote `main` remained at `7614590`.
+- Opened [PR #2](https://github.com/DVDWK812/Finscope/pull/2) against `main` and attached it to the Codex chat. The PR is open for review, not merged. [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) remains open because API-evaluation gates are unresolved.
+- Verified GitHub Actions [tests run 39977138588](https://github.com/DVDWK812/Finscope/actions/runs/39977138588) completed successfully for PR head `44ba4bc`; this is an observed CI result. The local pre-publication run passed all 27 tests and the dry run. A following documentation-only commit records this evidence and will trigger its own checks.
+- Tracked-file audit found no ignored report/.env paths or secret-like token/private-key patterns; `.env` and the live report remain ignored. No new provider requests were made during publication. GDELT remains provisional; FinBERT/dashboard work is unstarted.
