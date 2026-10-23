@@ -15,7 +15,7 @@ import statistics
 import time
 
 from .api_sources import (PROVIDERS, TOPICS, ENV_KEYS, Article, fetch_provider,
-                          build_request, local_credentials)
+                          build_request, local_credentials, QueryResult)
 
 
 def summarize(articles: list[Article]) -> dict:
@@ -51,8 +51,9 @@ def run(argv: list[str] | None = None) -> int:
     rows: list[dict] = []
     for provider in dict.fromkeys(args.providers):
         previous_request = None
+        rate_limited = False
         for topic in dict.fromkeys(args.topics):
-            if not args.dry_run and provider == "gdelt" and previous_request is not None:
+            if not args.dry_run and not rate_limited and provider == "gdelt" and previous_request is not None:
                 # Conservative spacing, not a claim of an official quota or SLA.
                 time.sleep(max(0, 6 - (time.monotonic() - previous_request)))
             query_time = datetime.now(timezone.utc)
@@ -76,11 +77,19 @@ def run(argv: list[str] | None = None) -> int:
                              "planned_article_cap": params.get("limit", params.get("size", params.get("maxrecords", "provider-defined"))),
                              "note": note})
                 continue
-            previous_request = time.monotonic()
-            result = fetch_provider(provider, topic, now=query_time, days=args.days,
-                                    limit=args.limit, timeout=args.timeout)
+            if rate_limited:
+                result = QueryResult(provider, topic, mode, "skipped", [],
+                                     outcome="provider_rate_limited",
+                                     note="Earlier request to this provider returned HTTP 429; no further requests this run.")
+            else:
+                previous_request = time.monotonic()
+                result = fetch_provider(provider, topic, now=query_time, days=args.days,
+                                        limit=args.limit, timeout=args.timeout)
+                rate_limited = result.http_status == 429
             rows.append({"topic": topic, "provider": provider, "query_mode": result.query_mode,
                          **query_metadata,
+                         "request_attempted": result.status != "skipped",
+                         "request_at_utc": query_time.isoformat() if result.status != "skipped" else None,
                          "status": result.status, "latency_ms": result.latency_ms,
                          "outcome": result.outcome, "http_status": result.http_status,
                          "rate_limit_headers": result.rate_limit_headers,

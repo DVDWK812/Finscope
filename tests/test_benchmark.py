@@ -67,6 +67,25 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(report["results"][0]["status"], "failed")
 
+    @patch("finscope.benchmark.time.sleep")
+    @patch("finscope.benchmark.local_credentials", return_value={})
+    @patch("finscope.benchmark.fetch_provider")
+    def test_rate_limit_stops_provider_without_stopping_other_providers(self, fetch, credentials, sleep):
+        def result(provider, topic, **kwargs):
+            if provider == "gdelt":
+                return QueryResult(provider, topic, "keyword", "failed", [], http_status=429,
+                                   outcome="rate_limit")
+            return QueryResult(provider, topic, "not_run", "skipped", [], outcome="missing_credentials")
+        fetch.side_effect = result
+        code, report = self.execute(["--providers", "gdelt", "marketaux"])
+        self.assertEqual(code, 1)
+        self.assertEqual(fetch.call_count, 4)  # One GDELT attempt plus three other-provider checks.
+        sleep.assert_not_called()
+        self.assertEqual([r["outcome"] for r in report["results"][:3]],
+                         ["rate_limit", "provider_rate_limited", "provider_rate_limited"])
+        self.assertFalse(report["results"][1]["request_attempted"])
+        self.assertIsNone(report["results"][1]["request_at_utc"])
+
 
 if __name__ == "__main__":
     unittest.main()
