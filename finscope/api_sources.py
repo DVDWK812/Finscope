@@ -6,14 +6,15 @@ request URLs containing credentials, or entire HTTP error bodies.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 from urllib.parse import urlsplit
-import os
+from pathlib import Path
 import time
 
 import requests
+from dotenv import dotenv_values
 
 
 TOPICS: dict[str, dict[str, str]] = {
@@ -31,6 +32,11 @@ ENV_KEYS = {
     "newsdata": "NEWSDATA_API_KEY",
     "finnhub": "FINNHUB_API_KEY",
 }
+
+
+def local_credentials() -> dict[str, str | None]:
+    """Read only the project's .env; never inherit shell or parent-folder keys."""
+    return dotenv_values(Path(__file__).resolve().parents[1] / ".env", interpolate=False)
 
 
 @dataclass(frozen=True)
@@ -54,24 +60,55 @@ class QueryResult:
     raw_count: int = 0
     latency_ms: float | None = None
     note: str = ""
+    normalized_count: int = 0  # Before the local sample cap; not a coverage estimate.
+    http_status: int | None = None
+    rate_limit_headers: dict[str, str] = field(default_factory=dict)
+    outcome: str = ""  # records / empty / invalid_records / classified failure / missing_credentials
+
+
+@dataclass
+class HTTPResponse:
+    payload: Any
+    status_code: int
+    rate_limit_headers: dict[str, str]
 
 
 class APIError(Exception):
     """Safe, redacted transport error; must not include credentials or URLs."""
 
+    def __init__(self, message: str, *, kind: str = "schema", status: int | None = None,
+                 rate_headers: dict[str, str] | None = None):
+        super().__init__(message)
+        self.kind = kind
+        self.status = status
+        self.rate_headers = rate_headers or {}
+
 
 def _http_get_json(url: str, params: dict[str, Any], headers: dict[str, str], timeout: float) -> Any:
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=timeout)
+        # No automatic retries or redirects that might spend quota or forward tokens.
+        response = requests.get(url, params=params, headers=headers, timeout=timeout,
+                                allow_redirects=False)
     except requests.RequestException as exc:
         # Do not display str(exc): requests may embed URL query parameters / API keys.
-        raise APIError(f"Transport error ({type(exc).__name__})") from None
+        raise APIError(f"Transport error ({type(exc).__name__})", kind="transport") from None
+    rate_headers = {}
+    for name in ("Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"):
+        value = response.headers.get(name, "")
+        # Only numeric quota values: never persist arbitrary response-header text.
+        if value and value.isascii() and value.isdecimal():
+            rate_headers[name] = value
     if response.status_code != 200:
-        raise APIError(f"HTTP {response.status_code}")
+        kind = "auth" if response.status_code in (401, 403) else (
+            "rate_limit" if response.status_code == 429 else "http")
+        raise APIError(f"HTTP {response.status_code}", kind=kind,
+                       status=response.status_code, rate_headers=rate_headers)
     try:
-        return response.json()
+        payload = response.json()
     except ValueError:
-        raise APIError("Invalid JSON response") from None
+        raise APIError("Invalid JSON response", kind="invalid_json", status=200,
+                       rate_headers=rate_headers) from None
+    return HTTPResponse(payload, response.status_code, rate_headers)
 
 
 GetJSON = Callable[[str, dict[str, Any], dict[str, str], float], Any]
@@ -82,7 +119,7 @@ def _source(url: str, provider_source: str | None) -> str:
 
 
 def _gdelt_datetime(value: str | None) -> str:
-    if not value:
+    if not isinstance(value, str) or not value:
         return ""
     for pattern in ("%Y%m%dT%H%M%SZ", "%Y%m%d%H%M%S"):
         try:
@@ -92,22 +129,35 @@ def _gdelt_datetime(value: str | None) -> str:
     return ""  # Never pass an unvalidated observed time off as a publication time.
 
 
+def _published_datetime(value: Any) -> str:
+    """Marketaux dates and NewsData's explicitly requested UTC dates."""
+    if not isinstance(value, str) or not value:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc).isoformat()
+    except ValueError:
+        return ""
+
+
 def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
     """Normalize successful provider responses; fail on unexpected JSON shapes."""
     if provider == "gdelt":
         if not isinstance(payload, dict):
             raise APIError("Unexpected GDELT response shape")
-        raw = payload.get("articles", [])
+        raw = payload.get("articles")
     elif provider == "marketaux":
         if not isinstance(payload, dict):
             raise APIError("Unexpected Marketaux response shape")
-        raw = payload.get("data", [])
+        raw = payload.get("data")
     elif provider == "newsdata":
         if not isinstance(payload, dict):
             raise APIError("Unexpected NewsData response shape")
-        if payload.get("status") == "error":
-            raise APIError("NewsData returned error status")
-        raw = payload.get("results", [])
+        if payload.get("status") != "success":
+            raise APIError("NewsData did not return success status", kind="provider_error")
+        raw = payload.get("results")
     elif provider == "finnhub":
         raw = payload
     else:
@@ -122,7 +172,12 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
             continue
         title = str(row.get("headline" if provider == "finnhub" else "title") or "").strip()
         url = str(row.get("link" if provider == "newsdata" else "url") or "").strip()
-        if not title or not url.startswith(("https://", "http://")):
+        try:
+            parsed = urlsplit(url)
+            valid_url = parsed.scheme in ("http", "https") and bool(parsed.hostname)
+        except ValueError:
+            valid_url = False
+        if not title or not valid_url:
             continue
 
         if provider == "gdelt":
@@ -131,12 +186,12 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
             desc = ""  # DOC API ArticleList does not promise full article descriptions.
             source = _source(url, row.get("domain"))
         elif provider == "marketaux":
-            ts = str(row.get("published_at") or "")
+            ts = _published_datetime(row.get("published_at"))
             kind = "published"
             desc = str(row.get("description") or "")
             source = _source(url, row.get("source"))
         elif provider == "newsdata":
-            ts = str(row.get("pubDate") or "")
+            ts = _published_datetime(row.get("pubDate"))
             kind = "published"
             desc = str(row.get("description") or "")
             source = _source(url, row.get("source_name") or row.get("source_id"))
@@ -161,6 +216,7 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
         raise ValueError(f"Unsupported provider: {provider}")
     if now.tzinfo is None:
         raise ValueError("now must be timezone-aware")
+    now = now.astimezone(timezone.utc)
     keyword = TOPICS[topic]["keyword"]
     symbol = TOPICS[topic]["symbol"]
     earlier = now - timedelta(days=days)
@@ -187,7 +243,7 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
         headers["X-ACCESS-KEY"] = str(key)
         return (
             "https://newsdata.io/api/1/latest",
-            {"q": keyword, "language": "en", "size": min(limit, 10)},
+            {"q": keyword, "language": "en", "size": min(limit, 10), "timezone": "UTC"},
             headers, "keyword",
             "Latest endpoint is approximately 48h coverage; do not interpret days as a guaranteed lookback.",
         )
@@ -215,23 +271,42 @@ def fetch_provider(
     if now is None:
         now = datetime.now(timezone.utc)
     env_key = ENV_KEYS[provider]
-    key = os.getenv(env_key) if env_key else None
+    key = local_credentials().get(env_key) if env_key else None
     if env_key and not key:
-        return QueryResult(provider, topic, "not_run", "skipped", [], note=f"Missing {env_key}")
+        return QueryResult(provider, topic, "not_run", "skipped", [],
+                           note=f"Missing {env_key} in local .env", outcome="missing_credentials")
     url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key)
     started = time.perf_counter()
+    http_status = None
+    rate_headers = {}
     try:
         payload = transport(url, params, headers, timeout)
+        if isinstance(payload, HTTPResponse):
+            http_status = payload.status_code
+            rate_headers = payload.rate_limit_headers
+            payload = payload.payload
         items, raw_count = normalize(provider, payload)
     except APIError as exc:
         return QueryResult(provider, topic, query_mode, "failed", [],
                            latency_ms=round((time.perf_counter()-started)*1000, 1),
-                           note=f"{note} {exc}")
+                           http_status=exc.status or http_status,
+                           rate_limit_headers=exc.rate_headers or rate_headers,
+                           outcome=exc.kind,
+                           note=f"{note} Request failed ({exc.kind}); HTTP status={exc.status or http_status}")
     except Exception as exc:
         # Don't leak params, headers, API keys or raw response errors into report.
         return QueryResult(provider, topic, query_mode, "failed", [],
                            latency_ms=round((time.perf_counter()-started)*1000, 1),
+                           http_status=http_status, rate_limit_headers=rate_headers,
+                           outcome="unexpected_error",
                            note=f"{note} Unexpected error: {type(exc).__name__}")
+    if raw_count and not items:
+        return QueryResult(provider, topic, query_mode, "failed", [], raw_count=raw_count,
+                           latency_ms=round((time.perf_counter()-started)*1000, 1),
+                           http_status=http_status, rate_limit_headers=rate_headers,
+                           outcome="invalid_records", note=f"{note} No valid records in nonempty array.")
     return QueryResult(provider, topic, query_mode, "ok", items[:limit],
-                       raw_count=raw_count,
+                       raw_count=raw_count, normalized_count=len(items),
+                       http_status=http_status, rate_limit_headers=rate_headers,
+                       outcome="records" if items else "empty",
                        latency_ms=round((time.perf_counter()-started)*1000, 1), note=note)

@@ -42,7 +42,9 @@ python -m finscope.benchmark --providers gdelt marketaux newsdata finnhub \
     --topics technology healthcare materials --limit 3 --days 2
 ```
 
-Reports are written to `reports/api_benchmark.json` (excluded from Git). API keys must **never** be committed or pasted into logs and GitHub Issues.
+Reports receive unique names under `reports/` (excluded from Git); `--output reports/name.json` selects an explicit local path. Each row preserves its UTC query time, safe query parameters, outcome, latency, quota headers when supplied, normalization metrics and up to ten title/URL/source/time samples. Descriptions and article bodies are not saved. URL checks validate syntax only; publisher pages are not fetched. A failed live attempt writes its report and exits with code 1; missing credentials are skipped.
+
+Keys are read only from this project's `.env`, without shell inheritance or interpolation. Requests run provider first, with conservative spacing between GDELT requests and no automatic retries or redirects. API keys must **never** be committed or pasted into logs and GitHub Issues.
 
 ## Interpreting results
 

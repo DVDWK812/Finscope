@@ -12,11 +12,10 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import statistics
+import time
 
-from dotenv import load_dotenv
-
-from .api_sources import PROVIDERS, TOPICS, ENV_KEYS, Article, fetch_provider, build_request
-import os
+from .api_sources import (PROVIDERS, TOPICS, ENV_KEYS, Article, fetch_provider,
+                          build_request, local_credentials)
 
 
 def summarize(articles: list[Article]) -> dict:
@@ -42,32 +41,59 @@ def run(argv: list[str] | None = None) -> int:
     parser.add_argument("--days", type=int, default=2)
     parser.add_argument("--limit", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=15.0)
-    parser.add_argument("--output", default="reports/api_benchmark.json")
+    parser.add_argument("--output", help="Local JSON path; defaults to a unique file in reports/")
     parser.add_argument("--dry-run", action="store_true", help="Show query strategies; do not make API calls")
     args = parser.parse_args(argv)
     if args.days < 1 or args.limit < 1 or args.timeout <= 0:
         parser.error("--days, --limit and --timeout must be positive")
-    load_dotenv()  # local .env only, excluded from git
+    credentials = local_credentials()
     now = datetime.now(timezone.utc)
     rows: list[dict] = []
-    for topic in args.topics:
-        for provider in args.providers:
+    for provider in dict.fromkeys(args.providers):
+        previous_request = None
+        for topic in dict.fromkeys(args.topics):
+            if not args.dry_run and provider == "gdelt" and previous_request is not None:
+                # Conservative spacing, not a claim of an official quota or SLA.
+                time.sleep(max(0, 6 - (time.monotonic() - previous_request)))
+            query_time = datetime.now(timezone.utc)
+            endpoint, params, _, mode, note = build_request(
+                provider, topic, query_time, args.days, args.limit, "REDACTED")
+            # Explicit allowlist: credentials and headers cannot enter report metadata.
+            safe_params = {k: v for k, v in params.items() if k in {
+                "query", "mode", "format", "timespan", "maxrecords", "search", "language",
+                "published_after", "limit", "group_similar", "q", "size", "timezone",
+                "symbol", "from", "to"}}
+            query_metadata = {"query_at_utc": query_time.isoformat(), "endpoint": endpoint,
+                              "query_parameters": safe_params,
+                              "query_keyword_or_symbol": TOPICS[topic][
+                                  "symbol" if mode == "company_symbol" else "keyword"]}
             if args.dry_run:
-                key_present = (not ENV_KEYS[provider]) or bool(os.getenv(ENV_KEYS[provider]))
-                _, params, _, mode, note = build_request(provider, topic, now, args.days, args.limit, "REDACTED")
+                key_present = (not ENV_KEYS[provider]) or bool(credentials.get(ENV_KEYS[provider]))
                 rows.append({"topic": topic, "provider": provider, "query_mode": mode,
+                             **query_metadata,
                              "credentials_configured": key_present,
                              "query_keyword_or_symbol": TOPICS[topic]["symbol" if mode=="company_symbol" else "keyword"],
                              "planned_article_cap": params.get("limit", params.get("size", params.get("maxrecords", "provider-defined"))),
                              "note": note})
                 continue
-            result = fetch_provider(provider, topic, now=now, days=args.days,
+            previous_request = time.monotonic()
+            result = fetch_provider(provider, topic, now=query_time, days=args.days,
                                     limit=args.limit, timeout=args.timeout)
             rows.append({"topic": topic, "provider": provider, "query_mode": result.query_mode,
+                         **query_metadata,
                          "status": result.status, "latency_ms": result.latency_ms,
+                         "outcome": result.outcome, "http_status": result.http_status,
+                         "rate_limit_headers": result.rate_limit_headers,
                          "raw_articles": result.raw_count,
-                         "valid_article_ratio": round(len(result.articles)/result.raw_count,3) if result.raw_count else None,
-                         **summarize(result.articles), "note": result.note})
+                         "normalized_articles_before_cap": result.normalized_count,
+                         "valid_article_ratio": round(result.normalized_count/result.raw_count,3) if result.raw_count else None,
+                         "sample_truncated": result.normalized_count > len(result.articles),
+                         **summarize(result.articles), "note": result.note,
+                         "samples": [{"title": a.title, "url": a.url, "source": a.source,
+                                      "timestamp": a.timestamp, "timestamp_kind": a.timestamp_kind}
+                                     for a in result.articles[:10]],
+                         "manual_relevance": "not_reviewed",
+                         "link_validation": "syntax_only; publisher pages not fetched"})
             print(f"{provider:9} {topic:11} {result.status:7} "
                   f"articles={len(result.articles):3} elapsed_ms={result.latency_ms}")
     document = {
@@ -84,7 +110,8 @@ def run(argv: list[str] | None = None) -> int:
         ],
         "results": rows,
     }
-    output = Path(args.output)
+    output = Path(args.output) if args.output else Path("reports") / (
+        f"api_benchmark_{document['experiment_type']}_{now.strftime('%Y%m%dT%H%M%S%fZ')}.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Report written to {output}")
@@ -92,7 +119,7 @@ def run(argv: list[str] | None = None) -> int:
         for row in rows:
             print(f"{row['provider']:9} {row['topic']:11} mode={row['query_mode']:14} "
                   f"credentials={row['credentials_configured']}")
-    return 0
+    return 1 if any(row.get("status") == "failed" for row in rows) else 0
 
 
 if __name__ == "__main__":
