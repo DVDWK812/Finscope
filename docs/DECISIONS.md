@@ -4,6 +4,8 @@ Select **GDELT as the provisional primary for continued metadata feasibility wor
 
 **Phase 2: NO-GO after the follow-up review.** Remain in Phase 1 until source reliability, usable input and deployment rights are supported. The different-day retest is scheduled, not yet completed; no new GDELT result is claimed.
 
+**Parallel UI exception (24 October 2026):** The team may build an offline Streamlit interface using conspicuously labeled synthetic fixtures and a swappable repository contract. This UI-only development is independent of source approval and is **not** Phase 2 model/data integration or a production news dashboard. Live data, model-generated sentiment and provider content remain blocked pending the gates below.
+
 GDELT has the strongest verified reuse basis among the reviewed options: its [dataset terms](https://www.gdeltproject.org/about.html#termsofuse) allow reuse and redistribution with attribution. One real healthcare query returned three usable metadata records. However, two of three API requests returned HTTP 429, the successful request took 20.2 seconds, and all three accepted records lacked descriptions and publication timestamps. This supports further metadata research only; it does not establish adequate text input for a future sentiment model.
 
 Marketaux is the next finance-specific candidate to test when a local key exists, but public-display, retention and derived-analysis rights need written clarification under its [reviewed terms](https://www.marketaux.com/tos). NewsData.io has overlapping personal/internal and external-derivative/sharing clauses; it remains unapproved, rather than categorically prohibited for every public use. Finnhub personal-plan sharing of data or derived results requires written approval and its company-symbol scope differs. An API response does not clear any fallback. See the [current evidence and rights review](API_EVALUATION.md#follow-up-review--2026-10-24-australiasydney).
@@ -31,4 +33,4 @@ The one-shot follow-up is scheduled for 25 October 2026, 09:00 Australia/Sydney,
 | Public use and retention | GDELT dataset reuse basis strongest; alternatives unresolved | Field/plan-specific display, retention and derived-output basis; separately resolve publisher rights and training if relevant |
 | Operational readiness | Pilot only | Verified CI on pushed head and a request budget that respects saved provider holds |
 
-GO applies to continued bounded Phase 1 research only. No production provider selection, FinBERT, embeddings, crawler or dashboard work is authorized by this recommendation.
+GO applies to continued bounded Phase 1 research only. No production provider selection, FinBERT, embeddings, crawler or live-data dashboard work is authorized by this recommendation. Synthetic-only UI prototyping is explicitly permitted.

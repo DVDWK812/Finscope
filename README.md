@@ -4,7 +4,7 @@
 
 This repository starts with a deliberately small **news API feasibility pilot**. The planned final app will collect financial news metadata, classify sentiment using FinBERT (or a supported user-provided model), categorize articles by sector, identify duplicate event coverage via embeddings, and display time/source/sector trends in Streamlit.
 
-> Status: Phase 1 pilot tested locally. First live GDELT run: one successful healthcare query, two HTTP 429 failures; keyed providers skipped. GDELT is provisional for further metadata research. See [actual evidence](docs/API_EVALUATION.md) and [decision gates](docs/DECISIONS.md). No dashboard or sentiment model has been built.
+> Status: Phase 1 pilot tested locally. First live GDELT run: one successful healthcare query, two HTTP 429 failures; keyed providers skipped. GDELT is provisional for further metadata research. See [actual evidence](docs/API_EVALUATION.md) and [decision gates](docs/DECISIONS.md). An offline **synthetic-data Streamlit UI prototype** is now included; no production news dashboard or sentiment model is connected.
 
 ## Phase 1 features
 
@@ -81,3 +81,14 @@ The repository's MIT licence covers the project software; provider data and link
 - Limited pilot size, provider-specific queries, and no full article text extraction.
 - No sector impact inference, sentiment module, or embedding deduplication yet.
 - Marketaux free-tier result cap and NewsData latest-news window reduce comparability.
+
+## Synthetic UI prototype
+
+Run the offline interface after installing dependencies:
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+The demo provides Overview, Trends, News Explorer and System Status with sector/source/date/sentiment filters and raw-report versus unique-event views. All headlines, sources, timestamps and labels are synthetic. No real API calls, news storage or AI inference occur on UI startup. See [UI specification](docs/UI_SPEC.md). Phase 2 live-source/inference approval remains **NO-GO**.

@@ -1,3 +1,7 @@
+# Current scope note (2026-10-24)
+
+This file documents the original Phase 1 pilot task. The user has authorized a parallel **offline, synthetic-only Streamlit UI prototype** on `main`. That permission does **not** relax Phase 1 news-source gates or permit live news display, FinBERT/embedding execution, scraping, or invented measurements. See `docs/UI_SPEC.md` and `AGENTS.md`. Continue to use `main` only.
+
 # Codex task: bootstrap FinScope GitHub and benchmark finance news APIs
 
 Work inside the extracted FinScope scaffold.
@@ -30,4 +34,4 @@ Work inside the extracted FinScope scaffold.
 - Runnable pilot, all offline tests passing, no secrets in repo.
 - Actual results and limitations documented, no invented provider test outcomes.
 - One primary API chosen on licence suitability, finance relevance, usable text, reliability, history and quota.
-- No dashboard, FinBERT integration or crawling until phase 1 evidence is ready.
+- No **live-data** dashboard, FinBERT integration or crawling until Phase 1 evidence is ready; a mock-only UI prototype is permitted in parallel.
