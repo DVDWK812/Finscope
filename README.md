@@ -58,12 +58,18 @@ See [evaluation protocol](docs/API_EVALUATION.md), [Codex task](CODEX_TASK.md), 
 
 ## GitHub setup and version control
 
-The public repository is [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope). Phase 1 changes are developed on `phase1/api-evaluation` and reviewed through a pull request. To obtain the pilot branch:
+The public repository is [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope). Phase 1 PR #2 was merged into `main`. **The project now uses `main` as its only active development branch.** Do not create new feature branches or PRs. Before editing, fetch and fast-forward `main`; push tested commits to `origin main` and verify GitHub Actions.
 
 ```bash
-git clone --branch phase1/api-evaluation https://github.com/DVDWK812/Finscope.git
+git clone --branch main https://github.com/DVDWK812/Finscope.git
 cd Finscope
+# In an existing checkout with a clean working tree:
+git fetch origin
+git switch main
+git pull --ff-only origin main
 ```
+
+Do not discard uncommitted work, force-push or overwrite diverged history. Older Phase 1 branch references in historical logs document past work rather than current instructions.
 
 If using Codex, supply `CODEX_TASK.md` as its phase-1 objective. All team-authored changes and AI coding assistance must be disclosed in the course report. For public deployment, verify each provider's usage and redistribution rights.
 
