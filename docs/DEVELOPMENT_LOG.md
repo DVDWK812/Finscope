@@ -6,7 +6,7 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | PR #2 merged by user; main-only workflow active | Merge `6ae8e00`; complete Phase 1 work preserved on main; merged feature branches deleted |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 36 passed locally on synchronized main; main push CI verified for `f432102` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39983651007); later documentation requires exact-head CI |
+| Offline adapter unit tests | 36 passed locally on synchronized main; main push CI verified for `db296c5` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39984381988); later documentation requires exact-head CI |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
 | Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
@@ -100,3 +100,9 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Updated the existing one-shot automation in place, preserving its name, active status and 25 October 09:00 Sydney schedule. Its prompt now uses main only, prohibits new branches/PRs, checks prior execution evidence, retains at most the previously authorized one GDELT request, forbids extra optional-provider calls, and requires exact metrics/skips, all-gate reassessment and exact-main CI. Missing report/intent evidence cannot justify a repeat request.
 - As of this handover (24 October Sydney / 23 October UTC), the scheduled time is still future and no execution report was found. No one-shot HTTP status, latency, records or new NLP text can be reported yet. This is pending, not a cooldown skip. Saved cooldowns and ignored reports are preserved; no live API calls were made. Phase 2 remains NO-GO and GDELT provisional.
 - Updated API_EVALUATION.md and DECISIONS.md to distinguish verified merge/main status, pending task execution and actual provider evidence. Issue #1 and this documentation's publication/CI status are updated after commit and push.
+
+## 2026-10-24 — Main handover publication verification
+
+- Committed the three-document handover/audit update directly on main as `db296c50a521c946984e44212c9dff1ba2184546` and pushed normally to origin main. Verified exact local/remote SHA equality, a clean working tree and absence of the deleted remote feature ref. Updated Issue #1 to the merged/main-only status and pending one-shot evidence audit.
+- Verified PUSH-triggered [Actions run 39984381988](https://github.com/DVDWK812/Finscope/actions/runs/39984381988) completed successfully for `db296c5`, including the unit-test and benchmark dry-run steps. This following log-only commit requires its own exact-head check before claiming final CI success.
+- The active one-shot's saved configuration retains its original one-occurrence schedule and chat target, with main-only, no-repeat/no-extra-call auditing instructions. No scheduled execution is claimed early; the original provider results and all NO-GO gates remain unchanged. No additional news API requests were made.
