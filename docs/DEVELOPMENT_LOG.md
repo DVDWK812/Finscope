@@ -4,11 +4,11 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 
 | Milestone | Status | Evidence / next step |
 |---|---|---|
-| Initial repository scaffold | Prepared locally, not pushed | Push `FinScope` scaffold to GitHub and link the commit |
-| API candidates and evaluation plan | Prepared; dry-run verified | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | Verified locally (11 passed) | `python -m unittest discover -s tests -v`; CI not run yet |
-| Live API comparison | Not started | Run with network access and real environment variables |
-| Source selection | Not started | Review test findings and licensing |
+| Initial repository scaffold | Committed locally, not pushed | Baseline `3c7c738`; intended GitHub repository returned Not Found |
+| API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
+| Offline adapter unit tests | Verified locally (27 passed) | `python -m unittest discover -s tests -v`; dry run passed; CI not run |
+| Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
+| Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
 | Event deduplication | Not started | Phase 2 |
 | Public dashboard deployment | Not started | Later milestone |
@@ -45,3 +45,10 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 
 - The first run continued to different topics after a 429; retained that actual report unchanged except for clearly labelled manual annotations. Tightened subsequent runs to stop that provider immediately after HTTP 429 and mark remaining topics `skipped/provider_rate_limited`; other providers can still proceed. Added explicit attempted-request flags/times for future reports.
 - Regression verified that a GDELT 429 allows exactly one GDELT request, skips its remaining topics without sleeping/retrying, and continues optional-provider checks. All 27 offline tests and the dry run passed. No live API calls were repeated to test this change.
+
+## 2026-10-24 — Evidence and decision milestone
+
+- Added the official endpoint/metadata/history, free quota and deployment-permission comparison to API_EVALUATION.md, with source links and explicit unknowns. Finnhub's dynamically embedded company-news documentation was inspected via its official page; a current free per-minute quota could not be confirmed. No unsupported quota was substituted.
+- Recorded exact GDELT query times, HTTP statuses and latencies, sample completeness, manual relevance uncertainty, source overlap and publisher-link accessibility limitations. Only aggregate findings are committed; local report retains the small metadata sample and original URLs/times without bodies.
+- DECISIONS.md selects GDELT provisionally for continued metadata research. Availability, summary coverage, additional-day sampling and deployment rights for alternatives remain open; Phase 1 is not declared complete. FinBERT/dashboard development remains unstarted.
+- Local milestones: `3c7c738` baseline, `05a7bdb` adapter/report corrections, `0a74486` stop-on-rate-limit guard. GitHub repository lookup was rechecked and still returned Not Found; no remote writes or GitHub CI were possible. User creation request remains pending. Documentation commit follows these verified milestones.
