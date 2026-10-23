@@ -6,7 +6,7 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | Pushed on feature branch; PR open | [PR #2](https://github.com/DVDWK812/Finscope/pull/2); remote initial commit `7614590` preserved |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 36 passed locally after review fixes; updated-head CI pending | Earlier [CI success](https://github.com/DVDWK812/Finscope/actions/runs/39977332594) was for `7a656df`; dry run passed locally |
+| Offline adapter unit tests | 36 passed locally; updated CI success verified for `5f99533` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39981319191); unit tests and CLI dry run passed |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
 | Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
@@ -84,3 +84,9 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Added explicit NO-GO for Phase 2 and a release-gate table in DECISIONS.md. GDELT stays provisional; missing keys, different-day availability, usable finance input and timestamp scope remain open. No full-text crawling, FinBERT, embeddings or dashboard work was introduced.
 - Created and verified active one-shot chat automation `finscope-different-day-feasibility-check` for 25 October 2026 at 09:00 Australia/Sydney (24 October 22:00 UTC); host timezone is AUS Eastern Standard Time. Its saved prompt enforces both new calendar dates, 24-hour separation, persisted cooldowns, one GDELT healthcare request, no retry/pagination, optional-provider skips, evidence updates and exact-head CI verification. This is pending work, not a completed retest. Local computer/app availability is required.
 - Updated API_EVALUATION.md and DECISIONS.md with source-backed limits and recommendations. Issue #1 and PR publication/CI are updated after the documentation milestone is committed and pushed; earlier successful CI is not presented as a check of new commits.
+
+## 2026-10-24 — Follow-up publication and CI verification
+
+- Pushed `2ce44d6` (review fixes) and `5f99533` (NLP/rights evidence and Phase 2 gates) to the existing PR branch. Verified remote feature head equals local `5f995338fb88e57e8e72ac4c7776aded6f8853f8`; remote `main` remained `7614590`.
+- Submitted a [COMMENT review on PR #2](https://github.com/DVDWK812/Finscope/pull/2#pullrequestreview-5630804704) describing findings, fixes, review scope and remaining feasibility gates. This is a Codex-assisted review, not an independent approval. Updated [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) with NO-GO, current skips, offline NLP metrics, corrected permission interpretation and the pending one-shot retest.
+- Verified [GitHub Actions run 39981319191](https://github.com/DVDWK812/Finscope/actions/runs/39981319191) completed successfully for head `5f99533`. This following documentation-only record triggers its own checks, to be verified separately. PR remains unmerged; different-day GDELT evidence remains pending.
