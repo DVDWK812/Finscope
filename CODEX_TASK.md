@@ -21,7 +21,7 @@ Work inside the extracted FinScope scaffold.
 - Write a short decision memo in `docs/DECISIONS.md` and update `docs/DEVELOPMENT_LOG.md`.
 
 **GitHub update cadence**
-- Commit after each tested and reviewable milestone; push with descriptive messages; for changes beyond small fixes, use feature branches and PRs.
+- `main` is the only active development branch. Start by safely switching to and fast-forwarding local `main` from `origin/main`; do not create feature branches or new pull requests. Commit after each tested and reviewable milestone and push directly to `origin main`, checking remote SHA and CI. Never force-push or overwrite divergent/uncommitted changes.
 - Use Issues for blockers and test outcomes; never claim a CI pass without checking GitHub Actions.
 - At the end, report repository URL, commit SHAs, tests run (with pass/fail), API requests made, which providers were skipped, and recommended primary source.
 - Disclose Codex-assisted code in the written assignment report.
