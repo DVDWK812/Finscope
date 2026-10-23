@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import requests
 
 from finscope.api_sources import (APIError, build_request, fetch_provider, normalize,
-                                  _http_get_json, local_credentials)
+                                  _http_get_json, local_credentials, Article)
 from finscope.benchmark import summarize
 
 
@@ -87,6 +87,39 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(items[0].timestamp, "")
         self.assertEqual(items[1].timestamp, "2026-10-23T14:00:00+00:00")
 
+    def test_malformed_text_is_not_usable_nlp_input(self):
+        items, count = normalize("marketaux", {"data": [
+            {"title": {"bad": "shape"}, "url": "https://example.org"},
+            {"title": "Valid title", "url": "https://example.org", "description": ["bad"]},
+            {"title": "Another title", "url": "https://example.org/a", "description": "  \n  "},
+            {"title": "Credentials in URL", "url": "https://user:secret@example.org"}]})
+        self.assertEqual(count, 4)
+        self.assertEqual(len(items), 2)
+        self.assertTrue(all(a.description == "" for a in items))
+
+    def test_nlp_metrics_distinguish_title_input_from_publication_times(self):
+        records = [Article("gdelt", "Copper demand", "https://example.org/a", "example.org", "  ",
+                           "2026-10-24T00:00:00+00:00", "first_seen"),
+                   Article("marketaux", "Bank", "https://example.org/b", "example.org", "Summary",
+                           "2026-10-24T00:00:00+00:00", "published")]
+        metrics = summarize(records)
+        self.assertEqual(metrics["min_title_chars"], 4)
+        self.assertEqual(metrics["max_title_chars"], 13)
+        self.assertEqual(metrics["mean_title_chars"], 8.5)
+        self.assertEqual(metrics["mean_title_whitespace_words"], 1.5)
+        self.assertEqual(metrics["description_available_ratio_among_valid"], 0.5)
+        self.assertEqual(metrics["published_timestamp_ratio_among_valid"], 0.5)
+        self.assertEqual(metrics["first_seen_timestamp_ratio_among_valid"], 0.5)
+        self.assertIsNone(summarize([])["mean_title_chars"])
+
+    def test_date_only_and_epoch_sentinels_are_not_publication_timestamps(self):
+        items, _ = normalize("marketaux", {"data": [
+            {"title": "A", "url": "https://example.org", "published_at": "2026-10-24"}]})
+        self.assertEqual(items[0].timestamp, "")
+        for value in (0, False, -1):
+            items, _ = normalize("finnhub", [{"headline": "A", "url": "https://example.org", "datetime": value}])
+            self.assertEqual(items[0].timestamp, "")
+
 
 class RequestTests(unittest.TestCase):
     def test_marketaux_disables_provider_dedup(self):
@@ -158,6 +191,12 @@ class RequestTests(unittest.TestCase):
 
 
 class TransportTests(unittest.TestCase):
+    @patch("finscope.api_sources.requests.get")
+    def test_http_date_retry_after_is_preserved_without_arbitrary_headers(self, get):
+        get.return_value = Mock(status_code=429, headers={"Retry-After": "Sat, 24 Oct 2026 00:01:00 GMT", "Secret": "SECRET"})
+        with self.assertRaises(APIError) as caught:
+            _http_get_json("https://example.org", {}, {}, 1)
+        self.assertEqual(caught.exception.rate_headers, {"Retry-After": "Sat, 24 Oct 2026 00:01:00 GMT"})
     @patch("finscope.api_sources.requests.get")
     def test_auth_rate_limit_and_http_classification(self, get):
         for status, kind in ((401, "auth"), (403, "auth"), (429, "rate_limit"), (503, "http")):

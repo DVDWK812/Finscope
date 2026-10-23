@@ -16,21 +16,30 @@ import time
 
 from .api_sources import (PROVIDERS, TOPICS, ENV_KEYS, Article, fetch_provider,
                           build_request, local_credentials, QueryResult)
+from .rate_limits import COOLDOWN_PATH, load_cooldowns, save_cooldowns, retry_deadline
 
 
 def summarize(articles: list[Article]) -> dict:
     n = len(articles)
     urls = {a.url.split("#")[0] for a in articles}
     sources = {a.source.lower().strip() for a in articles}
+    title_chars = [len(a.title.strip()) for a in articles]
+    title_words = [len(a.title.split()) for a in articles]
     return {
         "valid_articles": n,
         "unique_urls": len(urls),
         "distinct_sources": len(sources),
         "title_available_ratio_among_valid": round(sum(bool(a.title) for a in articles)/n, 3) if n else None,
-        "description_available_ratio_among_valid": round(sum(bool(a.description) for a in articles)/n, 3) if n else None,
+        "description_available_ratio_among_valid": round(sum(bool(a.description.strip()) for a in articles)/n, 3) if n else None,
         "timestamp_available_ratio_among_valid": round(sum(bool(a.timestamp) for a in articles)/n, 3) if n else None,
         "timestamp_kind": sorted({a.timestamp_kind for a in articles}),
         "mean_description_chars": round(statistics.mean(len(a.description) for a in articles), 1) if n else None,
+        "min_title_chars": min(title_chars) if n else None,
+        "max_title_chars": max(title_chars) if n else None,
+        "mean_title_chars": round(statistics.mean(title_chars), 1) if n else None,
+        "mean_title_whitespace_words": round(statistics.mean(title_words), 1) if n else None,
+        "published_timestamp_ratio_among_valid": round(sum(bool(a.timestamp) and a.timestamp_kind == "published" for a in articles)/n, 3) if n else None,
+        "first_seen_timestamp_ratio_among_valid": round(sum(bool(a.timestamp) and a.timestamp_kind == "first_seen" for a in articles)/n, 3) if n else None,
     }
 
 
@@ -47,13 +56,18 @@ def run(argv: list[str] | None = None) -> int:
     if args.days < 1 or args.limit < 1 or args.timeout <= 0:
         parser.error("--days, --limit and --timeout must be positive")
     credentials = local_credentials()
+    try:
+        cooldowns = {} if args.dry_run else load_cooldowns(COOLDOWN_PATH)
+    except (ValueError, OSError):
+        parser.error("Cannot read valid local cooldown state; no API requests made")
     now = datetime.now(timezone.utc)
     rows: list[dict] = []
     for provider in dict.fromkeys(args.providers):
         previous_request = None
         rate_limited = False
         for topic in dict.fromkeys(args.topics):
-            if not args.dry_run and not rate_limited and provider == "gdelt" and previous_request is not None:
+            held = cooldowns.get(provider)
+            if not args.dry_run and not rate_limited and not (held and held > datetime.now(timezone.utc)) and provider == "gdelt" and previous_request is not None:
                 # Conservative spacing, not a claim of an official quota or SLA.
                 time.sleep(max(0, 6 - (time.monotonic() - previous_request)))
             query_time = datetime.now(timezone.utc)
@@ -81,11 +95,20 @@ def run(argv: list[str] | None = None) -> int:
                 result = QueryResult(provider, topic, mode, "skipped", [],
                                      outcome="provider_rate_limited",
                                      note="Earlier request to this provider returned HTTP 429; no further requests this run.")
+            elif held and held > query_time and (provider == "gdelt" or credentials.get(ENV_KEYS[provider])):
+                result = QueryResult(provider, topic, mode, "skipped", [],
+                                     outcome="provider_cooldown",
+                                     note=f"Local provider cooldown until {held.isoformat()}; no request made.")
             else:
                 previous_request = time.monotonic()
                 result = fetch_provider(provider, topic, now=query_time, days=args.days,
                                         limit=args.limit, timeout=args.timeout)
                 rate_limited = result.http_status == 429
+                if rate_limited or result.rate_limit_headers.get("Retry-After"):
+                    deadline = retry_deadline(result.rate_limit_headers.get("Retry-After"),
+                                              datetime.now(timezone.utc))
+                    cooldowns[provider] = max(cooldowns.get(provider, deadline), deadline)
+                    save_cooldowns(COOLDOWN_PATH, cooldowns)
             rows.append({"topic": topic, "provider": provider, "query_mode": result.query_mode,
                          **query_metadata,
                          "request_attempted": result.status != "skipped",
@@ -93,6 +116,7 @@ def run(argv: list[str] | None = None) -> int:
                          "status": result.status, "latency_ms": result.latency_ms,
                          "outcome": result.outcome, "http_status": result.http_status,
                          "rate_limit_headers": result.rate_limit_headers,
+                         "cooldown_until_utc": cooldowns[provider].isoformat() if provider in cooldowns else None,
                          "raw_articles": result.raw_count,
                          "normalized_articles_before_cap": result.normalized_count,
                          "valid_article_ratio": round(result.normalized_count/result.raw_count,3) if result.raw_count else None,

@@ -46,6 +46,10 @@ Reports receive unique names under `reports/` (excluded from Git); `--output rep
 
 Keys are read only from this project's `.env`, without shell inheritance or interpolation. Requests run provider first, with conservative spacing between GDELT requests and no automatic retries or redirects. HTTP 429 stops further requests to that provider for the run; later topics are marked skipped. API keys must **never** be committed or pasted into logs and GitHub Issues.
 
+Validated `Retry-After` seconds or HTTP dates are persisted in ignored `reports/provider_cooldowns.json`, so another CLI invocation cannot bypass the hold. A 429 without a usable header creates our conservative 24-hour hold. A malformed cooldown file blocks live requests until reviewed. Run the pilot serially on this checkout; its local state is not a distributed quota coordinator. Do not delete or shorten holds to retry a provider.
+
+Reports also measure title character lengths, whitespace word counts (not model tokens), nonblank descriptions and publication/first-seen completeness separately. Malformed text fields and date-only/epoch sentinel timestamps do not count as usable NLP input.
+
 ## Interpreting results
 
 This is a **feasibility study**, not an objective leaderboard. Finnhub uses ticker-specific queries; the other providers use keywords. GDELT often supplies only titles/URLs and its article timestamp is first seen, **not** a confirmed publication timestamp. A successful API response does not prove full-text availability or lawful reuse.

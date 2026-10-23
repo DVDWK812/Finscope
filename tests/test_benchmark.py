@@ -14,7 +14,8 @@ class BenchmarkTests(unittest.TestCase):
     def execute(self, args):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / "report.json"
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    patch("finscope.benchmark.COOLDOWN_PATH", Path(folder) / "cooldowns.json"):
                 code = run([*args, "--output", str(output)])
             return code, json.loads(output.read_text(encoding="utf-8"))
 
@@ -85,6 +86,30 @@ class BenchmarkTests(unittest.TestCase):
                          ["rate_limit", "provider_rate_limited", "provider_rate_limited"])
         self.assertFalse(report["results"][1]["request_attempted"])
         self.assertIsNone(report["results"][1]["request_at_utc"])
+
+    @patch("finscope.benchmark.local_credentials", return_value={})
+    @patch("finscope.benchmark.fetch_provider")
+    def test_second_invocation_respects_persisted_retry_after(self, fetch, credentials):
+        fetch.return_value = QueryResult("gdelt", "healthcare", "keyword", "failed", [],
+                                         http_status=429, rate_limit_headers={"Retry-After": "3600"})
+        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(io.StringIO()), \
+                patch("finscope.benchmark.COOLDOWN_PATH", Path(folder) / "cooldowns.json"):
+            args = ["--providers", "gdelt", "--topics", "healthcare", "--output", str(Path(folder) / "report.json")]
+            self.assertEqual(run(args), 1)
+            self.assertEqual(run(args), 0)
+            row = json.loads((Path(folder) / "report.json").read_text())["results"][0]
+        fetch.assert_called_once()
+        self.assertEqual(row["outcome"], "provider_cooldown")
+        self.assertFalse(row["request_attempted"])
+
+    @patch("finscope.benchmark.fetch_provider")
+    def test_corrupt_cooldown_state_fails_closed(self, fetch):
+        with tempfile.TemporaryDirectory() as folder, \
+                patch("finscope.benchmark.COOLDOWN_PATH", Path(folder) / "state.json"):
+            (Path(folder) / "state.json").write_text("broken", encoding="utf-8")
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                run(["--providers", "gdelt"])
+        fetch.assert_not_called()
 
 
 if __name__ == "__main__":

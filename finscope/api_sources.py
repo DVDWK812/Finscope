@@ -11,10 +11,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 from urllib.parse import urlsplit
 from pathlib import Path
+import re
 import time
 
 import requests
 from dotenv import dotenv_values
+
+from .rate_limits import safe_retry_after
 
 
 TOPICS: dict[str, dict[str, str]] = {
@@ -95,8 +98,12 @@ def _http_get_json(url: str, params: dict[str, Any], headers: dict[str, str], ti
     rate_headers = {}
     for name in ("Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"):
         value = response.headers.get(name, "")
-        # Only numeric quota values: never persist arbitrary response-header text.
-        if value and value.isascii() and value.isdecimal():
+        # Quotas are numeric; Retry-After also permits a validated HTTP date.
+        if name == "Retry-After" and value:
+            safe = safe_retry_after(value)
+            if safe is not None:
+                rate_headers[name] = safe
+        elif value and value.isascii() and value.isdecimal():
             rate_headers[name] = value
     if response.status_code != 200:
         kind = "auth" if response.status_code in (401, 403) else (
@@ -115,7 +122,11 @@ GetJSON = Callable[[str, dict[str, Any], dict[str, str], float], Any]
 
 
 def _source(url: str, provider_source: str | None) -> str:
-    return str(provider_source or urlsplit(url).hostname or "unknown")
+    return _text(provider_source) or urlsplit(url).hostname or "unknown"
+
+
+def _text(value: Any) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _gdelt_datetime(value: str | None) -> str:
@@ -131,7 +142,7 @@ def _gdelt_datetime(value: str | None) -> str:
 
 def _published_datetime(value: Any) -> str:
     """Marketaux dates and NewsData's explicitly requested UTC dates."""
-    if not isinstance(value, str) or not value:
+    if not isinstance(value, str) or not re.search(r"[T ]\d{2}:\d{2}", value):
         return ""
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -170,11 +181,12 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
     for row in raw:
         if not isinstance(row, dict):
             continue
-        title = str(row.get("headline" if provider == "finnhub" else "title") or "").strip()
-        url = str(row.get("link" if provider == "newsdata" else "url") or "").strip()
+        title = _text(row.get("headline" if provider == "finnhub" else "title"))
+        url = _text(row.get("link" if provider == "newsdata" else "url"))
         try:
             parsed = urlsplit(url)
-            valid_url = parsed.scheme in ("http", "https") and bool(parsed.hostname)
+            valid_url = (parsed.scheme in ("http", "https") and bool(parsed.hostname)
+                         and parsed.username is None and parsed.password is None)
         except ValueError:
             valid_url = False
         if not title or not valid_url:
@@ -188,21 +200,23 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
         elif provider == "marketaux":
             ts = _published_datetime(row.get("published_at"))
             kind = "published"
-            desc = str(row.get("description") or "")
+            desc = _text(row.get("description"))
             source = _source(url, row.get("source"))
         elif provider == "newsdata":
             ts = _published_datetime(row.get("pubDate"))
             kind = "published"
-            desc = str(row.get("description") or "")
+            desc = _text(row.get("description"))
             source = _source(url, row.get("source_name") or row.get("source_id"))
         else:  # finnhub
             unix_time = row.get("datetime")
             try:
+                if isinstance(unix_time, bool) or int(unix_time) <= 0:
+                    raise ValueError
                 ts = datetime.fromtimestamp(int(unix_time), tz=timezone.utc).isoformat()
             except (ValueError, TypeError, OverflowError, OSError):
                 ts = ""
             kind = "published"
-            desc = str(row.get("summary") or "")
+            desc = _text(row.get("summary"))
             source = _source(url, row.get("source"))
         records.append(Article(provider, title, url, source, desc, ts, kind))
     return records, len(raw)

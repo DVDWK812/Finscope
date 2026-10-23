@@ -2,6 +2,8 @@ name: tests
 on:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -14,3 +16,5 @@ jobs:
         run: pip install -r requirements.txt
       - name: Unit tests (no API keys or live external calls)
         run: python -m unittest discover -s tests -v
+      - name: Benchmark dry run (no provider requests)
+        run: python -m finscope.benchmark --dry-run
