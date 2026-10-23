@@ -103,8 +103,8 @@ def filter_articles(
     selected_sectors, selected_sources, selected_sentiments = map(set, (sectors, sources, sentiments))
     return [
         a for a in articles
-        if (start is None or a.timestamp.date() >= start)
-        and (end is None or a.timestamp.date() <= end)
+        if (start is None or a.timestamp.astimezone(timezone.utc).date() >= start)
+        and (end is None or a.timestamp.astimezone(timezone.utc).date() <= end)
         and (not selected_sectors or bool(selected_sectors.intersection(a.sectors)))
         and (not selected_sources or a.source in selected_sources)
         and (not selected_sentiments or a.sentiment in selected_sentiments)
@@ -130,9 +130,19 @@ def sector_sentiment_counts(articles: Sequence[ArticleRecord]) -> list[dict[str,
     return [{"Sector": sector, **{s: counts[sector, s] for s in SENTIMENTS}} for sector in SECTORS]
 
 
-def daily_sentiment_counts(articles: Sequence[ArticleRecord]) -> list[dict[str, str | int]]:
-    dates = sorted({a.timestamp.date() for a in articles})
-    counts = Counter((a.timestamp.date(), a.sentiment) for a in articles)
+def daily_sentiment_counts(
+    articles: Sequence[ArticleRecord], *, start: date | None = None, end: date | None = None,
+) -> list[dict[str, str | int]]:
+    """UTC calendar counts, including zero days within the selected interval."""
+    if start is not None and end is not None and start > end:
+        raise ValueError("Start date cannot be after end date")
+    filtered = filter_articles(articles, start=start, end=end)
+    if not filtered:
+        return []
+    observed = [a.timestamp.astimezone(timezone.utc).date() for a in filtered]
+    first, last = start or min(observed), end or max(observed)
+    dates = [first + timedelta(days=i) for i in range((last - first).days + 1)]
+    counts = Counter((a.timestamp.astimezone(timezone.utc).date(), a.sentiment) for a in filtered)
     return [{"Date": day.isoformat(), **{s: counts[day, s] for s in SENTIMENTS}} for day in dates]
 
 

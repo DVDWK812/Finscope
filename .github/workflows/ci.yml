@@ -6,14 +6,18 @@ permissions:
   contents: read
 jobs:
   unit-tests:
+    name: Python 3.11 / ${{ matrix.streamlit }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        streamlit: ["streamlit==1.50.0", "streamlit>=1.50,<2"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt "${{ matrix.streamlit }}"
       - name: Unit tests (no API keys or live external calls)
         run: python -m unittest discover -s tests -v
       - name: Benchmark dry run (no provider requests)
