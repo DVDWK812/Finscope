@@ -4,7 +4,7 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 
 | Milestone | Status | Evidence / next step |
 |---|---|---|
-| Initial repository scaffold | Committed locally, not pushed | Baseline `3c7c738`; intended GitHub repository returned Not Found |
+| Initial repository scaffold | Committed locally; remote verified, publication in progress | Public `DVDWK812/Finscope`; remote initial commit `7614590` is being preserved |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
 | Offline adapter unit tests | Verified locally (27 passed) | `python -m unittest discover -s tests -v`; dry run passed; CI not run |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
@@ -52,3 +52,10 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Recorded exact GDELT query times, HTTP statuses and latencies, sample completeness, manual relevance uncertainty, source overlap and publisher-link accessibility limitations. Only aggregate findings are committed; local report retains the small metadata sample and original URLs/times without bodies.
 - DECISIONS.md selects GDELT provisionally for continued metadata research. Availability, summary coverage, additional-day sampling and deployment rights for alternatives remain open; Phase 1 is not declared complete. FinBERT/dashboard development remains unstarted.
 - Local milestones: `3c7c738` baseline, `05a7bdb` adapter/report corrections, `0a74486` stop-on-rate-limit guard. GitHub repository lookup was rechecked and still returned Not Found; no remote writes or GitHub CI were possible. User creation request remains pending. Documentation commit follows these verified milestones.
+
+## 2026-10-24 — GitHub reconciliation milestone
+
+- User confirmed repository creation. Verified canonical public repository `DVDWK812/Finscope`, connector push/admin permission and remote default branch `main` at `761459093be13757f9891b4ae5505e4727304d24`.
+- Added canonical `origin` and fetched remote history. Remote initial commit contains README.md and an MIT LICENSE. Reconciled the two README versions into the existing detailed Phase 1 README, preserved the remote licence, and joined the previously unrelated histories on `phase1/api-evaluation`. No force push or remote-main replacement.
+- Re-ran all 27 offline tests and the dry run successfully before reconciliation; no new news-API calls were made and optional credentials remain absent.
+- Created [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) with actual local test/live outcomes and remaining rate-limit, credential, rights and evidence gates. Updated repository instructions and decision status. Push/PR and CI verification follow; no CI pass claimed yet.

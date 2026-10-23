@@ -54,19 +54,16 @@ See [evaluation protocol](docs/API_EVALUATION.md), [Codex task](CODEX_TASK.md), 
 
 ## GitHub setup and version control
 
-Create `DVDWK812/FinScope` as a public repository, initialize with a README, then clone it and copy scaffold files into it. Make meaningful incremental commits. Example:
+The public repository is [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope). Phase 1 changes are developed on `phase1/api-evaluation` and reviewed through a pull request. To obtain the pilot branch:
 
 ```bash
-# Run from the parent folder containing the extracted FinScope/ directory
-git clone https://github.com/DVDWK812/FinScope.git FinScope-repo
-cp -a FinScope/. FinScope-repo/  # macOS/Linux; use Explorer/Copy-Item on Windows
-cd FinScope-repo
-git add .
-git commit -m "chore: bootstrap FinScope API comparison"
-git push -u origin main
+git clone --branch phase1/api-evaluation https://github.com/DVDWK812/Finscope.git
+cd Finscope
 ```
 
 If using Codex, supply `CODEX_TASK.md` as its phase-1 objective. All team-authored changes and AI coding assistance must be disclosed in the course report. For public deployment, verify each provider's usage and redistribution rights.
+
+The repository's MIT licence covers the project software; provider data and linked publisher content remain subject to their own rights. Track unresolved Phase 1 evidence and permission gates in [Issue #1](https://github.com/DVDWK812/Finscope/issues/1).
 
 ## Known limitations
 
