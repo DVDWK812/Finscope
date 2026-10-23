@@ -14,7 +14,7 @@
 5. With access to the network and user-supplied environment keys, conduct the lowest-cost real provider requests. Keep query and UTC timestamp metadata in the local report.
 6. Review errors (auth failure, rate limit, empty response, unexpected schema); distinguish `skipped` from `failed`.
 7. Add a concise, evidence-based result to `docs/API_EVALUATION.md` or `docs/DECISIONS.md` and update `docs/DEVELOPMENT_LOG.md`.
-8. Commit each coherent change with a meaningful commit message, e.g. `test(api): add GDELT adapter fixtures`. Push only if the working repo and user access are configured. Prefer a branch + PR for nontrivial changes.
+8. Use `main` as the only active development branch. Before editing, run `git fetch origin`, check for uncommitted work, switch to `main`, and fast-forward safely with `git pull --ff-only origin main`. Do not create or switch to feature branches or open new PRs. Commit each coherent, tested change with a meaningful message and push to `origin main`; verify the remote SHA and GitHub Actions. If main has diverged or contains unrelated edits, stop rather than force push or overwrite work.
 
 ## Safety and integrity
 - Never commit `.env`, actual API keys, copied article full text, bulk article datasets, or licence-restricted data.
