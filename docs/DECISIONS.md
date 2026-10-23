@@ -17,7 +17,7 @@ Marketaux is the next finance-specific candidate to test when a local key exists
 - The three healthcare headlines yielded two relevant trade items and one uncertain partnership item. Two stories likely describe the same event. Original links/times and manual annotations are in ignored `reports/phase1_live_20261023.json`; no article text is committed.
 - Before closing Phase 1: obtain another-day availability/relevance evidence when practical, resolve rate-limit handling operationally without bypass, test available keyed alternatives at minimum cost, verify retention/history entitlements, and secure necessary public-display/storage/derived-output rights. If summaries are required later, reevaluate the data requirement rather than adding a crawler.
 - GitHub connector login is DVDWK812. The user merged [PR #2](https://github.com/DVDWK812/Finscope/pull/2) into public [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope) as `6ae8e00`. Local `main` was safely fast-forwarded through the user's workflow updates to `f432102`; all Phase 1 implementation/tests/evidence files match the merged head. The fully merged feature branch was deleted locally and remotely after verifying zero unique commits. **Use main only: no feature branches, new PRs or force pushes.** [Issue #1](https://github.com/DVDWK812/Finscope/issues/1) tracks feasibility gates; historical unmerged-PR statements describe earlier milestones.
-- Confirm the official course code in Moodle. Record Codex assistance accurately in the assignment. No FinBERT, embeddings, crawler or dashboard development was started.
+- Confirm the official course code in Moodle. Record Codex assistance accurately in the assignment. No FinBERT, embeddings, crawler or live-data dashboard integration is approved; the separate synthetic-only UI exception remains in force.
 
 ## Follow-up release gates
 
@@ -31,6 +31,13 @@ The one-shot follow-up is scheduled for 25 October 2026, 09:00 Australia/Sydney,
 | Financial NLP input | Not established | Manually reviewed finance-relevant samples for intended topics; adequate permitted descriptions, or an explicitly accepted and validated headline-only scope |
 | Time semantics | Scope gap | Publication timestamps from an approved source, or explicit acceptance of discovery-time-only analysis |
 | Public use and retention | GDELT dataset reuse basis strongest; alternatives unresolved | Field/plan-specific display, retention and derived-output basis; separately resolve publisher rights and training if relevant |
-| Operational readiness | Pilot only | Verified CI on pushed head and a request budget that respects saved provider holds |
+| History and quota sustainability | Not established | Account/plan-specific usable history and a sustainable request budget; documented limits and a small rate-limited sample are insufficient |
+| Operational readiness | Pilot only; 47 local tests and dry run pass after synthetic-UI addition | Verified CI on pushed head and a request budget that respects saved provider holds; local tests do not establish provider reliability |
 
 GO applies to continued bounded Phase 1 research only. No production provider selection, FinBERT, embeddings, crawler or live-data dashboard work is authorized by this recommendation. Synthetic-only UI prototyping is explicitly permitted.
+
+## Execution audit checkpoint — 24 October 2026, 03:20 Sydney
+
+The saved one-shot is **not yet due** (25 October 09:00 Sydney). No execution report or attempt marker was found; no HTTP status, latency, record count or new NLP text can be attributed to it. It was not classified as a cooldown skip. The audit made zero provider calls and preserved the existing schedule and cooldown. Only the original three GDELT responses remain measured evidence; optional-provider rows remain skipped for missing credentials. Every source gate above remains open, so Phase 2 is **NO-GO** and GDELT provisional.
+
+Current main includes the user's authorized offline UI prototype (`8f7d730`), preserved during safe fast-forward. Its invented fixtures and manually assigned illustrative labels are not real provider coverage, model output or permission evidence. All 47 offline tests and the dry run pass; exact-head push CI is checked after publishing this audit. Keep the local computer awake/online and Codex running at the scheduled time through completion; it need not stay on continuously beforehand.

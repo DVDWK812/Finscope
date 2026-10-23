@@ -165,3 +165,21 @@ The automation remains scheduled for **25 October 2026, 09:00 Sydney**. At the 2
 The saved one-shot instructions now require main-only development and evidence-based execution auditing. They retain only the previously authorized one-request GDELT check, forbid extra optional-provider calls, and prevent a second attempt if a prior execution/attempt marker is found. A marker without result evidence is unknown execution, not proof of an HTTP request or success. After execution, record exact attempts versus received responses, HTTP status, latency, raw/normalized/sample counts, title lengths, descriptions, relevance and timestamp semantics. A hold is skipped/provider_cooldown; no HTTP 429 is retried. No catch-up call is authorized merely because execution evidence is absent.
 
 All 36 offline tests and the dry run pass on synchronized main. [Push-triggered Actions run 39983651007](https://github.com/DVDWK812/Finscope/actions/runs/39983651007) passed for `f432102`; publication of this documentation needs exact-head verification. Phase 2 remains **NO-GO** across all release gates, independent of merge status or a future isolated HTTP 200.
+
+## Saved-result execution audit — 24 October 2026, 03:20 Sydney
+
+Audited the active automation configuration, attempt-marker path and all saved report types at **2026-10-23T16:20:27.754470+00:00**. The scheduled time is **25 October at 09:00 Sydney** (24 October 22:00 UTC), still future. No attempt marker or one-shot result report exists. Status is **not yet due / no execution evidence**, not failed, successful or skipped for cooldown. This audit made **zero news-API requests**; the scheduled task's HTTP status, latency, records and new NLP input remain unobserved. A local inventory/assessment is saved in ignored `reports/phase1_execution_audit_20261024.json`.
+
+Only the original live report contains actual provider responses:
+
+| Original GDELT topic | HTTP | Latency | Accepted records / available NLP text |
+|---|---|---|---|
+| Technology | 429 | 11,962.4 ms | Unobserved due to failure; not evidence of empty coverage |
+| Healthcare | 200 | 20,217.3 ms | 3 title-only records; mean 77 characters / 11.3 whitespace words; no descriptions or publication times |
+| Materials | 429 | 12,342.2 ms | Unobserved due to failure; not evidence of empty coverage |
+
+Thus there are still **three historical GDELT requests and no different-day sample**. The optional-provider follow-up contains three explicit missing-credential skips with `request_attempted=false`; dry-run plans and offline reanalysis are not additional live requests. The original report predates explicit attempt flags; its three requests are supported by recorded HTTP responses and the original run log. The saved cooldown was not changed, and no retry was attempted.
+
+Main was fast-forwarded to the user's newer `8f7d730`, preserving the authorized synthetic-only Streamlit prototype. Its 12 invented records/illustrative events are excluded from news-source feasibility evidence. All **47 offline tests** (36 API/report/cooldown plus 11 synthetic-UI data tests) and the benchmark dry run pass. This does not establish a Streamlit browser/runtime pass.
+
+Phase 2 remains **NO-GO**: repeat availability, representative financial input, timestamp scope, usable history/quota and public-display/retention/derived-output rights remain unresolved. Local checks and synthetic fixtures cannot close those source gates. The local computer and desktop app must be running for the scheduled task's local-file access; have them ready before the due time and leave them available through completion. [Official scheduling guidance](https://developers.openai.com/training/walkthroughs/scheduled-tasks)
