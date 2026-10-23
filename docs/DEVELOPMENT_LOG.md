@@ -6,7 +6,7 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | Pushed on feature branch; PR open | [PR #2](https://github.com/DVDWK812/Finscope/pull/2); remote initial commit `7614590` preserved |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 27 passed locally; GitHub Actions success verified for `44ba4bc` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39977138588); dry run passed locally |
+| Offline adapter unit tests | 36 passed locally after review fixes; updated-head CI pending | Earlier [CI success](https://github.com/DVDWK812/Finscope/actions/runs/39977332594) was for `7a656df`; dry run passed locally |
 | Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
 | Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
@@ -76,3 +76,11 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - All 36 tests and dry run passed after corrections, including new date-header, persisted-hold, corrupt-state, malformed-field, sentinel-timestamp and NLP-metric regressions. An intermediate timestamp test failure exposed a misplaced validation guard; it was corrected before this milestone passed.
 - Optional-provider follow-up: `reports/phase1_optional_followup_20261024.json` records one healthcare query plan each for Marketaux, NewsData.io and Finnhub as skipped/missing_credentials; zero HTTP requests. The earlier live healthcare metadata was reanalyzed offline into `reports/phase1_nlp_input_review_20261024.json`, not refetched.
 - Both the original live sample and this review are dated 24 October in Sydney (23 October UTC), so another-day evidence is still pending. Seeded the local conservative GDELT hold from the last recorded 429 through 2026-10-24T15:09:44.173494+00:00; this is local policy derived from saved evidence, not a new provider header or response.
+
+## 2026-10-24 — Follow-up evidence, permission and scheduling milestone
+
+- Saved tested review fixes in `2ce44d6`. Offline reanalysis of the three original healthcare titles: lengths 71–83 characters, mean 77.0; whitespace words 10–13, mean 11.3; descriptions 0/3, publication times 0/3, first-seen times 3/3. Original relevance judgments remain 2 relevant / 1 uncertain with likely event overlap; no new headline or precision evidence was invented.
+- Reread GDELT, Marketaux, NewsData.io and Finnhub official terms. Added separate public-display, metadata-retention and derived-analysis/output decisions. Corrected the overly narrow NewsData interpretation to include its external-derivative/sharing clauses alongside API restrictions and publisher rights; no permission was inferred for the free public MVP. No provider was contacted.
+- Added explicit NO-GO for Phase 2 and a release-gate table in DECISIONS.md. GDELT stays provisional; missing keys, different-day availability, usable finance input and timestamp scope remain open. No full-text crawling, FinBERT, embeddings or dashboard work was introduced.
+- Created and verified active one-shot chat automation `finscope-different-day-feasibility-check` for 25 October 2026 at 09:00 Australia/Sydney (24 October 22:00 UTC); host timezone is AUS Eastern Standard Time. Its saved prompt enforces both new calendar dates, 24-hour separation, persisted cooldowns, one GDELT healthcare request, no retry/pagination, optional-provider skips, evidence updates and exact-head CI verification. This is pending work, not a completed retest. Local computer/app availability is required.
+- Updated API_EVALUATION.md and DECISIONS.md with source-backed limits and recommendations. Issue #1 and PR publication/CI are updated after the documentation milestone is committed and pushed; earlier successful CI is not presented as a check of new commits.

@@ -65,7 +65,7 @@ Official sources were checked on this date. Documentation describes provider cap
 |---|---|---|
 | GDELT | No numeric DOC request quota or SLA verified in reviewed official pages. Observed two HTTP 429s; no captured numeric quota or Retry-After headers. Six-second request-start spacing is our precaution, not an official entitlement. | Dataset use and redistribution allowed with GDELT citation and website link. This supports a metadata pilot; it does not license linked publishers' bodies or images. [Terms of use](https://www.gdeltproject.org/about.html#termsofuse) |
 | Marketaux | 100 requests/day, 3 articles/news request; this account's quota not exercised. [Pricing](https://www.marketaux.com/pricing) | Reviewed terms grant personal non-commercial content access, without a clear public redistribution grant. Public display, retention and derived NLP permissions require provider clarification before deployment. API availability is not a deployment licence. [Terms](https://www.marketaux.com/tos) |
-| NewsData.io | 200 credits/day, up to 10 articles/credit; 30 credits/15 minutes. No live quota observations. [Credits](https://newsdata.io/documentation/api-credit-limits), [rate limits](https://newsdata.io/documentation/api-rate-limit) | API licence covers personal/internal business use; restrictions include making the API available to others over a network, and publishers retain content rights. A public MVP is not cleared under the reviewed terms; obtain specific written permission covering public output, storage and analysis. [Terms](https://newsdata.io/terms) |
+| NewsData.io | 200 credits/day, up to 10 articles/credit; 30 credits/15 minutes. No live quota observations. [Credits](https://newsdata.io/documentation/api-credit-limits), [rate limits](https://newsdata.io/documentation/api-rate-limit) | Personal/internal API restrictions coexist with external Data Derivatives and sharing-at-customer-risk clauses. This is unresolved scope, not a categorical ban on every public use. Publisher rights remain separate; clarify free-plan display, retention and AI use before approval. [Terms](https://newsdata.io/terms) |
 | Finnhub | Terms impose 30 calls/second in addition to plan limits. Current free per-minute allowance was not independently extracted from the pricing page; do not assume it. No live quota observations. [Terms](https://finnhub.io/terms-of-service), [pricing](https://finnhub.io/pricing) | Personal plans prohibit sharing data **or derived results** without written approval; data deletion is required when the data subscription ends. Public deployment is blocked absent an appropriate agreement. The SDK/OpenAPI Apache licence does not license news data. [Terms](https://finnhub.io/terms-of-service) |
 
 ### Actual first run
@@ -96,3 +96,53 @@ Manual headline review: two pharmaceutical export/trade stories were financially
 Technology/materials coverage, relevance and metadata quality are **unmeasured** because their API requests failed. Optional-provider coverage and latency are **unmeasured** because they were skipped. A one-day, three-record, relevance-ranked sample cannot establish general reliability, comparative source diversity, historical completeness or sustainable ingestion performance.
 
 After the experiment, commit `0a74486` tightened future runs to stop a provider after its first HTTP 429 and mark later topics skipped. The actual first run above predates this guard and was not rerun. See [decision memo](DECISIONS.md) for the conditional choice and remaining gates.
+
+## Follow-up review — 2026-10-24 (Australia/Sydney)
+
+### PR #2 review and remediation
+
+Reviewed original head `7a656df` against `7614590` for adapter correctness, secret handling, report integrity, request budgets, tests and CI permissions. The review did not merge the PR.
+
+| Finding in reviewed head | Impact | Remediation / evidence |
+|---|---|---|
+| Valid HTTP-date Retry-After was discarded; cooldown disappeared on CLI restart | A fresh invocation could request before a provider's hold expired | `2ce44d6`: validated seconds/date parsing, atomic ignored local cooldown state, fail-closed corrupt-state handling and cross-invocation regression. No automatic retries. A missing/invalid header on HTTP 429 uses our 24-hour hold, not a claimed provider quota. [HTTP semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after) |
+| Arbitrary JSON values were stringified into title/description fields; whitespace summaries and date-only/zero-epoch placeholders could appear complete | Inflated usable-text or publication completeness | Strict text normalization, timestamp sentinel checks, separate first-seen/publication metrics and synthetic regression cases |
+| Report lacked title-length evidence; CI did not execute the CLI dry run | NLP input feasibility and CLI regression coverage incomplete | Added character and whitespace-word metrics, dry-run CI step, read-only CI contents permission; all 36 offline tests and local dry run pass |
+
+URL credentials are rejected before samples are retained; original accepted publisher URLs remain unchanged. Request-token parameters, arbitrary error bodies and nonvalidated quota headers are not included in reports. This is a bounded source review and tracked-file audit, not a penetration test or a dependency vulnerability certification. The cooldown file supports serial pilot runs on one checkout, not simultaneous processes or a distributed deployment.
+
+### Current sampling status and NLP evidence
+
+The first run and this follow-up are on the **same Sydney day, 24 October**, and same UTC day, 23 October. No GDELT request was made in this follow-up. A different-day retest is pending, not a second observed result. A one-shot local chat follow-up is scheduled for **25 October 2026 at 09:00 Sydney** (24 October 22:00 UTC), subject to the computer/app being available. Its budget is **one pharmaceutical query, maxrecords=3, two-day lookback**, with no retry, pagination or additional GDELT topic. The follow-up must first verify different UTC/Sydney dates, elapsed time and any provider hold.
+
+The local conservative GDELT hold was initialized from the saved last 429, through `2026-10-24T15:09:44.173494+00:00`. No header was observed in that response; this deadline is local policy. Future valid Retry-After deadlines persist across CLI invocations, and a still-active hold produces skipped/provider_cooldown without a request.
+
+Marketaux, NewsData.io and Finnhub each have **one new skipped healthcare row**, not failures, in ignored `reports/phase1_optional_followup_20261024.json`: local `.env` remains absent. **New news-API HTTP requests this follow-up: zero.** Documentation retrieval is separate from news-API sampling.
+
+Offline reanalysis of the three original GDELT healthcare records is in ignored `reports/phase1_nlp_input_review_20261024.json`:
+
+| Input property | Actual original-sample evidence | Implication |
+|---|---|---|
+| Title length | 71, 77 and 83 characters; mean 77.0 | Technically usable short headline strings; length alone proves no model suitability |
+| Whitespace words | 10, 11 and 13; mean 11.3 | Descriptive word count, not tokenizer/model-token count |
+| Description availability | 0/3; no description text reconstructed or fetched | No observed title-plus-summary input; context must not be invented |
+| Publication timestamp availability | 0/3 | Publication-time analysis is unsupported by this sample |
+| First-seen timestamp availability | 3/3 | Suitable only for explicitly labelled discovery-time analysis |
+| Manual financial relevance | 2 relevant export/trade headlines, 1 uncertain partnership headline | Small, relevance-ranked, single-topic sample; two records likely share an event |
+
+Headline-only NLP might be a separately scoped experiment, but accepting that narrower input and validating it is still a project decision. There is no universal title-length threshold here, no tokenizer/model evaluation, and no evidence of sector-impact validity. The skipped providers have **unknown observed** title/summary/publication quality; documented fields are not measured availability.
+
+### Rights decision by intended use
+
+Official terms were reread on 24 October. The following is the project's evidence interpretation for the actual metadata pilot, rather than a guarantee about all third-party content:
+
+| Provider | Public metadata display | Metadata retention | Derived AI analysis / output |
+|---|---|---|---|
+| GDELT | Released dataset redistribution is supported with GDELT citation/link | Broad dataset reuse supports retention; no stated dataset time limit found | Broad research/analysis grant supports analysis of released metadata; no AI-specific exclusion found. This does not grant publisher full-text/image rights. [Terms](https://www.gdeltproject.org/about.html) |
+| Marketaux | Public redistribution grant not established by reviewed personal/non-commercial website terms | Specific retention period/rights unresolved | Specific derived-analysis/output scope unresolved; obtain plan-specific confirmation. [Terms](https://www.marketaux.com/tos) |
+| NewsData.io | External derivatives/sharing clauses must be reconciled with API restrictions and attribution | Free-plan retention duration and post-termination scope not established | Publisher copyright and applicable contractual scope remain unresolved. [Terms](https://newsdata.io/terms) |
+| Finnhub | Written approval required to share personal-plan data | Deletion required when data subscription ends | Sharing derived results also requires written approval. [Terms](https://finnhub.io/terms-of-service) |
+
+Before clearing a keyed provider, obtain plan-specific written terms covering the exact endpoint, title/description fields, anonymous public display, local retention period, derived inference results and any training use. Do not equate inference permission with model training permission. No provider was contacted and no new permission was granted during this review.
+
+**Phase 2 recommendation: NO-GO.** GDELT remains provisional. Different-day availability, financially relevant usable input and publication-time scope are unresolved; alternatives lack local credentials and a cleared public-use basis. A scheduled test is not completed evidence. See DECISIONS.md and Issue #1 for release gates.
