@@ -1,6 +1,6 @@
 # API evaluation protocol — Phase 1
 
-> Latest evidence: the keyed pilot ran on 24 October 2026. Marketaux is the conditional primary candidate for further local sector-news evaluation; no provider is approved for public deployment. See the keyed experiment section below. Earlier missing-key statements are dated historical evidence.
+> Latest review: Phase 1.5 on 25 October 2026 Sydney reanalysed the existing 24 October keyed pilot without new provider requests. Marketaux remains the preferred conditional candidate. See the Phase 1.5 section and [bounded multi-day plan](PHASE15_MARKETAUX_PLAN.md); that study is designed, not executed or scheduled. No provider is approved for public deployment. Earlier missing-key statements are dated historical evidence.
 
 ## Objective
 Choose one sustainable news metadata source for a **publicly deployed**, non-commercial student MVP. The API test does **not** evaluate the sentiment model, sector labelling or event deduplication yet.
@@ -248,3 +248,51 @@ All three now demonstrate more promising **title-plus-short-description** candid
 Rights remain separate from these successes. Marketaux's reviewed website terms grant personal noncommercial access but do not establish field/plan-specific public display, retention or derived-output permission. NewsData's personal/internal API restrictions coexist with external-derivative/sharing-at-risk clauses; free public-use scope and publisher rights require clarification. Finnhub explicitly restricts sharing personal-plan data or derived results without written approval and requires deletion when the data subscription ends. No new licence or written permission was obtained. [Marketaux terms](https://www.marketaux.com/tos), [NewsData terms](https://newsdata.io/terms), [Finnhub terms](https://finnhub.io/terms-of-service).
 
 **Recommendation:** Marketaux is the most suitable **conditional primary financial-news candidate** for FinScope's sector-keyword design among the tested keyed options. It supplied relevant business metadata across all three requested topics, multiple sources and usable short-text/publication fields with low observed latency. Finnhub remains a distinct company-news comparator; NewsData is a potential general-news alternative with only healthcare evidence so far. This one-day sample does not choose a production provider. Multi-day reliability, representativeness, NLP quality, account/history limits and deployment/retention/derived-analysis rights remain open: **Phase 2 NO-GO**. No real data was connected to Streamlit; the separate scheduled GDELT test and its own hold/marker are preserved.
+
+
+## Phase 1.5 review — 25 October 2026 Sydney
+
+This is a **saved-evidence audit and study design**, not another provider test. New news-provider requests: **0**. Original keyed request/response reports, gate decisions and aggregate review are preserved byte-for-byte; their seven HTTP 200 replies remain the only keyed traffic measured. The GDELT automation and complete shared cooldown file were fingerprinted before work and preserved; no duplicate task or catch-up call was created. Reproducible offline code/notebook and aggregate output are local and ignored: `reports/phase15_saved_evidence_audit.py`, `.ipynb` and `.json` (run from the repository root). Source-document HTTP reads spend no news API quota and are not provider-availability tests.
+
+### Refined Marketaux sample quality
+
+Grain is a saved article appearance among the three original Marketaux replies, nine records total. Review does not recreate discarded descriptions or expand the sample.
+
+| Check | Observed result | Interpretation / remaining risk |
+|---|---|---|
+| Financial relevance | Existing title/URL judgments: 8 relevant / 1 off-topic | Single Codex-assisted review, not independent labels or sentiment/model accuracy |
+| Description informativeness | 9/9 present, mean 149.3 characters in original in-memory measurements; description text not saved | Added information, repetition and boilerplate cannot be reconstructed; semantic usefulness remains unobserved |
+| Publication validity / requested window | 9/9 parse as published times; 0 future and 0 before requested lower bound | Internal consistency only; publisher accuracy not independently checked |
+| Retrieval minus provider publication | Minimum / median / maximum **1.524 / 22.970 / 42.707 hours** | Article age, not measured ingestion latency or proof of news delay; search relevance ordering can select older articles |
+| Diversity | 7 reported source domains and 7 normalized URL hosts; largest source 3/9 appearances; healthcare entirely one source | Pooled diversity hides sector concentration; global coverage and original-newsroom counts unproven |
+| Traceability | 2/9 reported-source/normalized-host differences | One technology label differs from its URL host and one materials label uses a different domain. Differences survive stripping leading www/numbered-www prefixes; preserve both, no unsupported claim of invalid links |
+| Exact duplicates | 9 distinct URLs; 0 repeated normalized titles | URL comparison lowercases scheme/host and drops fragment, preserving path/query; title comparison casefolds and normalizes words/punctuation. These exact-key checks do not measure event uniqueness |
+| Event overlap | The existing healthcare title review suspects 2 articles cover the same regulatory event | Unconfirmed cluster; distinct URLs/titles can still repeat an event. No event-ground-truth corpus, precision/recall or embedding evaluation |
+
+The [multi-day plan](PHASE15_MARKETAUX_PLAN.md) proposes three manual rounds on 26, 28 and 31 October at 12:00 Sydney, at most three requests per round/nine total. These are proposed windows, not automations or completed samples. It defines safe stopping, quota checks, transient description review, independent-review prerequisites, timestamp/source/duplicate measures and prospective screening criteria. The current CLI does not implement its attempt ledger, 60-second spacing or in-memory description annotation; those safeguards must be ready and offline-tested before collection. No raw text persistence or recovery re-query is permitted.
+
+### NewsData HTTP 200 plus Retry-After investigation
+
+Saved healthcare request began **2026-10-24T12:47:56.851083+00:00**: HTTP 200, 882.7 ms, three valid records. Safe saved headers are Retry-After=900, X-RateLimit-Limit=60, Remaining=59 and Reset=1792846980. The benchmark recorded a hold through **2026-10-24T13:02:57.734634+00:00**, then expansion topics were skipped. That historical deadline has now elapsed; its saved bytes are unchanged, and **NewsData live testing remains manually paused** while meaning/constraints are unresolved. Do not misreport the elapsed timestamp as an active timed hold or release testing simply because it has expired.
+
+The official [rate-limit documentation](https://newsdata.io/documentation/api-rate-limit) and [provider usage article](https://newsdata.io/blog/newsdata-rate-limit/) describe 30 free credits per 15 minutes and HTTP 429 on exceeding the threshold. They do not explain Retry-After on a successful response, or reconcile the observed numeric limit of 60 with the credit window. A 900-second hint is consistent with a 15-minute window, **an inference, not proof of exhausted quota or permission to ignore it**. If Reset is Unix seconds, it maps to 13:03:00 UTC, near the saved hold deadline; the header's units/semantics have not been confirmed. Remaining=59 cannot establish the daily remaining allowance. Do not declare the successful reply a 429/failure or infer that 60 equals daily entitlement.
+
+[RFC 9110 section 10.2.3](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3) defines Retry-After as follow-up waiting guidance, supporting seconds or an HTTP date; it does not settle this provider's success-header policy. The existing benchmark conservatively records a hold whenever a validated Retry-After is present, including HTTP 200. An offline regression test now verifies records remain successful while subsequent topics and a second invocation make no provider call, do not sleep/retry and preserve the hold. The generic CLI only enforces unexpired deadlines: the additional manual pause must be observed separately. No adapter policy was weakened, hold edited, live probe made or provider contacted. Draft clarification questions are in the plan.
+
+### Marketaux free history and permission findings
+
+Rechecked public documentation on 25 October Sydney. Official pricing returned HTTP 200 on a direct public-document read (web extraction timed out) and confirms **100 daily requests / 3 articles per news request**. [API documentation](https://www.marketaux.com/documentation) documents UTC publication-date filters, meta descriptions, similarity grouping and subscription-dependent caps. Its error table distinguishes subscription-usage headers from the **60-second X-RateLimit window**, resolving the earlier uncertainty about the type of observed limit 30; the account's current daily remaining usage/reset is still unverified. Documentation defines default search ranking by relevance, explaining why the sample cannot establish latest-news freshness. These are documented contracts, not new endpoint observations. [Pricing](https://www.marketaux.com/pricing), [FAQ](https://www.marketaux.com/faq).
+
+No reviewed public pricing/FAQ clause specifies the earliest retrievable date or an explicit free-account history duration. Supported date parameters and the observed two-day slice do not prove unlimited history or a successful older-data entitlement. No authenticated dashboard entitlement was inspected and no history API probe was made: this gate remains **unverified**.
+
+| Intended use | Evidence / unresolved permission | Phase 1.5 status |
+|---|---|---|
+| Public student-app display of title, meta description, URL/source/time | Generic Site terms cover personal noncommercial access, not a clear field-specific public API-data grant; noncommercial does not itself settle redistribution | OPEN; no real display |
+| Metadata/text retention, caching, backups and deletion | No verified plan-specific duration or post-cancellation allowance for these API fields | OPEN; preserve existing evidence, do not expand retention |
+| Three-person private review | Personal account access is not verified permission to share publisher metadata with the team | OPEN before independent shared review |
+| Local pretrained-model inference | No verified express permission for input processing under the intended API/publisher terms; technical API access is not a usage grant | OPEN; no inference performed |
+| Retention/publication of derived scores, labels, event groups or aggregates | No verified output-sharing basis or post-deletion rule; provider sentiment fields do not grant rights for project analysis | OPEN; no real derived outputs published |
+
+The [terms](https://www.marketaux.com/tos), marked last updated 10 January 2021, describe the Site and third-party content; they are insufficient evidence to assert the intended API uses are approved. Absence of an express AI clause is neither permission nor a categorical finding that every inference use is prohibited. Written plan-/field-/publisher-specific clarification is required. Questions are prepared in the plan, **not sent**. Training/fine-tuning is distinct from inference and is outside this task.
+
+**Decision:** Marketaux stays the preferred conditional financial-news candidate. This review improves evidence discipline and study readiness, not production authorization. Multi-day reliability, description informativeness, independent NLP validation, timestamp accuracy, representativeness, free history/quota and intended-use permissions remain open. Phase 2 production integration remains **NO-GO**; Streamlit remains synthetic-only. No FinBERT, embeddings or crawling was run.

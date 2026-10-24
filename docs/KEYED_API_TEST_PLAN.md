@@ -1,5 +1,7 @@
 # Keyed news API feasibility experiment — Phase 1
 
+Phase 1.5 follow-up: the [bounded Marketaux multi-day design](PHASE15_MARKETAUX_PLAN.md) is separate and unexecuted. Preserve the completed evidence below; do not rerun the Stage A/B commands as a new experiment. NewsData remains manually paused pending header clarification beyond its now-elapsed saved deadline. The existing GDELT one-shot is unchanged.
+
 **Status: staged local experiment executed on 24 October 2026 UTC/Sydney.** All three local credentials were confirmed configured without displaying values; `.env` is ignored and untracked. Stage A made three healthcare requests. Stage B made four requests to eligible Marketaux/Finnhub only; NewsData's two remaining topics were skipped for its saved hold. Total: seven HTTP 200 responses, no retry/pagination and no GDELT requests. See API_EVALUATION.md for exact evidence and limitations. Successful access does not establish public-deployment permission.
 
 ## Phase 1 staged testing

@@ -1,4 +1,5 @@
 import contextlib
+from datetime import datetime, timedelta, timezone
 import io
 import json
 from pathlib import Path
@@ -101,6 +102,44 @@ class BenchmarkTests(unittest.TestCase):
         fetch.assert_called_once()
         self.assertEqual(row["outcome"], "provider_cooldown")
         self.assertFalse(row["request_attempted"])
+
+    @patch("finscope.benchmark.time.sleep")
+    @patch("finscope.benchmark.local_credentials", return_value={"NEWSDATA_API_KEY": "TEST_ONLY"})
+    @patch("finscope.benchmark.fetch_provider")
+    def test_successful_newsdata_reply_preserves_records_and_holds_followups(self, fetch, credentials, sleep):
+        now = datetime(2026, 10, 25, 1, tzinfo=timezone.utc)
+        article = Article("newsdata", "Synthetic business headline", "https://example.org/news",
+                          "example.org", "Synthetic private description", now.isoformat(), "published")
+        fetch.return_value = QueryResult("newsdata", "healthcare", "keyword", "ok", [article],
+                                         raw_count=1, normalized_count=1, http_status=200,
+                                         outcome="records", rate_limit_headers={"Retry-After": "900"})
+        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(io.StringIO()), \
+                patch("finscope.benchmark.COOLDOWN_PATH", Path(folder) / "cooldowns.json"), \
+                patch("finscope.benchmark.datetime") as clock:
+            clock.now.return_value = now
+            output = Path(folder) / "report.json"
+            args = ["--providers", "newsdata", "--topics", "healthcare", "technology", "materials",
+                    "--output", str(output)]
+            self.assertEqual(run(args), 0)
+            first = json.loads(output.read_text(encoding="utf-8"))["results"]
+            state = (Path(folder) / "cooldowns.json").read_bytes()
+            self.assertEqual(json.loads(state)["newsdata"], (now + timedelta(seconds=900)).isoformat())
+            clock.now.return_value = now + timedelta(minutes=1)
+            self.assertEqual(run(args), 0)
+            second = json.loads(output.read_text(encoding="utf-8"))["results"]
+            self.assertEqual((Path(folder) / "cooldowns.json").read_bytes(), state)
+        fetch.assert_called_once()
+        sleep.assert_not_called()
+        self.assertEqual(first[0]["http_status"], 200)
+        self.assertEqual(first[0]["status"], "ok")
+        self.assertEqual(first[0]["valid_articles"], 1)
+        self.assertTrue(first[0]["request_attempted"])
+        self.assertNotIn(article.description, json.dumps(first))
+        for row in first[1:] + second:
+            self.assertEqual(row["outcome"], "provider_cooldown")
+            self.assertFalse(row["request_attempted"])
+            self.assertIsNone(row["http_status"])
+            self.assertIsNone(row["request_at_utc"])
 
     @patch("finscope.benchmark.fetch_provider")
     def test_corrupt_cooldown_state_fails_closed(self, fetch):

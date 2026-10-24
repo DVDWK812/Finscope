@@ -4,7 +4,7 @@
 
 This repository starts with a deliberately small **news API feasibility pilot**. The planned final app will collect financial news metadata, classify sentiment using FinBERT (or a supported user-provided model), categorize articles by sector, identify duplicate event coverage via embeddings, and display time/source/sector trends in Streamlit.
 
-> Status: Phase 1 pilot tested locally. First live GDELT run: one successful healthcare query, two HTTP 429 failures; keyed providers skipped. GDELT is provisional for further metadata research. See [actual evidence](docs/API_EVALUATION.md) and [decision gates](docs/DECISIONS.md). An offline **synthetic-data Streamlit UI prototype** is now included; no production news dashboard or sentiment model is connected.
+> Status: Phase 1.5 validation design. The keyed pilot made seven successful requests; Marketaux is the preferred conditional candidate. Its [multi-day evaluation](docs/PHASE15_MARKETAUX_PLAN.md) is planned, not executed or scheduled. NewsData testing remains paused pending header clarification; the existing GDELT one-shot is preserved. See [observed evidence](docs/API_EVALUATION.md) and [open release gates](docs/DECISIONS.md). **Phase 2 production integration is NO-GO.** The Streamlit prototype uses synthetic data only.
 
 ## Phase 1 features
 

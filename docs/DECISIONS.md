@@ -1,6 +1,8 @@
-# Phase 1 decision memo — 2026-10-24
+# Phase 1 / 1.5 decision memo — 2026-10-25 Sydney
 
 Recommend **Marketaux as the conditional primary financial-news candidate for continued local sector-keyword evaluation**, based on the staged keyed experiment below. GDELT remains a provisional keyless comparator. No provider is approved as the production source, and Phase 1's complete exit criteria are not satisfied.
+
+**Phase 1.5 checkpoint (25 October Sydney):** the [multi-day plan](PHASE15_MARKETAUX_PLAN.md) is designed, not run or scheduled: at most nine new Marketaux requests over three dates, with no retries or catch-up. This review makes zero provider requests and preserves all existing evidence, the NewsData hold and the GDELT schedule. NewsData remains manually paused pending clarification of HTTP 200 with Retry-After, even though its historical timestamp has elapsed. Official Marketaux date filters and free pricing do not establish this account's full historical reach or field-specific display, retention, inference and derived-output rights. Separate [offline findings](API_EVALUATION.md#phase-15-review--25-october-2026-sydney) refine sample quality without establishing model accuracy. **Phase 2 production integration remains NO-GO.**
 
 **Phase 2: NO-GO after the keyed experiment.** Seven successful requests improve observed text/metadata availability but do not resolve multi-day reliability, NLP quality, account/history limits or public display/retention/derived-output rights. The separate GDELT retest remains scheduled and unchanged; no GDELT request was made in this task.
 
@@ -42,12 +44,13 @@ The one-shot follow-up is scheduled for 25 October 2026, 09:00 Australia/Sydney,
 
 | Gate | Current status | Required evidence before Phase 2 |
 |---|---|---|
-| Repeat availability | Pending; keyed pilot is one-day evidence | Actual multi-day results after provider holds; seven responses and a queued GDELT test do not establish stability |
-| Financial NLP input | Availability demonstrated in 21 keyed samples; quality not established | Manually review retained/permitted text quality and validate the intended model task; presence/length is not model accuracy |
-| Time semantics | Published fields present in all 21 keyed samples | Validate provider timestamp accuracy and required historical window; GDELT remains first-seen only |
-| Public use and retention | GDELT dataset reuse basis strongest; alternatives unresolved | Field/plan-specific display, retention and derived-output basis; separately resolve publisher rights and training if relevant |
-| History and quota sustainability | Endpoint access/headers observed; full account/history entitlement unresolved | Confirm plan-specific usable history and quota periods; do not infer daily allowance from aggregate or different-window headers |
-| Operational readiness | Pilot only; 66 local tests and keyed dry run pass, hold honored | Exact-head push CI and safe request budget; software success does not establish provider reliability |
+| Repeat availability | OPEN; keyed pilot is one-day evidence; Phase 1.5 plan not executed | Actual multi-day results after provider holds; seven responses and a queued GDELT test do not establish stability |
+| Financial NLP input | OPEN; 21 samples have short text but description semantics not retained | Prospective informative-description labels and independent permitted review; separate validation of the eventual NLP task. Title/URL judgments and presence/length are not model accuracy |
+| Time semantics | OPEN; all 9 Marketaux times fit the request window, ages 1.524–42.707 hours | Validate provider timestamp accuracy and required historical window; GDELT remains first-seen only |
+| Source / duplicate representativeness | OPEN; 7 Marketaux sources, 9 distinct URLs, 0 exact title repeats, suspected healthcare event overlap | Review per-day/sector concentration, source/URL attribution and event overlap; exact uniqueness is not event recall or model validation |
+| Public use and retention | OPEN; GDELT dataset reuse basis strongest; Marketaux API-field rights unresolved | Written free-plan display, cache/retention, team review, local inference and derived-output basis; separately resolve publisher rights and training if relevant |
+| History and quota sustainability | OPEN; 100/day and cap 3 documented; X-RateLimit is 60-second window per docs; free-history depth unspecified | Account-specific history/reset/usage evidence; date parameters do not prove historical entitlement. No quota/history probe was made |
+| Operational readiness | Offline pilot checks pass; HTTP-200 hold regression added; final exact-head CI pending at commit time | Verify pushed head CI and use the manual attempt ledger/spacing/budget before future rounds. NewsData manually paused beyond expired historical timestamp; no provider reliability conclusion from software checks |
 
 GO applies to continued bounded Phase 1 research only. No production provider selection, FinBERT, embeddings, crawler or live-data dashboard work is authorized by this recommendation. Synthetic-only UI prototyping is explicitly permitted.
 

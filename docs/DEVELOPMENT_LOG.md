@@ -30,14 +30,14 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | PR #2 merged by user; main-only workflow active | Merge `6ae8e00`; complete Phase 1 work preserved on main; merged feature branches deleted |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 66 passed locally in isolated `.venv`; keyed dry run passed | Final exact-head push CI pending at commit time; post-push evidence recorded in Issue #1 |
+| Offline adapter unit tests | 67 tests and both benchmark dry runs pass, including HTTP-200 Retry-After regression | Exact-head push CI pending at commit time; post-push evidence recorded in Issue #1 |
 | Live API comparison | Staged keyed pilot complete; original GDELT comparator retained | 7 keyed HTTP 200; 2 NewsData expansion topics skipped for hold; no new GDELT call |
 | Source selection | Marketaux conditional financial-news candidate; GDELT provisional comparator | See `docs/DECISIONS.md`; Phase 2 NO-GO and no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
 | Event deduplication | Not started | Phase 2 |
 | Public dashboard deployment | Not started | Later milestone |
 
-Suggested rhythm: one meaningful commit per completed unit of work; use small PRs for group review and keep a weekly changelog. Commit frequency is not a proxy for real contribution or functional completeness.
+Current rhythm: commit coherent tested milestones directly to main, verify push/CI and keep a weekly changelog; no new PRs. Commit frequency is not a proxy for real contribution or functional completeness.
 
 ## 2026-10-24 — Phase 1 baseline milestone
 
@@ -169,3 +169,21 @@ Published aggregate observations and manual title/URL relevance judgments in API
 Final local verification passed **66 offline tests** and the three-provider healthcare dry run at 12:58 UTC; the dry run made no HTTP requests. No adapter, test, UI or workflow code changed, so no new code regression tests were needed. All seven live requests are accounted for in ignored local evidence; no further live request was made during documentation/verification. Credential values were checked in memory against reports and proposed tracked changes without printing them. Only aggregate results are committed; no keys, local reports, descriptions or article bodies are staged.
 
 The existing GDELT automation file is byte-for-byte unchanged, its own saved cooldown is unchanged, and its 25 October attempt marker remains absent. NewsData's additional saved hold is retained. The GDELT one-shot is still scheduled for 25 October at 09:00 Sydney, with no catch-up request or duplicate task. Publication is directly to main; exact remote SHA and push-triggered CI are checked after pushing and recorded in [Issue #1](https://github.com/DVDWK812/Finscope/issues/1). This milestone was prepared with Codex assistance; no human independent relevance annotation or NLP evaluation is claimed.
+
+
+## Phase 1.5 preflight and preservation — 25 October 2026 Sydney
+
+Safely fetched/pulled clean main at f045933 and reviewed AGENTS.md, CODEX_TASK.md, the keyed plan/evaluation, README and existing tests. The 66-test preflight suite and benchmark dry run passed in the existing project .venv; no API requests were made. Fingerprinted the four original keyed evidence reports, shared cooldown file and GDELT automation into an ignored preservation manifest before work. No report/hold was edited and no new task or provider request was created. The GDELT attempt marker was absent; its separately authorized one-shot is preserved.
+
+## Phase 1.5 evidence, documentation and study-design milestone — 25 October 2026 Sydney
+
+Reanalysed the original nine Marketaux samples offline: nine distinct URLs, zero repeated normalized titles, seven reported sources/URL hosts, largest source 3/9, two source/host mismatches. All publication fields fit the requested lower bound with no future times; observed article ages min/median/max 1.524/22.970/42.707 hours. This measures internal consistency, not publisher accuracy or ingestion delay. Existing suspected healthcare event overlap remains unconfirmed; description informativeness cannot be recovered because descriptions were not saved. Inspectable audit code/notebook/aggregate output are ignored under reports/phase15_saved_evidence_audit.*. Original evidence remains byte-for-byte unchanged.
+
+Reviewed official Marketaux pricing/documentation/FAQ/terms and NewsData rate-limit documentation plus RFC 9110. Marketaux documents a 60-second X-RateLimit window separately from subscription usage; free history depth and field-specific display/retention/team-review/inference/derived-output permission remain unverified. NewsData documents 30 credits per 15 minutes and 429 on exceeding limits, but HTTP 200 plus Retry-After=900 and numeric limit 60 remain unexplained. Preserved its elapsed historical deadline unchanged and retained a manual testing pause pending clarification. No provider was contacted.
+
+Designed PHASE15_MARKETAUX_PLAN.md: proposed manual dates 26/28/31 October, at most nine new requests across three sectors, no automation/catch-up/retries/pages, current quota/hold checks, attempt ledger, serial spacing, transient description annotation and independent-review prerequisites. These are prospective safeguards/criteria, not executed observations. The benchmark needs the described collection safeguards before this study is run. Added one synthetic/mocked regression test proving successful NewsData records are retained while Retry-After blocks later topics and a second invocation without requests, sleep or hold changes. No adapter, UI, model or workflow code changed. README/current task and evaluation/decision documents now distinguish completed evidence from the unexecuted design. Codex assisted with research, analysis, test and documentation; no independent NLP accuracy is claimed. **Phase 2 production integration remains NO-GO.**
+
+
+## Phase 1.5 final verification milestone — 25 October 2026 Sydney
+
+All **67 offline tests** pass in the isolated .venv, including the new HTTP-200 Retry-After regression. Both the required all-provider benchmark dry run and the proposed Marketaux three-sector dry run pass with zero requests. Preservation-manifest comparison confirms all four original keyed evidence reports, the full shared cooldown and GDELT schedule remain byte-for-byte unchanged; the one-shot attempt marker is still absent. Existing credentials remain configured and ignored; an in-memory scan found no credential values in tracked/proposed files. New audit artifacts/notebook remain ignored. No adapter, Streamlit, model or workflow change is staged. Commit/push is directly to main; verify the full remote SHA and final push-triggered CI after publication and record the result in Issue #1. Local software checks and the unexecuted study design do not close any production source/permission gate.
