@@ -1,5 +1,7 @@
 # API evaluation protocol — Phase 1
 
+> Latest evidence: the keyed pilot ran on 24 October 2026. Marketaux is the conditional primary candidate for further local sector-news evaluation; no provider is approved for public deployment. See the keyed experiment section below. Earlier missing-key statements are dated historical evidence.
+
 ## Objective
 Choose one sustainable news metadata source for a **publicly deployed**, non-commercial student MVP. The API test does **not** evaluate the sentiment model, sector labelling or event deduplication yet.
 
@@ -187,3 +189,62 @@ Phase 2 remains **NO-GO**: repeat availability, representative financial input, 
 ## Synthetic UI verification — 2026-10-24
 
 Reviewed UI commit `8f7d730` and continued on safely synchronized main (`39a1c06`). The synthetic-only interface now has tested runtime filters, empty states, explicit raw/event counting, event-source drill-down and responsive styling. Local validation passed all 66 tests and benchmark dry runs on Streamlit 1.50.0 and 1.66.1 (Python 3.12.3); browser checks are recorded in UI_SPEC.md / DEVELOPMENT_LOG.md. These 12 invented reports / 10 predefined events remain excluded from provider, sentiment-model and deduplication evidence. This UI milestone made **zero news-API requests** and ran no FinBERT or embeddings. **Phase 2 remains NO-GO**, with every existing source and rights gate unchanged.
+
+## Keyed provider experiment — 2026-10-24
+
+Followed CODEX_TASK.md and KEYED_API_TEST_PLAN.md on clean main `0c95397`. All three project-local `.env` keys were nonempty; ignore/untracked status was verified without displaying key values or fragments. The default shared Python lacked Streamlit, so the existing isolated `.venv` was used: all 66 tests and the healthcare-only dry run passed before sampling. No adapter or benchmark code was changed.
+
+Stage A command (using `.venv/Scripts/python.exe`):
+
+```powershell
+python -m finscope.benchmark --providers marketaux newsdata finnhub --topics healthcare --limit 3 --days 2 --output reports/keyed_healthcare_initial.json
+```
+
+All three initial responses passed authentication/shape/normalization checks with valid records. NewsData also returned Retry-After=900, producing a hold through **2026-10-24T13:02:57.734634+00:00**. At the Stage B decision time (12:49:39 UTC), that hold was active. Only Marketaux and Finnhub were eligible:
+
+```powershell
+python -m finscope.benchmark --providers marketaux finnhub --topics technology materials --limit 3 --days 2 --output reports/keyed_followup_topics.json
+```
+
+Exactly **7 keyed requests**, all HTTP 200; no authentication/schema/transport failures, HTTP 429, empty responses, retries or pagination occurred. NewsData's two omitted topics are **skipped/provider_cooldown**, with no request/status/latency/coverage observation, recorded separately in ignored `reports/keyed_expansion_gate_decisions.json`. They are not failed queries. GDELT was not called or changed by this task.
+
+### Per-query observations
+
+All request dates below are **24 October 2026 UTC**. Parameters, endpoint, exact UTC start, headers and local title/URL/time samples are retained in the ignored reports. Marketaux used pharmaceutical/semiconductor/copper keywords, English, a two-day published-after filter, cap 3 and `group_similar=false`; NewsData used pharmaceutical, English, UTC and size 3 on latest; Finnhub used PFE/NVDA/FCX and calendar dates 22–24 October, without a server-side result-limit parameter.
+
+| Provider / topic | Query start UTC | HTTP / latency | Raw / normalized / sampled | Sample sources | Mean title chars / words | Mean description chars | Descriptions / published times |
+|---|---|---|---|---:|---|---:|---|
+| Marketaux healthcare | 12:47:55.943001 | 200 / 907.4 ms | 3 / 3 / 3 | 1 | 85.7 / 13.3 | 126.7 | 3/3 / 3/3 |
+| NewsData healthcare | 12:47:56.851083 | 200 / 882.7 ms | 3 / 3 / 3 | 3 | 96.3 / 13.0 | 206.3 | 3/3 / 3/3 |
+| Finnhub PFE | 12:47:57.735637 | 200 / 975.3 ms | 18 / 18 / 3 | 1 | 91.3 / 16.3 | 272.0 | 3/3 / 3/3 |
+| Marketaux technology | 12:49:39.283253 | 200 / 896.4 ms | 3 / 3 / 3 | 3 | 92.7 / 13.3 | 181.0 | 3/3 / 3/3 |
+| Marketaux materials | 12:49:40.180301 | 200 / 839.0 ms | 3 / 3 / 3 | 3 | 69.3 / 9.3 | 140.3 | 3/3 / 3/3 |
+| Finnhub NVDA | 12:49:41.019919 | 200 / 1,663.6 ms | 250 / 250 / 3 | 1 | 92.0 / 14.7 | 86.0 | 3/3 / 3/3 |
+| Finnhub FCX | 12:49:42.684423 | 200 / 1,028.5 ms | 6 / 6 / 3 | 1 | 68.3 / 12.3 | 125.0 | 3/3 / 3/3 |
+| NewsData technology/materials | Not requested | Skipped: provider hold | Unobserved | Unobserved | Unobserved | Unobserved | Unobserved |
+
+Normalization acceptance was 100% before the local cap for all seven replies; all 21 sampled rows retained a title, syntactically valid HTTP(S) URL, nonblank description/summary and valid provider-labelled publication time. Finnhub's sampled completeness is not a completeness review of all 274 normalized rows. Publication fields were not independently checked against publisher pages. Distinct original URLs and provider timestamps are retained; source pages were not fetched. First-three sampling and differing ranking/filter scopes prevent a coverage leaderboard.
+
+### Relevance, traceability and usable NLP input
+
+Manual labels use actual returned titles and URLs, with business/investment/earnings/regulatory relevance as the rubric; descriptions were assessed by measured presence/length only and are not persisted. These judgments are neither independent annotations nor model precision estimates.
+
+| Provider | Aggregate sampled evidence | Manual relevance / limitations |
+|---|---|---|
+| Marketaux | 9 records, 7 reported source domains; mean title 82.6 chars / 12.0 words; mean description 149.3 chars; mean request latency 880.9 ms | Healthcare: 2 pharma-regulation items and 1 off-topic AI-skills headline; technology/materials: all 6 business-relevant. Total 8 relevant / 1 off-topic. Healthcare has likely event overlap; source/ranking/geography bias remains. One copper record's source label differs from its URL host, so preserve both rather than silently rewriting attribution. |
+| NewsData | 3 healthcare records, 3 sources; mean title 96.3 chars / 13.0 words; mean description 206.3 chars; latency 882.7 ms | 2 biotech/manufacturing-finance headlines and 1 uncertain healthcare-policy item. No evidence for other sectors because held; general-news scope and delayed latest window differ from Marketaux. |
+| Finnhub | 274 raw/normalized rows across 3 symbols, **9 sampled**, all source label Yahoo; mean sampled title 83.9 chars / 14.4 words; mean summary 161.0 chars; mean latency 1,222.5 ms | PFE: 3 relevant titles. NVDA: 2 contextual technology-finance items / 1 uncertain crypto-AI item; none explicitly names NVDA/Nvidia. FCX: 2 relevant copper/company items / 1 uncertain other-company item. Total 7 contextual relevant / 2 uncertain; only 5/9 titles explicitly identify the requested company. Body-level association remains unverified. |
+
+Marketaux/NewsData returned publisher-site links; Finnhub returned Finnhub-hosted news links, not resolved ultimate publisher URLs. Yahoo may aggregate underlying publishers; its one source label is not proof of only one original newsroom. Finnhub's 250-row NVDA return is not evidence of exhaustive retrieval or comparable sector breadth. No extra news-link fetch was made.
+
+All three now demonstrate more promising **title-plus-short-description** candidates than the earlier title-only GDELT sample. Presence and length alone do not establish informative, nonboilerplate text, finance sentiment accuracy or semantic dedup performance. A summary may repeat the title or omit decisive context. No tokenizer, FinBERT, embeddings, provider sentiment substitution, body extraction or model-quality evaluation was run. Only short metadata is handled; no descriptions, extracts or full bodies are committed.
+
+### Quotas, history and permissions
+
+- Marketaux official pricing HTML was rechecked and confirms 100 daily requests / 3 articles per news request. Actual replies supplied numeric limit 30, remaining 29/29/28; these may describe a different quota window, whose period was not established. They do not replace the published daily cap. UTC date filters are documented, but this experiment proves only the requested two-day slice, not earliest free-history retention. [Pricing](https://www.marketaux.com/pricing), [documentation](https://www.marketaux.com/documentation).
+- NewsData docs state 200 daily credits, up to 10 results/credit, a 48-hour latest window and advertised 12-hour free delay. Actual healthcare response supplied limit 60/remaining 59/reset 1792846980 and Retry-After 900. The runtime hold was honored even though HTTP was 200; no interpretation was used to authorize extra traffic. Differing published AI-feature badges are not treated as entitlement or FinBERT evidence. [Credits](https://newsdata.io/documentation/api-credit-limits), [plan overview](https://newsdata.io/documentation).
+- Finnhub actual company-news requests succeeded and supplied limit 60, remaining 59/59/58 and reset headers. This demonstrates endpoint access, not an independently verified account-dashboard daily allowance or broad historical entitlement. The aggregate 30/second cap was not used as a free-plan quota. Header values and UTC dates remain local evidence; account limits must be confirmed before scheduled ingestion. [Company endpoint](https://finnhub.io/docs/api/company-news), [OpenAPI](https://github.com/Finnhub-Stock-API/finnhub-go/blob/master/api/openapi.yaml).
+
+Rights remain separate from these successes. Marketaux's reviewed website terms grant personal noncommercial access but do not establish field/plan-specific public display, retention or derived-output permission. NewsData's personal/internal API restrictions coexist with external-derivative/sharing-at-risk clauses; free public-use scope and publisher rights require clarification. Finnhub explicitly restricts sharing personal-plan data or derived results without written approval and requires deletion when the data subscription ends. No new licence or written permission was obtained. [Marketaux terms](https://www.marketaux.com/tos), [NewsData terms](https://newsdata.io/terms), [Finnhub terms](https://finnhub.io/terms-of-service).
+
+**Recommendation:** Marketaux is the most suitable **conditional primary financial-news candidate** for FinScope's sector-keyword design among the tested keyed options. It supplied relevant business metadata across all three requested topics, multiple sources and usable short-text/publication fields with low observed latency. Finnhub remains a distinct company-news comparator; NewsData is a potential general-news alternative with only healthcare evidence so far. This one-day sample does not choose a production provider. Multi-day reliability, representativeness, NLP quality, account/history limits and deployment/retention/derived-analysis rights remain open: **Phase 2 NO-GO**. No real data was connected to Streamlit; the separate scheduled GDELT test and its own hold/marker are preserved.

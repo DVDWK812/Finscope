@@ -30,9 +30,9 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | PR #2 merged by user; main-only workflow active | Merge `6ae8e00`; complete Phase 1 work preserved on main; merged feature branches deleted |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 36 passed locally on synchronized main; main push CI verified for `db296c5` | [CI run](https://github.com/DVDWK812/Finscope/actions/runs/39984381988); later documentation requires exact-head CI |
-| Live API comparison | First GDELT run recorded; optional providers skipped | 3 requests: one HTTP 200, two HTTP 429; keys absent |
-| Source selection | GDELT provisional; exit gates remain open | See `docs/DECISIONS.md`; no deployment approval |
+| Offline adapter unit tests | 66 passed locally in isolated `.venv`; keyed dry run passed | Final exact-head push CI pending at commit time; post-push evidence recorded in Issue #1 |
+| Live API comparison | Staged keyed pilot complete; original GDELT comparator retained | 7 keyed HTTP 200; 2 NewsData expansion topics skipped for hold; no new GDELT call |
+| Source selection | Marketaux conditional financial-news candidate; GDELT provisional comparator | See `docs/DECISIONS.md`; Phase 2 NO-GO and no deployment approval |
 | FinBERT pipeline | Not started | Phase 2 |
 | Event deduplication | Not started | Phase 2 |
 | Public dashboard deployment | Not started | Later milestone |
@@ -160,3 +160,12 @@ Suggested rhythm: one meaningful commit per completed unit of work; use small PR
 - Responsive browser presets requested 390×844 and 768×1024; this host's scaling reported 407 and 800 CSS-pixel widths. At both sizes document width matched viewport width, metric cards wrapped, and phone sidebar navigation remained available. This is a limited local browser check, not an exhaustive device certification or user study. Screenshots are saved only under ignored `reports/ui_*_synthetic.jpg`.
 - Added 8 data regressions and 11 Streamlit AppTest cases (66 total tests). Runtime cases block requests transport and assert it was unused. All 66 tests pass on both Streamlit 1.50.0 and 1.66.1; benchmark dry runs pass without provider requests. CI now runs the full suite and dry run against minimum/current Streamlit on Python 3.11. Final remote SHA and push-triggered Actions are checked after publication; no CI result is claimed in advance here.
 - Updated UI_SPEC.md and API_EVALUATION.md with observed UI evidence and limits. AI assistance: Codex reviewed, implemented and tested these interface changes; they are not independent human usability or model evaluations. Phase 2 NO-GO and DECISIONS.md are unchanged. No live ingestion, FinBERT, embeddings, credentials, provider content or stored cooldowns were activated/modified; no scheduled feasibility task was run.
+
+
+## Keyed comparison and final local validation — 2026-10-24
+
+Published aggregate observations and manual title/URL relevance judgments in API_EVALUATION.md, updated the executed test plan and reassessed every decision gate. Marketaux is the conditional primary candidate for continued local sector-keyword evaluation, based on 8/9 relevant sampled titles across three topics and seven reported sources. NewsData remains healthcare-only evidence; Finnhub remains a different company-symbol scope. Short-description presence/length is measured, not semantic or model-quality validation. Official documentation/terms were rechecked; public display, retention and derived-output permission remain unresolved. Phase 2 remains **NO-GO**.
+
+Final local verification passed **66 offline tests** and the three-provider healthcare dry run at 12:58 UTC; the dry run made no HTTP requests. No adapter, test, UI or workflow code changed, so no new code regression tests were needed. All seven live requests are accounted for in ignored local evidence; no further live request was made during documentation/verification. Credential values were checked in memory against reports and proposed tracked changes without printing them. Only aggregate results are committed; no keys, local reports, descriptions or article bodies are staged.
+
+The existing GDELT automation file is byte-for-byte unchanged, its own saved cooldown is unchanged, and its 25 October attempt marker remains absent. NewsData's additional saved hold is retained. The GDELT one-shot is still scheduled for 25 October at 09:00 Sydney, with no catch-up request or duplicate task. Publication is directly to main; exact remote SHA and push-triggered CI are checked after pushing and recorded in [Issue #1](https://github.com/DVDWK812/Finscope/issues/1). This milestone was prepared with Codex assistance; no human independent relevance annotation or NLP evaluation is claimed.

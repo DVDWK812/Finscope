@@ -1,16 +1,31 @@
 # Phase 1 decision memo — 2026-10-24
 
-Select **GDELT as the provisional primary for continued metadata feasibility work**. No provider is yet accepted as a reliable production source, and Phase 1's complete exit criteria are not satisfied.
+Recommend **Marketaux as the conditional primary financial-news candidate for continued local sector-keyword evaluation**, based on the staged keyed experiment below. GDELT remains a provisional keyless comparator. No provider is approved as the production source, and Phase 1's complete exit criteria are not satisfied.
 
-**Phase 2: NO-GO after the follow-up review.** Remain in Phase 1 until source reliability, usable input and deployment rights are supported. The different-day retest is scheduled, not yet completed; no new GDELT result is claimed.
+**Phase 2: NO-GO after the keyed experiment.** Seven successful requests improve observed text/metadata availability but do not resolve multi-day reliability, NLP quality, account/history limits or public display/retention/derived-output rights. The separate GDELT retest remains scheduled and unchanged; no GDELT request was made in this task.
 
 **Parallel UI exception (24 October 2026):** The team may build an offline Streamlit interface using conspicuously labeled synthetic fixtures and a swappable repository contract. This UI-only development is independent of source approval and is **not** Phase 2 model/data integration or a production news dashboard. Live data, model-generated sentiment and provider content remain blocked pending the gates below.
 
 GDELT has the strongest verified reuse basis among the reviewed options: its [dataset terms](https://www.gdeltproject.org/about.html#termsofuse) allow reuse and redistribution with attribution. One real healthcare query returned three usable metadata records. However, two of three API requests returned HTTP 429, the successful request took 20.2 seconds, and all three accepted records lacked descriptions and publication timestamps. This supports further metadata research only; it does not establish adequate text input for a future sentiment model.
 
-Marketaux is the next finance-specific candidate to test when a local key exists, but public-display, retention and derived-analysis rights need written clarification under its [reviewed terms](https://www.marketaux.com/tos). NewsData.io has overlapping personal/internal and external-derivative/sharing clauses; it remains unapproved, rather than categorically prohibited for every public use. Finnhub personal-plan sharing of data or derived results requires written approval and its company-symbol scope differs. An API response does not clear any fallback. See the [current evidence and rights review](API_EVALUATION.md#follow-up-review--2026-10-24-australiasydney).
+Marketaux now has actual responses for healthcare, technology and materials: nine sampled records across seven reported sources, all with descriptions/publication timestamps, eight business-relevant titles and one off-topic title. Its sector-keyword contract is the closest fit to the project; public use still needs clarification under its [terms](https://www.marketaux.com/tos). NewsData returned promising healthcare metadata but supplied a hold, so other topics were skipped. Finnhub supplied company-scoped short text, with narrower source attribution and indirect matches; its personal-plan sharing restriction remains material. See the [keyed evidence](API_EVALUATION.md#keyed-provider-experiment--2026-10-24), including the distinct query scopes and [rights comparison](API_EVALUATION.md#rights-decision-by-intended-use).
 
-## Evidence and outstanding gates
+## Keyed decision evidence — 24 October 2026
+
+All three ignored local `.env` keys were configured and authenticated by actual successful endpoint requests. Stage A made exactly one healthcare request per provider. Only Marketaux/Finnhub passed the expansion timing gate: two more requests each, one per remaining topic. NewsData's HTTP 200 included Retry-After=900; its two omitted topics are skipped/provider_cooldown, not failures or empty coverage. Total **7 requests, 7 HTTP 200, no retry/pagination**. No adapter, UI or model code was changed.
+
+| Candidate | Observed strengths | Decision limits |
+|---|---|---|
+| Marketaux | 9 sampled records / 7 sources over all three keyword topics; 9/9 descriptions and publication times; mean latency 880.9 ms; 8 relevant / 1 off-topic title | Small single-day sample; source/ranking/geography bias and overlapping healthcare policy items; short descriptions; public-use/retention/derived-output rights unresolved |
+| NewsData.io | Healthcare 3 records / 3 sources, 3/3 descriptions and publication times; 2 relevant / 1 uncertain title | Only one topic observed; advertised delay/latest window; saved provider hold; rights clauses need reconciliation |
+| Finnhub | PFE/NVDA/FCX access; 274 normalized rows across three symbols, 9 sampled; summaries/publication times present in all samples | Not sector-keyword coverage; sampled source label Yahoo, Finnhub-hosted links; indirect company attribution; personal-plan sharing of data/derived results requires written approval |
+| GDELT | Broad dataset reuse basis with attribution; no key | No new call in this task; original rate limits, missing summaries and first-seen-only timestamps remain; scheduled comparator is preserved |
+
+Recommend Marketaux for the next **separately authorized** local reliability/representativeness test and plan-specific permission clarification. Keep NewsData as an unproven broader-news alternative and Finnhub as a company-news comparator. This is a conditional engineering recommendation, not a licence grant or deployment approval. No real records or provider sentiment are connected to Streamlit; the synthetic-only UI exception remains unchanged.
+
+## Historical baseline evidence and outstanding gates
+
+The following baseline predates configured keys and the keyed experiment. Missing-key rows are preserved as historical skips, not current credential status. Current validation uses the isolated project `.venv`: all 66 tests and the keyed dry run pass; exact-head CI is pending at commit time and its post-push result is recorded in Issue #1.
 
 - Baseline: 11 existing offline tests passed; the reviewed pilot has 36 passing offline tests and a passing dry run on `main`. Push-triggered [Actions run 39983651007](https://github.com/DVDWK812/Finscope/actions/runs/39983651007) passed for synchronized main `f432102`; later documentation commits require their own checks.
 - Actual API requests: three GDELT requests, one per topic, no retries. Two HTTP 429 failures; one HTTP 200. All nine optional-provider query rows are skipped because this project's `.env` has no keys. No live auth/schema/empty-result claim is made.
@@ -27,12 +42,12 @@ The one-shot follow-up is scheduled for 25 October 2026, 09:00 Australia/Sydney,
 
 | Gate | Current status | Required evidence before Phase 2 |
 |---|---|---|
-| Repeat availability | Pending | Actual different-day result after cooldown; no conclusion from queued work or one lucky response |
-| Financial NLP input | Not established | Manually reviewed finance-relevant samples for intended topics; adequate permitted descriptions, or an explicitly accepted and validated headline-only scope |
-| Time semantics | Scope gap | Publication timestamps from an approved source, or explicit acceptance of discovery-time-only analysis |
+| Repeat availability | Pending; keyed pilot is one-day evidence | Actual multi-day results after provider holds; seven responses and a queued GDELT test do not establish stability |
+| Financial NLP input | Availability demonstrated in 21 keyed samples; quality not established | Manually review retained/permitted text quality and validate the intended model task; presence/length is not model accuracy |
+| Time semantics | Published fields present in all 21 keyed samples | Validate provider timestamp accuracy and required historical window; GDELT remains first-seen only |
 | Public use and retention | GDELT dataset reuse basis strongest; alternatives unresolved | Field/plan-specific display, retention and derived-output basis; separately resolve publisher rights and training if relevant |
-| History and quota sustainability | Not established | Account/plan-specific usable history and a sustainable request budget; documented limits and a small rate-limited sample are insufficient |
-| Operational readiness | Pilot only; 47 local tests and dry run pass after synthetic-UI addition | Verified CI on pushed head and a request budget that respects saved provider holds; local tests do not establish provider reliability |
+| History and quota sustainability | Endpoint access/headers observed; full account/history entitlement unresolved | Confirm plan-specific usable history and quota periods; do not infer daily allowance from aggregate or different-window headers |
+| Operational readiness | Pilot only; 66 local tests and keyed dry run pass, hold honored | Exact-head push CI and safe request budget; software success does not establish provider reliability |
 
 GO applies to continued bounded Phase 1 research only. No production provider selection, FinBERT, embeddings, crawler or live-data dashboard work is authorized by this recommendation. Synthetic-only UI prototyping is explicitly permitted.
 

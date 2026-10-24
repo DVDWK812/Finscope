@@ -1,6 +1,6 @@
 # Keyed news API feasibility experiment — Phase 1
 
-**Status: protocol prepared; no keyed requests executed by this document update.** User reports registration of free Marketaux, NewsData.io and Finnhub accounts, but their `.env` content and real entitlement are not visible to GitHub or this chat.
+**Status: staged local experiment executed on 24 October 2026 UTC/Sydney.** All three local credentials were confirmed configured without displaying values; `.env` is ignored and untracked. Stage A made three healthcare requests. Stage B made four requests to eligible Marketaux/Finnhub only; NewsData's two remaining topics were skipped for its saved hold. Total: seven HTTP 200 responses, no retry/pagination and no GDELT requests. See API_EVALUATION.md for exact evidence and limitations. Successful access does not establish public-deployment permission.
 
 ## Phase 1 staged testing
 
@@ -33,12 +33,12 @@ The free-plan limits are **request/credit limits**, not a promise of fresh or fi
 
 API access is not a publisher full-text licence. Public use must be resolved separately from local evaluation. See `docs/DECISIONS.md`.
 
-## Results (complete after live execution)
+## Observed results — 24 October 2026
 
 | Provider | Authentication | Actual live responses | Summary text? | Publication timestamp? | Relevance | Public rights | Next action |
 |---|---|---|---|---|---|---|---|
-| Marketaux | Not tested with user's key | None in this phase yet | Unknown observed | Unknown observed | Not measured | Unresolved | Local low-volume test |
-| NewsData.io | Not tested with user's key | None in this phase yet | Unknown observed | Unknown observed | Not measured | Unresolved | Local low-volume test |
-| Finnhub | Not tested with user's key | None in this phase yet | Unknown observed | Unknown observed | Not measured | Restricted without approval | Local low-volume test |
+| Marketaux | Valid requests succeeded | 3 HTTP 200; 9 raw/normalized/sampled records across 3 topics | 9/9 sampled meta descriptions | 9/9 sampled | 8 relevant / 1 off-topic by title+URL; 7 sources | Unresolved | Conditional primary candidate; clarify rights and repeat reliability sampling in a separately authorized run |
+| NewsData.io | Valid request succeeded | 1 HTTP 200; 3 raw/normalized/sampled healthcare records; 2 topics skipped for hold | 3/3 sampled descriptions | 3/3 sampled | 2 relevant / 1 uncertain; 3 sources | Unresolved | Retain hold; no automatic retry or expansion in this experiment |
+| Finnhub | Company-news entitlement demonstrated | 3 HTTP 200; 274 raw/normalized records, 9 sampled across PFE/NVDA/FCX | 9/9 sampled summaries | 9/9 sampled | 7 contextual sector-relevant / 2 uncertain; one source label; company attribution differs | Restricted without approval | Company-news comparator for private evaluation; not a sector-coverage winner |
 
-Do not replace the untested labels based on official examples or inferred limits. Record actual UTC test date and per-request outcome after running.
+Evidence is local in ignored `reports/keyed_healthcare_initial.json`, `reports/keyed_followup_topics.json`, `reports/keyed_expansion_gate_decisions.json` and `reports/keyed_aggregate_review.json`. Description availability/length is measured; description semantics and model quality were not independently tested. The raw-to-valid ratio is pre-cap; all text/source ratios refer to the sampled rows. NewsData returned Retry-After=900 even with HTTP 200; its hold was honored. Finnhub's numeric quota headers were recorded without inferring an account-specific daily allowance or unlimited history. Phase 2 remains NO-GO and the synthetic-only UI remains disconnected from providers.
