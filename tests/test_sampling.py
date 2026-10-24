@@ -8,6 +8,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from threading import Event
 import unittest
 from unittest.mock import Mock, patch
 
@@ -257,6 +258,13 @@ class SamplingTests(unittest.TestCase):
         # independently of first-file creation timing on the host filesystem.
         with self.sampler.ledger.transaction():
             pass
+        dispatched, release = Event(), Event()
+        def in_flight(*args, **kwargs):
+            dispatched.set()
+            if not release.wait(timeout=5):
+                raise RuntimeError("Synthetic dispatch release timed out")
+            return self.response(*args, **kwargs)
+        self.fetch.side_effect = in_flight
         def attempt(_):
             try:
                 return self.new_sampler().collect_one("healthcare", authorization=self.authorization,
@@ -264,7 +272,16 @@ class SamplingTests(unittest.TestCase):
             except SamplingBlocked:
                 return "blocked"
         with ThreadPoolExecutor(max_workers=2) as pool:
-            outcomes = list(pool.map(attempt, range(2)))
+            first = pool.submit(attempt, 0)
+            try:
+                self.assertTrue(dispatched.wait(timeout=5))
+                # Contend while the committed first dispatch is in flight, not
+                # during SQLite commit locking (where both may safely fail).
+                second = pool.submit(attempt, 1)
+                second_outcome = second.result(timeout=5)
+            finally:
+                release.set()
+            outcomes = [first.result(timeout=5), second_outcome]
         self.assertEqual(sorted(outcomes), ["blocked", "ok"])
         self.fetch.assert_called_once()
 
