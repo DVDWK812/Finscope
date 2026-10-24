@@ -4,6 +4,7 @@
 - Course: FINS5557 / INFS5557 (confirm official course code in Moodle). Track A Tech Team, three members.
 - Current phase: find a reliable and legally suitable API for news **metadata**, not price forecasts, text sentiment, or a general-purpose crawler.
 - **Parallel UI exception:** A Streamlit front-end using only explicitly synthetic, offline fixtures may be developed and tested on `main`. This does **not** approve live ingestion, FinBERT, embedding inference, real sentiment conclusions or public redistribution of news content. Keep UI reads behind a repository interface and make demo status unmistakable.
+- **Independent AI prototype authorization (25 October 2026):** Modular FinBERT/embedding interfaces and offline tests with synthetic or explicitly licensed evaluation text are permitted separately from production integration. No real news inputs, automatic model downloads, provider/UI connection or accuracy claims. Sampling safeguards may be implemented/tested, but Marketaux rounds require separate explicit authorization and must not be scheduled/executed by readiness work.
 - Keep implementation small, testable and safe to run on the free API tiers.
 - Prefer Python 3.11+, `requests`, `python-dotenv`, `unittest`; avoid heavyweight ML libraries in API pilot.
 

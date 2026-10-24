@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 import json
+import math
 from pathlib import Path
 import sqlite3
 from typing import Callable
@@ -73,6 +74,9 @@ class SampleOutcome:
     http_status: int | None
     sampled_records: int
     description_reviews: tuple[dict, ...]
+    latency_ms: float | None
+    raw_records: int
+    normalized_records: int
 
 
 class AttemptLedger:
@@ -165,12 +169,12 @@ class AttemptLedger:
         # FULL synchronous commit completes before the caller can dispatch HTTP.
 
     def complete(self, day: date, sector: str, now: datetime, status: str,
-                 http_status: int | None, deadline: datetime | None, reviews: tuple[dict, ...]) -> None:
+                 http_status: int | None, deadline: datetime | None, metrics: dict) -> None:
         with self.transaction() as db:
             cursor = db.execute("""UPDATE attempts SET completed_at=?,status=?,http_status=?,
                 cooldown_until=?,review_json=? WHERE day=? AND sector=? AND status=?""",
                 (now.isoformat(), status, http_status, deadline.isoformat() if deadline else None,
-                 json.dumps(reviews), day.isoformat(), sector, "attempted_outcome_unknown"))
+                 json.dumps(metrics), day.isoformat(), sector, "attempted_outcome_unknown"))
             if cursor.rowcount != 1:
                 raise SamplingBlocked("reservation_missing_or_completed")
 
@@ -219,6 +223,12 @@ class MarketauxSampler:
                 or (result.http_status is not None and
                     (type(result.http_status) is not int or not 100 <= result.http_status <= 599))):
             raise SamplingBlocked("attempted_outcome_unknown")
+        if (type(result.raw_count) is not int or type(result.normalized_count) is not int
+                or not 0 <= result.normalized_count <= result.raw_count
+                or len(result.articles) > result.normalized_count
+                or (result.latency_ms is not None and (type(result.latency_ms) not in (int, float)
+                    or not math.isfinite(result.latency_ms) or result.latency_ms < 0))):
+            raise SamplingBlocked("attempted_outcome_unknown")
         header = result.rate_limit_headers.get("Retry-After")
         deadline = retry_deadline(header, finished) if header or result.http_status == 429 else None
         status, reviews = "failed", ()
@@ -229,10 +239,14 @@ class MarketauxSampler:
                 status = "ok" if result.articles else "empty"
             except Exception:
                 status = "review_failed"
-        self.ledger.complete(now.date(), sector, finished, status, result.http_status, deadline, reviews)
+        metrics = {"description_reviews": reviews, "latency_ms": result.latency_ms,
+                   "raw_records": result.raw_count, "normalized_records": result.normalized_count,
+                   "sampled_records": min(len(result.articles), 3)}
+        self.ledger.complete(now.date(), sector, finished, status, result.http_status, deadline, metrics)
         # Retry-After is durably stored in this ledger, even on HTTP 200; shared
         # GDELT/NewsData holds are read but never rewritten by this sampler.
-        return SampleOutcome(status, result.http_status, min(len(result.articles), 3), reviews)
+        return SampleOutcome(status, result.http_status, min(len(result.articles), 3), reviews,
+                             result.latency_ms, result.raw_count, result.normalized_count)
 
 
 def plan_summary() -> dict:

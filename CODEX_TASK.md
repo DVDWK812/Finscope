@@ -1,30 +1,27 @@
-# Current Codex task: Phase 1.5 Marketaux validation design
+# Current Codex task: Phase 1.5 safeguards and independent AI interfaces
 
 **Date:** 2026-10-25 (Australia/Sydney)
 **Repository:** DVDWK812/Finscope
-**Branch policy:** main only; no feature branches, PRs, force pushes or discarded work.
+**Branch policy:** main only; no branches/PRs, force pushes or discarded work.
 
-## Objective and current evidence
+## Authorized scope
 
-Validate Marketaux as the preferred conditional financial-news candidate before production integration. Read AGENTS.md, README.md, docs/API_EVALUATION.md, docs/DECISIONS.md, docs/KEYED_API_TEST_PLAN.md and docs/PHASE15_MARKETAUX_PLAN.md. The prior staged keyed experiment is completed: 7 requests, 7 HTTP 200, with 2 NewsData expansion topics skipped for its hold. Preserve original local reports unchanged. Do not rerun the old staged commands as a new task.
+Read AGENTS.md, README.md, docs/PHASE15_MARKETAUX_PLAN.md, API_EVALUATION.md, DECISIONS.md and AI_PROTOTYPE.md. Implement/test the bounded in-memory description reviewer and persistent attempt ledger with duplicate, quota, budget, spacing, crash and cooldown safeguards. **Do not execute or schedule Marketaux sampling rounds without separate explicit authorization.** No default network backend or saved approval is installed; the old keyed Marketaux live benchmark path is blocked.
 
-This Phase 1.5 checkpoint audits saved evidence, investigates official documentation and designs the bounded multi-day study. It makes **zero new news-provider requests** and creates **no automation**. Proposed dates in the study are not scheduled work or executed results. Future collection must satisfy the plan's attempt ledger, quota/hold checks, spacing and transient description-review safeguards first. Do not re-query to recover text omitted from reports.
+Independently implement modular FinBERT inference and embedding similarity contracts using **synthetic or explicitly licensed evaluation text only**. This explicit prototype scope supersedes earlier blanket instructions against interface-only AI work. Do not feed API records, download/load weights automatically, add heavy model libraries, connect Streamlit or claim model accuracy. All current backends in tests are synthetic mocks; real model execution/evaluation is not established.
 
-## Required work
+## Required workflow
 
-1. Inspect status, fetch origin, safely switch to main and pull --ff-only origin main before editing. Stop on unrelated edits/divergence; preserve all work.
-2. Review existing keyed evidence with sample denominators and query scopes intact. Relevance from title/URL is distinct from description informativeness and independently validated NLP accuracy. Keep publication time separate from retrieval/first-seen time and exact duplicates separate from event overlap.
-3. Use the Phase 1.5 plan: proposed three Marketaux-only manual rounds, one request per sector per round, at most 9 new requests total. The study is designed, not dispatched by this instruction. No retries, extra pages, catch-up requests or entitlement/history probes.
-4. Investigate NewsData HTTP 200 plus Retry-After=900 using saved evidence and official sources. Preserve the cooldown file unchanged. The historical timed deadline has elapsed; live NewsData testing remains manually paused until header meaning/account constraints are clarified. The generic CLI's expiry check alone does not enforce that manual pause.
-5. Verify documented Marketaux free history, quota windows and intended-use permissions separately. Record unknowns rather than infer rights from a free account or a successful response. Prepare questions covering public display, per-field retention/deletion, team review, pretrained inference and derived outputs. Do not contact providers without explicit messaging authorization.
-6. Preserve the existing 25 October 09:00 Sydney GDELT one-shot, its attempt marker state and saved cooldown. Do not make a duplicate/catch-up request, alter its schedule or clear a hold. Its authorized execution is governed separately by the existing automation, not by this design task.
-7. Update evaluation, decision and development-log documents and Issue #1 with observed, non-sensitive evidence. Keep historical statements dated. Record Codex assistance accurately.
-8. Add meaningful offline regression coverage for observed HTTP-200 Retry-After behavior. Run `.venv/Scripts/python.exe -m unittest discover -s tests -v` and `.venv/Scripts/python.exe -m finscope.benchmark --dry-run`; all tests must use synthetic fixtures/mocks with no provider calls. Commit/push coherent tested changes directly to origin main, verify full remote SHA and exact-commit push CI. Record post-push evidence in Issue #1; do not claim CI passed before observing it.
+1. Inspect status/README/tests, fetch origin, safely switch/pull --ff-only main before edits. Preserve unrelated work and stop on divergence. No feature branches or new PRs.
+2. Preserve original keyed evidence and the existing GDELT automation/attempt/cooldown state. No duplicate task, catch-up, retry or hold edits. NewsData remains manually paused pending HTTP-200 Retry-After clarification, even after its historical timed deadline elapsed.
+3. Implement the prospective study policy from PHASE15_MARKETAUX_PLAN.md: fixed three dates/sectors, at most three daily/nine total requests, cap three records, two-day slice, group_similar=false, committed pre-dispatch reservations, verified recent account quota and existing holds, at least 60 seconds after completion. A pending/ambiguous attempt consumes budget and blocks collection; never clear it automatically.
+4. Keep descriptions transient. Return/persist only bounded indices, categories, annotation basis and lengths/counts; never raw text, keys, callback errors or payloads. Missing/exact-repeat rules are distinct from manual informativeness annotation. One annotation is not independent NLP accuracy.
+5. Keep AI contracts independent from API/UI modules. Require provenance and explicit local backend identity/revision; validate complete probabilities and finite equal-dimensional vectors. No heuristics masquerading as FinBERT or embeddings. Review model weight/input/output licences separately before any real model use.
+6. Run the complete offline unittest suite and all previews: `python -m unittest discover -s tests -v`, `python -m finscope.benchmark --dry-run`, `python -m finscope.sampling --dry-run`, `python -m finscope.ai_prototype --dry-run`, using the existing .venv. Tests use synthetic fixtures, mocks and temporary ledgers only; no real provider calls, training or inference.
+7. Update DEVELOPMENT_LOG.md after coherent milestones and keep evaluation/decision/README/task docs current. Record Codex assistance and remaining permission/evaluation gaps accurately. Commit meaningful tested milestones directly to main; push and verify full remote SHA and exact-head GitHub Actions. Record post-push evidence in Issue #1 without keys or publisher content.
 
-## Safety and release decision
+## Production gate
 
-Load keys only from ignored project-local .env. Never print key values/fragments/hashes, persist raw HTTP payloads or put keys/real news content in Git/Issues/CI. Keep existing reports, cooldowns and local audit notebooks ignored. Do not extend publisher-text retention without a verified basis. Future description labels must be produced from the same permitted response in memory and persisted as categories/counts only; no raw descriptions or body snippets.
+Marketaux remains a preferred conditional candidate, not an approved production source. Public display, retention/deletion, team review, pretrained inference and derived-output permission, free history/account quota, multi-day reliability, useful descriptions, timestamp accuracy, representative sources/events and independent intended-model evaluation remain open. **Phase 2 production integration stays NO-GO.** Synthetic UI and the independent synthetic/licensed interface prototype do not close any of these gates. No real news/model/UI pipeline, crawler or publication of publisher text is authorized.
 
-Keep **Phase 2 production integration NO-GO** until every documented gate is satisfied: multi-day reliability/representativeness, useful permitted short text and intended NLP validation, timestamp accuracy, history/quota sustainability and display/retention/inference/derived-output rights. No real Streamlit data, FinBERT, embeddings, inference, crawling or public provider pipeline is authorized. The synthetic-only UI exception is unchanged.
-
-The completed keyed experiment's protocol and actual results remain in KEYED_API_TEST_PLAN.md, API_EVALUATION.md, DEVELOPMENT_LOG.md, ignored local reports and Git history.
+Keep .env, original evidence, local reports and SQLite state/journals ignored. Never print key values/fragments/hashes, commit restricted news or silently reset the study ledger. No provider messages are authorized by this task.

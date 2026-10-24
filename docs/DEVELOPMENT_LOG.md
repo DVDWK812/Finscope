@@ -30,11 +30,11 @@ Use this document for milestones supported by links to GitHub commits, PRs, or I
 |---|---|---|
 | Initial repository scaffold | PR #2 merged by user; main-only workflow active | Merge `6ae8e00`; complete Phase 1 work preserved on main; merged feature branches deleted |
 | API candidates and evaluation plan | Official documentation and terms reviewed | See `docs/API_EVALUATION.md` |
-| Offline adapter unit tests | 67 tests and both benchmark dry runs pass, including HTTP-200 Retry-After regression | Exact-head push CI pending at commit time; post-push evidence recorded in Issue #1 |
+| Offline tests / previews | 101 tests pass, including persistent sampling safeguards and synthetic AI contracts; all three previews pass | Final exact-head push CI pending at commit time; post-push evidence recorded in Issue #1 |
 | Live API comparison | Staged keyed pilot complete; original GDELT comparator retained | 7 keyed HTTP 200; 2 NewsData expansion topics skipped for hold; no new GDELT call |
 | Source selection | Marketaux conditional financial-news candidate; GDELT provisional comparator | See `docs/DECISIONS.md`; Phase 2 NO-GO and no deployment approval |
-| FinBERT pipeline | Not started | Phase 2 |
-| Event deduplication | Not started | Phase 2 |
+| FinBERT inference | Independent interface / synthetic contract tests only; no real model loaded or evaluated | See AI_PROTOTYPE.md; no provider/UI integration |
+| Event deduplication | Embedding/cosine interface / synthetic vector tests only; no evaluated event matching | Independent prototype only; production NO-GO |
 | Public dashboard deployment | Not started | Later milestone |
 
 Current rhythm: commit coherent tested milestones directly to main, verify push/CI and keep a weekly changelog; no new PRs. Commit frequency is not a proxy for real contribution or functional completeness.
@@ -194,3 +194,19 @@ All **67 offline tests** pass in the isolated .venv, including the new HTTP-200 
 On clean main 04008ad, implemented bounded in-memory description annotation and a guarded sampler with no default backend, live CLI or approval. SQLite commits a unique date/sector reservation before dispatch; duplicate/concurrent requests, unknown outcomes, corrupt state, stale/insufficient quota, out-of-window dates, exceeded budgets and insufficient spacing fail closed. Shared cooldowns are read without rewriting GDELT/NewsData state; new Marketaux holds persist in the study ledger. HTTP-200 Retry-After retains category results but stops the round, including after expiry. The old keyed Marketaux live benchmark path is blocked. No API calls or automation were executed/created; all original evidence/control-file fingerprints are preserved.
 
 Twenty new synthetic/mock tests plus the original suite pass: **87 tests**, benchmark dry run and guarded-sampler dry run. Tests caught and corrected a synthetic word-count expectation and Windows test SQLite connection cleanup; production ledger connections close explicitly. No real description text or keys are saved, and informativeness annotations are not model accuracy. The independently requested synthetic/licensed AI interface prototype is the next milestone; production remains NO-GO. Codex assisted with implementation/tests/docs.
+
+
+## Independent AI interface milestone — 25 October 2026 Sydney
+
+Implemented a separate standard-library-only `finscope.ai_prototype` with explicit synthetic/licensed EvaluationText, FinBERT-style all-label probability contracts and embedding/cosine similarity contracts. There is no API/UI import, default model/backend, model download, inference service or heavyweight dependency. Provenance/size checks reject raw API records and untagged inputs; licences remain caller attestations. Validated counts, labels, finite normalized scores, equal nonzero embedding dimensions, output provenance and error redaction. No real news or real model output is used.
+
+Twelve new AI tests use invented text and mocked probabilities/vectors; they verify contract behavior and cosine math, not accuracy. Added a separate abrupt-subprocess-exit test for durable pre-dispatch reservation survival. Full suite milestone: **100 passing tests**. The current official ProsusAI/finbert model card lists CC BY-NC-SA 4.0 weights; documented model-weight permissions separately from repository MIT code and provider-input rights. No weights were downloaded/loaded, embedding model selected or model accuracy/latency measured. Updated AI_PROTOTYPE.md, scope instructions and evaluation/decision docs. Real-news production integration remains NO-GO; Marketaux sampling remains unauthorized/unscheduled. Codex assisted with this implementation/testing/docs.
+
+
+## Final readiness validation and publication checkpoint — 25 October 2026 Sydney
+
+Final local suite: **101 tests pass**. Benchmark, guarded-sampler and independent-AI dry runs all pass; none issues provider requests or loads a model. Additional sampler metadata validation retains only finite latency/count metrics with category rows and leaves malformed/ambiguous outcomes reserved. The subprocess crash test proves the committed attempt survives abrupt exit; a later process/instance cannot repeat it. CI now runs all three previews in both existing Python 3.11 / Streamlit matrix jobs.
+
+Before publication, verified byte-for-byte preservation of the four original keyed reports, full shared cooldown file and active GDELT automation, plus unchanged one-shot attempt-marker state. No live Marketaux study ledger exists. Ignored credentials are still configured; an in-memory scan found no credential values in tracked/proposed files. API adapters and Streamlit/UI data were not changed; descriptions, keys, SQLite state and local reports are excluded from Git. Only synthetic examples/mocks were used for AI contracts and similarity math. No sampling authorization, live backend, task schedule or provider contact was created.
+
+Commit/push remains main only with no force push or new PR. Verify the exact remote SHA and final push-triggered CI after publication and record those results in Issue #1. Source reliability, description quality on actual permitted samples, independent model evaluation, free history/quota and public display/retention/team-review/inference/derived-output permissions remain unresolved. FinBERT weight licensing and an eventual embedding model's terms are separate gates. **Production integration remains NO-GO.** Codex assistance is recorded; no real model or API evaluation result is invented.

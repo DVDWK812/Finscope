@@ -5,6 +5,8 @@ import io
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -115,6 +117,8 @@ class SamplingTests(unittest.TestCase):
         self.assertEqual(result.status, "ok")
         with contextlib.closing(sqlite3.connect(self.path)) as db:
             saved = db.execute("SELECT review_json FROM attempts").fetchone()[0]
+        self.assertEqual(json.loads(saved)["raw_records"], 1)
+        self.assertEqual(json.loads(saved)["normalized_records"], 1)
         self.assertIn("adds_concrete_fact", saved)
         self.assertNotIn(article().description, saved)
         self.assertNotIn(article().title, saved)
@@ -230,6 +234,17 @@ class SamplingTests(unittest.TestCase):
         self.fetch.assert_called_once()
         self.assertNotIn(b"PRIVATE", self.path.read_bytes())
 
+    def test_invalid_count_or_latency_metadata_stays_unknown_and_never_retries(self):
+        response = self.response("marketaux", "healthcare")
+        response.latency_ms = float("nan")
+        self.fetch.return_value, self.fetch.side_effect = response, None
+        with self.assertRaisesRegex(SamplingBlocked, "attempted_outcome_unknown"):
+            self.collect()
+        self.now += timedelta(seconds=61)
+        with self.assertRaisesRegex(SamplingBlocked, "unresolved_attempt"):
+            self.collect("technology")
+        self.fetch.assert_called_once()
+
     def test_corrupt_and_empty_existing_ledgers_block_dispatch(self):
         for contents in (b"broken", b""):
             self.path.write_bytes(contents)
@@ -238,6 +253,10 @@ class SamplingTests(unittest.TestCase):
         self.fetch.assert_not_called()
 
     def test_concurrent_connections_cannot_dispatch_the_same_slot_twice(self):
+        # Initialize schema first so the test checks reservation contention,
+        # independently of first-file creation timing on the host filesystem.
+        with self.sampler.ledger.transaction():
+            pass
         def attempt(_):
             try:
                 return self.new_sampler().collect_one("healthcare", authorization=self.authorization,
@@ -248,6 +267,27 @@ class SamplingTests(unittest.TestCase):
             outcomes = list(pool.map(attempt, range(2)))
         self.assertEqual(sorted(outcomes), ["blocked", "ok"])
         self.fetch.assert_called_once()
+
+    def test_committed_attempt_survives_abrupt_process_exit(self):
+        script = """
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import os, sys
+from finscope.sampling import AttemptLedger, QuotaSnapshot
+now = datetime(2026, 10, 26, 1, tzinfo=timezone.utc)
+start = now.replace(hour=0)
+AttemptLedger(Path(sys.argv[1])).reserve('healthcare', now,
+    QuotaSnapshot(now, start, start + timedelta(days=1), 100), Path(sys.argv[2]))
+os._exit(7)
+"""
+        process = subprocess.run([sys.executable, "-c", script, str(self.path), str(self.holds)],
+                                 capture_output=True, timeout=10)
+        self.assertEqual(process.returncode, 7)
+        self.now += timedelta(seconds=61)
+        for sector in ("healthcare", "technology"):
+            with self.assertRaises(SamplingBlocked):
+                self.collect(sector)
+        self.fetch.assert_not_called()
 
     def test_legacy_cli_cannot_bypass_guards_with_configured_marketaux_key(self):
         with patch("finscope.benchmark.local_credentials", return_value={"MARKETAUX_API_KEY": "SYNTHETIC_KEY"}), \

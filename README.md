@@ -4,7 +4,7 @@
 
 This repository starts with a deliberately small **news API feasibility pilot**. The planned final app will collect financial news metadata, classify sentiment using FinBERT (or a supported user-provided model), categorize articles by sector, identify duplicate event coverage via embeddings, and display time/source/sector trends in Streamlit.
 
-> Status: Phase 1.5 validation design. The keyed pilot made seven successful requests; Marketaux is the preferred conditional candidate. Its [multi-day evaluation](docs/PHASE15_MARKETAUX_PLAN.md) is planned, not executed or scheduled. NewsData testing remains paused pending header clarification; the existing GDELT one-shot is preserved. See [observed evidence](docs/API_EVALUATION.md) and [open release gates](docs/DECISIONS.md). **Phase 2 production integration is NO-GO.** The Streamlit prototype uses synthetic data only.
+> Status: Phase 1.5 sampling safeguards are implemented and offline-tested; its [multi-day evaluation](docs/PHASE15_MARKETAUX_PLAN.md) remains unauthorized, unexecuted and unscheduled. The prior keyed pilot made seven successful requests. Marketaux remains the preferred conditional candidate; NewsData testing is paused and the GDELT one-shot is preserved. [Independent AI interfaces](docs/AI_PROTOTYPE.md) accept synthetic/licensed evaluation inputs only, with no default model backend. **Phase 2 production integration is NO-GO.** Streamlit remains synthetic-only.
 
 ## Phase 1 features
 
@@ -34,15 +34,14 @@ python -m unittest discover -s tests -v
 # 0 calls; inspect plans and missing credentials
 python -m finscope.benchmark --dry-run
 
-# Real calls: GDELT needs no key; others skip if not configured
-python -m finscope.benchmark --providers gdelt --topics technology healthcare materials
-
-# Compare up to four providers × three sectors = up to twelve low-volume calls
-python -m finscope.benchmark --providers gdelt marketaux newsdata finnhub \
-    --topics technology healthcare materials --limit 3 --days 2
+# Offline previews only; do not duplicate the separately scheduled GDELT request
+python -m finscope.sampling --dry-run
+python -m finscope.ai_prototype --dry-run
 ```
 
 Reports receive unique names under `reports/` (excluded from Git); `--output reports/name.json` selects an explicit local path. Each row preserves its UTC query time, safe query parameters, outcome, latency, quota headers when supplied, normalization metrics and up to ten title/URL/source/time samples. Descriptions and article bodies are not saved. URL checks validate syntax only; publisher pages are not fetched. A failed live attempt writes its report and exits with code 1; missing credentials are skipped.
+
+The legacy benchmark blocks live Marketaux when its key is configured. Future study dispatch must use the guarded sampler with explicit date authorization, a verified quota snapshot and a separately supplied nonretrying backend; none is enabled by default. The SQLite ledger reserves before dispatch, enforces duplicate/budget/spacing/cooldown rules and stores only safe categories/counts. Do not delete/reset the ledger or bypass it with direct adapter calls. NewsData's additional manual pause remains in force beyond its historical timed hold. See the [implemented safeguards](docs/PHASE15_MARKETAUX_PLAN.md#implemented-safeguards--25-october-2026-sydney).
 
 Keys are read only from this project's `.env`, without shell inheritance or interpolation. Requests run provider first, with conservative spacing between GDELT requests and no automatic retries or redirects. HTTP 429 stops further requests to that provider for the run; later topics are marked skipped. API keys must **never** be committed or pasted into logs and GitHub Issues.
 
@@ -79,7 +78,7 @@ The repository's MIT licence covers the project software; provider data and link
 
 - Requires network to perform live tests; token-based APIs require individual developer keys.
 - Limited pilot size, provider-specific queries, and no full article text extraction.
-- No sector impact inference, sentiment module, or embedding deduplication yet.
+- No evaluated model, sector impact inference or embedding event deduplication; only isolated synthetic-tested AI interfaces.
 - Marketaux free-tier result cap and NewsData latest-news window reduce comparability.
 
 ## Synthetic UI prototype
