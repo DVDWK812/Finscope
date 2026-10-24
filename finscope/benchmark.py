@@ -56,6 +56,8 @@ def run(argv: list[str] | None = None) -> int:
     if args.days < 1 or args.limit < 1 or args.timeout <= 0:
         parser.error("--days, --limit and --timeout must be positive")
     credentials = local_credentials()
+    if not args.dry_run and "marketaux" in args.providers and credentials.get(ENV_KEYS["marketaux"]):
+        parser.error("Live Marketaux sampling requires separate authorization and the guarded sampler; use --dry-run")
     try:
         cooldowns = {} if args.dry_run else load_cooldowns(COOLDOWN_PATH)
     except (ValueError, OSError):
