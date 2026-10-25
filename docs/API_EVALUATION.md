@@ -1,5 +1,7 @@
 # API evaluation protocol — Phase 1
 
+> Latest scheduled evidence: the existing GDELT one-shot executed on 25 October 2026 at 09:02 UTC / 20:02 Sydney after a late trigger. One client request attempt ended in transport failure after 26,381.9 ms; no HTTP response, coverage or new NLP text was observed. No retry. See the final one-shot audit section. Marketaux remains conditional and Phase 2 production integration NO-GO.
+
 > Latest readiness: sampling safeguards and independent synthetic-tested AI interfaces are implemented; no sampling is authorized or scheduled. The final readiness section supersedes earlier implementation-gap notes. Phase 1.5 on 25 October 2026 Sydney reanalysed the existing 24 October keyed pilot without new provider requests. Marketaux remains the preferred conditional candidate. See the Phase 1.5 section and [bounded multi-day plan](PHASE15_MARKETAUX_PLAN.md); that study is designed, not executed or scheduled. No provider is approved for public deployment. Earlier missing-key statements are dated historical evidence.
 
 ## Objective
@@ -309,3 +311,35 @@ Shared holds are read but not rewritten by the guarded sampler. New Marketaux ho
 The [independent AI prototype](AI_PROTOTYPE.md) adds FinBERT and embedding backend protocols with validated probability/cosine outputs and explicit synthetic/licensed input provenance. It imports no API/UI module, loads no model and uses no real news. Synthetic mock probabilities/vectors test contracts and cosine arithmetic, not trained-model accuracy or duplicate-event quality. Current model-card licence review is documented separately; no model-weight usage grant or inference permission for Marketaux content is inferred.
 
 Readiness software checks improve operational safety only. Multi-day evidence, description semantic quality, publication accuracy, financial/source/event representativeness, free history/actual quota and public display/retention/team-review/inference/derived-output permissions remain unresolved. Marketaux stays conditional and **Phase 2 production integration remains NO-GO**. Historical commands/results above remain dated evidence, not instructions to rerun traffic.
+
+
+## Scheduled GDELT one-shot audit — 25 October 2026 Sydney
+
+**Actual execution verified; failed/transport, not skipped.** Before execution there was no one-shot attempt marker/completed report, and a scan of saved non-dry-run GDELT query/response evidence found only the three original 23 October requests. The active task was scheduled for **25 October 09:00 Sydney (24 October 22:00 UTC)**, but this heartbeat was received at **25 October 09:00:27.559 UTC / 20:00:27.559 Sydney**, about eleven hours late. Its cause is not established. The actual trigger delivery and query time are recorded; a schedule alone was not treated as execution proof. No duplicate task or automatic reschedule was created.
+
+Preflight safely fetched/pulled clean main 58da79f. All **101 offline tests** and the GDELT healthcare dry run passed with zero requests. At 09:01:36.956412 UTC, the UTC/Sydney dates differed from 23 October UTC / 24 October Sydney, 41.865 hours had elapsed since the specified 2026-10-23T15:09:44Z baseline, and the latest saved GDELT hold (2026-10-24T15:09:44.173494+00:00) had expired. No active hold in shared state or saved Retry-After evidence was found. No hold was cleared or shortened.
+
+An ignored intent marker was exclusively created and flushed **before** invoking the CLI. The completed report and captured CLI stdout/return code prove the attempt, independently of the intent marker. Command used the existing project .venv:
+
+```powershell
+python -u -m finscope.benchmark --providers gdelt --topics healthcare --limit 3 --days 2 --timeout 25 --output reports/gdelt_one_shot_20261025T090214815087Z.json
+```
+
+| Measurement | Actual evidence |
+|---|---|
+| Provider / endpoint | GDELT DOC API, https://api.gdeltproject.org/api/v2/doc/doc |
+| Exact query UTC | **2026-10-25T09:02:15.024915+00:00** (20:02:15.024915 Sydney) |
+| Parameters | query=`pharmaceutical sourcelang:english`, mode=`artlist`, format=`json`, timespan=`2d`, maxrecords=3 |
+| Client request attempts / observed HTTP responses | **1 / 0**; whether the server received/processed the attempt is unknown |
+| Result / CLI return code | failed / transport; **1**; CLI completed 09:02:41.425008 UTC |
+| Elapsed attempt latency | **26,381.9 ms**; not a successful HTTP-response latency |
+| HTTP status / headers | **Unobserved / none captured**; no HTTP 429 was observed |
+| Raw / normalized / sampled parse counters | **0 / 0 / 0** internally because no response was available; these are not observed zero news coverage or an empty-success response |
+| Actual coverage / returned record count | **Unobserved** |
+| Title length, descriptions, usable NLP text, sources, finance relevance | **Unobserved; no new text/records were available** |
+| Published / first-seen timestamps | **Unobserved** for this attempt; prior GDELT timestamp semantics remain first-seen-only |
+| Retry / optional-provider requests | **0 / 0**; no pagination, new topic, publisher fetch or model work |
+
+Ignored local evidence: `reports/finscope_one_shot_20261025_attempt.json`, the uniquely named report above, its matching `.log`, `reports/oneshot_20261025_guard_audit.json` and `reports/gdelt_one_shot_20261025_audit.json`. The marker is finalized as execution verified/transport failure and prevents another attempt. All four original keyed reports and the full shared cooldown file remain unchanged. A transport outcome does not prove a specific timeout cause or server status; neither is invented from elapsed time. The serialized zero parse counters must not be used as a provider coverage score.
+
+**All Phase 2 gates reassessed:** a different-day attempt now exists, but it provides no successful availability or representativeness evidence. Useful/finance-relevant text and publication timestamps are unobserved on the new attempt; the original successful GDELT sample still has short titles only, no descriptions or published times. Public dataset reuse with attribution does not settle linked publisher rights, retained text or intended derived analysis. Marketaux's prior small keyed sample is still single-day evidence, with free history/quota and public display/retention/team-review/inference/derived-output permissions unresolved. NewsData remains manually paused; Finnhub scope/rights remain distinct. Independent model evaluation remains absent; synthetic software tests do not resolve these source/model gates. **Phase 2 production integration remains NO-GO**, Marketaux conditional and GDELT provisional. No real data was connected to Streamlit. The one-shot has completed its sole authorized attempt; retire its automation without retry/reschedule.
