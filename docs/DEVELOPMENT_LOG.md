@@ -1,5 +1,11 @@
 # Development log
 
+## 27 October 2026 Sydney — hosting watcher blocker
+
+- Safety milestone 871eee3a2941cefa393fc1bae66026fff529f5a8 pushed to main, remote SHA matched; exact PUSH run 40357790662 succeeded in both Streamlit jobs. No deployed-update claim was inferred from CI: the observed host still displayed the old control before reboot testing.
+- Hosting Manage app logs contained over 10,000 items, including repeated local_sources_watcher traversal into Transformers optional image modules and missing torchvision errors. These are watcher errors, not evidence that FinBERT needs vision dependencies. Disabled server.fileWatcherType using the official supported `none` option: https://docs.streamlit.io/develop/api-reference/configuration/config.toml. No extra model dependency, model/config/threshold change or broader architecture work. Source changes require deployment/restart with watching disabled.
+- Configuration parsed/loaded through Streamlit; all 135 offline tests and benchmark preview remain required before this push. Actual cold restart, inference, memory, isolation and export are audited separately afterwards; watcher removal does not itself establish a measured memory improvement.
+
 ## 27 October 2026 Sydney — safer grouping presentation
 
 - Safely fetched/ff-only pulled clean main at 2e63285. Baseline 131 offline tests passed. Preserved model/persistence/provider code and all existing evaluation/source evidence. No live-provider integration, source request, schedule, threshold tuning or architecture change.

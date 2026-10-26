@@ -4,6 +4,9 @@ gatherUsageStats = false
 [server]
 headless = true
 maxUploadSize = 1
+# Production source watching probes Transformers' optional vision modules.
+# Restart/redeploy after source changes; inference and cache stay unchanged.
+fileWatcherType = "none"
 
 [theme]
 primaryColor = "#16856b"
