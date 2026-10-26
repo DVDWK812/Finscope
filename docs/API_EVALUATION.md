@@ -1,5 +1,15 @@
 # API evaluation protocol — Phase 1
 
+> **Optional RSS prototype, 27 October 2026 Sydney:** A separate, manually triggered
+> RBA official media-release collector is now available; see [source terms, bounds
+> and smoke evidence](RSS_PROTOTYPE.md). Two bounded feed reads returned HTTP 200;
+> the initial RSS-2-only parser rejected the actual RSS 1.0 schema. After repair,
+> offline replay of the captured response stored one attributed record locally.
+> This narrow central-bank feed is not comparable to sector/company news APIs and
+> is not a new provider winner. Public app/model ingestion remains disconnected
+> pending record-level rights and quality review; existing provider restrictions
+> and evaluation/deployment priorities are unchanged.
+
 > **MVP sprint update, 26 October 2026 UTC:** The user authorized an approved-input noncommercial public demo. Actual FinBERT/MiniLM now run in Streamlit on fictional or explicitly licensed/user-owned text. [Public app](https://finscope-dvdwk812.streamlit.app/) and [authored evaluation](MVP_EVALUATION.md) are verified separately from source feasibility. No news API is connected or newly called. The 12-text pilot is provisional authored-label evidence, not independent NLP accuracy; candidate event-group precision was .60. No provider-use permission, multi-day source result or production release gate has been closed by this demo. Marketaux stays conditional; GDELT provisional; NewsData paused. Production source integration remains **NO-GO**. Older statements that models/UI are entirely disconnected are historical and superseded only for approved demo input.
 
 > Latest scheduled evidence: the existing GDELT one-shot executed on 25 October 2026 at 09:02 UTC / 20:02 Sydney after a late trigger. One client request attempt ended in transport failure after 26,381.9 ms; no HTTP response, coverage or new NLP text was observed. No retry. See the final one-shot audit section. Marketaux remains conditional and Phase 2 production integration NO-GO.

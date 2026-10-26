@@ -43,6 +43,22 @@ Earlier course notes identify **FINS5557 — Applied AI in Finance, T3 2026**, T
 
 ## Retained Phase 1 tooling and history
 
+## Optional local RSS prototype
+
+The manually triggered [RBA RSS collector](docs/RSS_PROTOTYPE.md) saves a small,
+attributed media-release sample in ignored `reports/rss/`. It is separate from
+Streamlit, evaluation and inference. Default/preview mode makes no requests:
+
+```powershell
+python -m finscope.rss_collector --dry-run
+# Explicit manual collection: robots check + at most one fixed RBA feed request
+python -m finscope.rss_collector --collect --limit 3
+```
+
+This central-bank release feed is not a substitute for broad financial-news
+coverage. Public integration remains deferred pending record-level rights and
+quality review; delivery readiness takes priority.
+
 ## Phase 1 features
 
 - Provider adapters for **GDELT, Marketaux, NewsData.io, Finnhub**.
