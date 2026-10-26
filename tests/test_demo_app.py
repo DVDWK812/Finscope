@@ -8,6 +8,14 @@ from streamlit.testing.v1 import AppTest
 from finscope.demo_pipeline import DemoPipeline
 
 
+def render_approved_status():
+    import streamlit as st
+    from streamlit_app import status
+    st.session_state["data_mode"]="Approved-text AI demo"
+    st.session_state["model_load_seconds"]=9.2  # Fixture for displaying measured runtime metadata.
+    status()
+
+
 class ApprovedAppTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
@@ -41,6 +49,14 @@ class ApprovedAppTests(unittest.TestCase):
         self.assertFalse(self.app.exception)
         self.assertTrue(any("Confirm your right" in error.value for error in self.app.error))
         self.assertEqual(self.app.metric[0].value,"0")
+
+    def test_status_reports_load_and_group_limits_without_loading_a_model(self):
+        with patch("finscope.demo_runtime.load_pipeline",side_effect=AssertionError("Status must not load models")):
+            app=AppTest.from_function(render_approved_status).run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("NO-GO" in info.value for info in app.info))
+        self.assertTrue(any("0.60" in warning.value for warning in app.warning))
+        self.assertEqual(app.metric[0].value,"9.2")
 
 
 if __name__=="__main__":unittest.main()

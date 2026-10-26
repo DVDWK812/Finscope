@@ -61,9 +61,9 @@ def approved_workspace():
             time_kind=st.selectbox("Timestamp meaning",["submitted","published","first_seen"])
             supplied_date=st.date_input("Record date (UTC)",value=datetime.now(timezone.utc).date())
             supplied_time=st.time_input("Record time (UTC)",value=datetime.now(timezone.utc).time().replace(second=0,microsecond=0,tzinfo=None))
-            rights=st.checkbox("I have the rights to process and store this text in the demo for up to 24 hours; it contains no private information.")
+            rights=st.checkbox("I have the rights to process and temporarily store this text; it contains no private information.")
             st.caption("Up to 2,000 characters; actual model limits are checked without truncation. "
-                       "Records belong to this browser session; export before leaving. No URL is fetched.")
+                       "Records belong to this browser session; export before leaving. Expired records are purged on the next app access after 24 hours. No URL is fetched.")
             submitted=st.form_submit_button("Run real AI analysis",disabled=not available,type="primary")
         if submitted:
             try:
@@ -73,7 +73,9 @@ def approved_workspace():
                               "synthetic" if origin.startswith("Synthetic") else "licensed",permission,rights,url or None)
                 submission.validate()  # Rights/size/metadata fail before model loading.
                 with st.spinner("Running local FinBERT and sentence embeddings…"):
-                    record=cached_pipeline().submit(submission,repository,workspace)
+                    engine=cached_pipeline()
+                    record=engine.submit(submission,repository,workspace)
+                st.session_state["model_load_seconds"]=getattr(engine,"load_seconds",None)
                 st.session_state["last_result_id"]=record.article.article_id
                 saved_dates=[r.article.timestamp.date() for r in repository.list_records(workspace)]
                 st.session_state["date_range"]=(min(saved_dates),max(saved_dates))
@@ -204,6 +206,16 @@ def status() -> None:
                   "grouping":"Candidate similarity groups, not confirmed events","storage":"Session-scoped SQLite; 24-hour retention; free-host restarts may clear storage",
                   "limits":"2,000 characters; FinBERT 512 tokens; MiniLM 256; 100 records per workspace"})
         st.markdown("FinBERT: CC BY-NC-SA 4.0 · MiniLM: Apache-2.0. No production data-source approval is claimed.")
+        st.caption("Memory is the current whole Python process RSS, not peak usage or a hosting capacity guarantee. "
+                   "Cold load excludes dependency installation/model download; later sessions reuse cached models.")
+        load_seconds=st.session_state.get("model_load_seconds")
+        if load_seconds is not None:st.metric("Cold model load (seconds)",load_seconds)
+        try:
+            import psutil
+            st.metric("Current server process RSS (MiB)",round(psutil.Process().memory_info().rss/1024**2,1))
+        except ImportError:
+            st.caption("Memory probe unavailable in this lightweight environment.")
+        st.warning("On the 12-text authored pilot, grouped-event pair precision was 0.60. Inspect raw records: similar wording can describe opposite outcomes.")
         return
     st.info("Phase 2: NO-GO. This is an offline synthetic interface. "
             "No news provider is approved for live UI display.")

@@ -3,7 +3,6 @@
 from contextlib import closing
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
-import hashlib
 import json
 import math
 from pathlib import Path
@@ -95,7 +94,8 @@ class ApprovedDemoRepository:
     """Session-scoped SQLite; never reads pilot reports or API state.
 
     No shared user-text gallery. Server storage is disposable on free hosts;
-    export is provided by the UI. Approved submissions expire after 24 hours.
+    export is provided by the UI. Expired records are purged on app access,
+    not by a background deletion service.
     """
 
     def __init__(self, path: Path):

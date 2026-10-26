@@ -1,0 +1,28 @@
+# Three-person public MVP test protocol
+
+Status: **prepared, not executed by three humans**. Programmatic three-workspace concurrency is separately reported in MVP_EVALUATION.md. Use [the public app](https://finscope-dvdwk812.streamlit.app/), one independent browser session/person, no private text, no copied provider stories. Do not send invitations automatically. Record participant codes A/B/C only, date/UTC, browser/device and deployed commit (ask maintainer if unknown).
+
+## Tasks (about 10 minutes per person)
+
+1. Explain what data is permitted and whether a news API is connected. Without checking rights, submit the default fictional text. Expect rejection and zero saved records.
+2. Confirm rights and run the default synthetic text. Record the actual label, three scores, visible sector evidence, latency and raw/group counts. Do not substitute the reference score for a newly observed value.
+3. Submit its p2 paraphrase from `evaluation/authored_demo_v1.json` under a distinct title/source. Compare raw and candidate-group views; raw rows must remain inspectable. A candidate group is not confirmed event identity.
+4. Submit n3 (contradictory Aster result). Inspect all raw labels and grouping. State whether the interface makes the false-match risk clear. Keep any unexpected result as evidence, not a reason to edit labels afterwards.
+5. Submit a synthetic bank/software sentence and an unrelated meeting sentence. Explain multiple sector labels and Unclassified. Inspect original source, timestamp meaning, permission reference and model revisions in News Explorer.
+6. Open Trends. Change sentiment/source/sector/date filters and reset. Confirm trends/Overview/Explorer agree for the selected raw/group basis; multi-sector totals may exceed raw counts. Published, first-seen and submitted are distinct.
+7. Export your workspace, then open a separate session. Expect no other participant's saved text to appear. Export only your own approved records; do not commit private participant data. Refresh/session reset and free-host storage are deliberately temporary.
+8. Open System Status and report observed resource/load fields or unavailable. Note host sleep/wakeup, any model preparation prompt, exceptions, slow operations and accessibility/mobile problems. Do not repeatedly click inference while it is running.
+
+## Feedback record (one per participant)
+
+| Field | Observed value |
+|---|---|
+| Participant code / UTC / deployed SHA / device | Pending |
+| Task completion (1–8), assistance needed, time | Pending |
+| Actual inference label/scores/latency and counts | Pending |
+| Source/time/sector/group explanation understood? | Pending |
+| Workspace isolation/export result | Pending |
+| Error or confusing wording; reproducible steps | Pending |
+| Ease of use 1–5 and one improvement | Pending |
+
+The maintainer consolidates blockers by severity and fixes data leakage, false success, crashes and inaccessible inference first. Re-run affected regression tests and one real approved-text browser acceptance after each fix; record exact CI commit. Do not claim the three-person requirement is met until all three actual feedback records exist. Independent label review must be recorded separately from usability feedback.

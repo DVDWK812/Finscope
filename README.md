@@ -2,6 +2,8 @@
 
 **Approved-text financial sentiment MVP — October 26–31 delivery sprint.**
 
+**[Open the public FinScope demo](https://finscope-dvdwk812.streamlit.app/)** — real hosted synthetic-text inference verified on 26 October 2026. No API key required. Free hosting can sleep; first-time model preparation/cold loading takes longer than warm inference.
+
 Submit synthetic, self-authored or explicitly licensed financial news text, attest processing/storage rights, run **real local FinBERT and MiniLM**, and inspect saved scores, explainable multi-label sectors and candidate event groups in Streamlit Overview, Trends and News Explorer. This is a noncommercial course research demo. No news API is connected; Marketaux/public data-source approval is not claimed. The completed GDELT one-shot is not retried.
 
 ## Run the working application
@@ -18,11 +20,11 @@ In the app choose **Approved-text AI demo**, provide text and its source/permiss
 
 FinBERT weights: **CC BY-NC-SA 4.0**, attribution ProsusAI / MIH AI B.V.; MiniLM: **Apache-2.0**, sentence-transformers/all-MiniLM-L6-v2. Model revisions/config/tokenizer/weights are pinned and hash-verified. Do not infer commercial or publisher-input permission from the MIT software licence. See [model evidence](docs/AI_PROTOTYPE.md) and [source rights](docs/DECISIONS.md).
 
-Records are isolated by browser-session workspace, expire after 24 hours and can be exported as JSON. Server storage on free hosts can reset after redeploy/reboot; refresh may start a new workspace. Do not submit private text. Original source and supplied/submitted timestamps are retained; published and first-seen meanings are never silently interchanged. Keyword sectors include **Unclassified** and expose matched terms. Cosine ≥0.80 within 72 hours creates **candidate groups**, not confirmed event identity. Group view uses the earliest matching representative, not sentiment consensus.
+Records are isolated by browser-session workspace and can be exported as JSON. An app access purges records older than 24 hours; there is no background deletion service. Server storage on free hosts can reset after redeploy/reboot; refresh may start a new workspace. Do not submit private text. Original source and supplied/submitted timestamps are retained; published and first-seen meanings are never silently interchanged. Keyword sectors include **Unclassified** and expose matched terms. Cosine ≥0.80 within 72 hours creates **candidate groups**, not confirmed event identity. Group view uses the earliest matching representative, not sentiment consensus.
 
 ## Deployment
 
-Community Cloud entrypoint: **deploy/streamlit_app.py**, branch **main**, Python **3.12**, dependency file **deploy/requirements.txt**. Do not copy local `.env`/API keys, reports, SQLite data or weights into hosting secrets/source. The app requires no API key. Docker is an alternative build recipe; its explicit build stage prepares pinned model assets. Public deployment is being tested; a URL is only reported once verified.
+Community Cloud entrypoint: **deploy/streamlit_app.py**, branch **main**, Python **3.12**, dependency file **deploy/requirements.txt**. Do not copy local `.env`/API keys, reports, SQLite data or weights into hosting secrets/source. The app requires no API key. Docker is an alternative build recipe, not yet built/tested here; its explicit build stage prepares pinned model assets. Community Cloud build and actual hosted inference succeeded; see [measured evidence and limitations](docs/MVP_EVALUATION.md).
 
 ## Verification and limitations
 
@@ -31,7 +33,7 @@ Community Cloud entrypoint: **deploy/streamlit_app.py**, branch **main**, Python
 .venv/Scripts/python.exe -m finscope.benchmark --dry-run
 ```
 
-Unit/UI regression tests use labelled mocks; actual browser/model runs are recorded separately in DEVELOPMENT_LOG.md. Small authored evaluation and three-user testing are tracked in the sprint evidence; no general accuracy, investment-return or confirmed-event claim follows from a demonstration. Unapproved provider ingestion/display remains **NO-GO**. Team members must disclose Codex assistance and confirm the official FINS5557/INFS5557 course code.
+Unit/UI regression tests use labelled mocks; actual browser/model runs are recorded separately in DEVELOPMENT_LOG.md. The [12-text authored evaluation](docs/MVP_EVALUATION.md) matched all provisional sentiment labels but grouped-event pair precision was only .60 across 66 pairs. This is not independent accuracy validation. Three-human feedback remains pending: [test protocol](docs/USER_TESTING.md). See the [sprint plan](docs/MVP_SPRINT.md), [report draft](docs/FINAL_REPORT.md) and [six-minute demo](docs/DEMO_SCRIPT.md). No investment-return or confirmed-event claim follows from the demo. Unapproved provider ingestion/display remains **NO-GO**. Team members must disclose Codex assistance and confirm the official FINS5557/INFS5557 course code.
 
 ## Retained Phase 1 tooling and history
 

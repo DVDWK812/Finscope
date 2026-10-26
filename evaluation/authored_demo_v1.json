@@ -1,0 +1,19 @@
+{
+  "dataset_id": "authored-demo-v1",
+  "provenance": "Codex-authored fictional examples, dedicated CC0-1.0; no publisher text. Labels assigned before this evaluation run; not independent human annotations.",
+  "limitations": "Convenience sample, repeated fictional entities and simple language; no held-out calibration or market-impact labels. Human review pending.",
+  "records": [
+    {"id":"p1","label":"positive","event":"aster-growth","sectors":["Technology"],"text":"Fictional chipmaker Aster reported a 20 percent rise in revenue and record quarterly profits."},
+    {"id":"p2","label":"positive","event":"aster-growth","sectors":["Technology"],"text":"Aster, a fictional semiconductor company, announced record quarterly profit as revenue increased by 20 percent."},
+    {"id":"p3","label":"positive","event":"cedar-approval","sectors":["Healthcare"],"text":"Fictional pharmaceutical company Cedar won approval for its new drug, boosting its earnings outlook."},
+    {"id":"p4","label":"positive","event":"solstice-contract","sectors":["Energy"],"text":"Fictional solar energy company Solstice secured a profitable long-term supply contract and raised its revenue forecast."},
+    {"id":"n1","label":"negative","event":"harbor-loss","sectors":["Financials"],"text":"Fictional bank Harbor reported a large quarterly loss as loan defaults surged and revenue fell."},
+    {"id":"n2","label":"negative","event":"harbor-loss","sectors":["Financials"],"text":"Harbor, a fictional bank, posted a substantial loss for the quarter after rising loan defaults and declining revenue."},
+    {"id":"n3","label":"negative","event":"aster-loss","sectors":["Technology"],"text":"Fictional chipmaker Aster reported a 20 percent decline in revenue and a large quarterly loss."},
+    {"id":"n4","label":"negative","event":"copper-cut","sectors":["Materials"],"text":"Fictional mining company Copperleaf cut its earnings forecast after copper production collapsed and costs soared."},
+    {"id":"u1","label":"neutral","event":"cedar-meeting","sectors":["Healthcare"],"text":"Fictional pharmaceutical company Cedar scheduled its annual shareholder meeting for Tuesday."},
+    {"id":"u2","label":"neutral","event":"cedar-meeting","sectors":["Healthcare"],"text":"Cedar, a fictional pharmaceutical company, will hold its annual meeting of shareholders on Tuesday."},
+    {"id":"u3","label":"neutral","event":"maple-address","sectors":["Unclassified"],"text":"Fictional company Maple changed the mailing address listed on its investor relations website."},
+    {"id":"u4","label":"neutral","event":"harbor-calendar","sectors":["Financials"],"text":"Fictional bank Harbor published the calendar for its next quarterly results announcement."}
+  ]
+}
