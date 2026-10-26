@@ -4,6 +4,8 @@
 
 **[Open the public FinScope demo](https://finscope-dvdwk812.streamlit.app/)** — real hosted synthetic-text inference verified on 26 October 2026. No API key required. Free hosting can sleep; first-time model preparation/cold loading takes longer than warm inference.
 
+The hosted app runs independently of the developer's computer. Observed hosted prepared-file cold model load was 6.226 seconds; current process memory was 866–869 MiB after small demo runs (not peak or a load guarantee). Export your approved results before leaving; temporary hosting storage and browser workspaces can reset.
+
 Submit synthetic, self-authored or explicitly licensed financial news text, attest processing/storage rights, run **real local FinBERT and MiniLM**, and inspect saved scores, explainable multi-label sectors and candidate event groups in Streamlit Overview, Trends and News Explorer. This is a noncommercial course research demo. No news API is connected; Marketaux/public data-source approval is not claimed. The completed GDELT one-shot is not retried.
 
 ## Run the working application
