@@ -1,0 +1,7 @@
+# Optional local CPU inference only; separate from the API/UI environment.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+transformers==5.20.2
+huggingface-hub==2.3.0
+safetensors==0.8.0
+tokenizers==0.23.3

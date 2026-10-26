@@ -26,3 +26,7 @@ jobs:
         run: python -m finscope.sampling --dry-run
       - name: AI interface preview (no weights or inference)
         run: python -m finscope.ai_prototype --dry-run
+      - name: Marketaux live-runner preflight (no authorization or dispatch)
+        run: python -m finscope.marketaux_runner --dry-run
+      - name: Local FinBERT preview (no weights, downloads or inference)
+        run: python -m finscope.finbert_backend --dry-run
