@@ -50,6 +50,15 @@ class ApprovedAppTests(unittest.TestCase):
         self.assertTrue(any("Confirm your right" in error.value for error in self.app.error))
         self.assertEqual(self.app.metric[0].value,"0")
 
+    def test_raw_default_and_reset_survive_candidate_opt_in(self):
+        self.assertFalse(self.app.toggle[0].value)
+        self.app.toggle[0].set_value(True).run()
+        self.assertTrue(self.app.toggle[0].value)
+        reset=next(button for button in self.app.button if button.label=="Reset filters")
+        reset.click().run()
+        self.assertFalse(self.app.exception)
+        self.assertFalse(self.app.toggle[0].value)
+
     def test_status_reports_load_and_group_limits_without_loading_a_model(self):
         with patch("finscope.demo_runtime.load_pipeline",side_effect=AssertionError("Status must not load models")):
             app=AppTest.from_function(render_approved_status).run()

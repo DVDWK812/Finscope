@@ -1,5 +1,11 @@
 # Development log
 
+## 27 October 2026 Sydney — safer grouping presentation
+
+- Safely fetched/ff-only pulled clean main at 2e63285. Baseline 131 offline tests passed. Preserved model/persistence/provider code and all existing evaluation/source evidence. No live-provider integration, source request, schedule, threshold tuning or architecture change.
+- Fixed the demonstrated hidden-label risk: approved-demo raw counts are now default/reset; summary controls and identifiers say unverified candidates. Explorer retains all matching originals in candidate mode and exposes all workspace group members outside filters. Potential contradictory outcomes are highlighted when candidate members have opposing positive/negative model labels; explicitly a review flag, not confirmed factual contradiction/event identity.
+- Added four offline regressions for raw default/reset, group-scope opposing-tone flags, original inspection in summary mode and opposing records excluded by filters. All 135 tests and benchmark dry run passed (zero provider requests). README/decision memo updated. Public deployed verification follows after main push and exact-commit CI; no success is inferred before those checks.
+
 ## 26 October 2026 UTC — hosted cold-load, memory and update verification
 
 - Milestone `9c51840d95ca7c8c7bc25c0d1db34720f34a36cd` pushed directly to main; local/remote SHA equality and clean tree verified. Exact PUSH [run 40324915794](https://github.com/DVDWK812/Finscope/actions/runs/40324915794) completed success; both Streamlit jobs passed all 131 offline tests and five previews. Safe fetch/ff-only pull again confirmed up to date before these documentation edits.

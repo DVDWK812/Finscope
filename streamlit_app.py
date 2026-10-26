@@ -14,7 +14,7 @@ import streamlit as st
 from finscope.ui_data import (
     SENTIMENTS, SECTORS, ArticleRecord, NewsRepository, SyntheticNewsRepository,
     daily_sentiment_counts, filter_articles, headline_metrics,
-    sector_sentiment_counts, unique_events,
+    sector_sentiment_counts, unique_events, candidate_tone_conflicts,
 )
 
 # Keep this order aligned with SENTIMENTS in both charts.
@@ -104,7 +104,7 @@ def approved_workspace():
 
 def record_table(rows: list[ArticleRecord]) -> pd.DataFrame:
     return pd.DataFrame([{
-        "Article ID": a.article_id, ("Candidate group ID" if approved_mode() else "Event ID"): a.event_id,
+        "Article ID": a.article_id, ("Unverified candidate ID" if approved_mode() else "Event ID"): a.event_id,
         "UTC date": a.timestamp.astimezone(timezone.utc).date().isoformat(),
         "Title": a.title, "Sector(s)": ", ".join(a.sectors),
         "Text sentiment": a.sentiment, "Source": a.source,
@@ -118,7 +118,7 @@ def overview(selected: list[ArticleRecord], shown: list[ArticleRecord], event_vi
     positive_share = f'{metrics["positive_share"]:.1f}%' if shown else "—"
     for col, (label, value) in zip(cards, [
         ("Raw articles", metrics["raw_articles"]),
-        ("Candidate event groups" if approved_mode() else "Unique events", metrics["unique_events"]),
+        ("Unverified candidates" if approved_mode() else "Unique events", metrics["unique_events"]),
         ("Sources", metrics["sources"]),
         ("Positive label share", positive_share),
     ]):
@@ -160,7 +160,11 @@ def explorer(selected: list[ArticleRecord], shown: list[ArticleRecord]) -> None:
     if not shown:
         st.info(EMPTY_MESSAGE)
         return
-    ordered = sorted(shown, key=lambda a: (a.timestamp, a.article_id), reverse=True)
+    # Candidate summary mode must never remove originals from inspection.
+    ordered = sorted(selected if approved_mode() else shown, key=lambda a: (a.timestamp, a.article_id), reverse=True)
+    if approved_mode():
+        st.caption("Every original matching the filters is listed, even when charts summarize candidates. "
+                   "Export always includes every original in this workspace, including filtered-out records.")
     st.dataframe(record_table(ordered), width="stretch", hide_index=True,
                  column_config={"Title": st.column_config.TextColumn(width="large")})
     records = {a.article_id: a for a in ordered}
@@ -173,7 +177,8 @@ def explorer(selected: list[ArticleRecord], shown: list[ArticleRecord]) -> None:
         st.markdown("**Approved record details**" if approved_mode() else "**Synthetic record details**")
         st.write(detail.title)
         st.write(detail.summary)
-        st.caption(f"Article {detail.article_id} · Event {detail.event_id} · {detail.source}")
+        group_kind="Unverified candidate" if approved_mode() else "Event"
+        st.caption(f"Article {detail.article_id} · {group_kind} {detail.event_id} · {detail.source}")
         st.caption(f"{detail.timestamp.astimezone(timezone.utc).isoformat()} "
                    f"({detail.timestamp_kind}) · {', '.join(detail.sectors)} · {detail.sentiment}")
         if approved_mode():
@@ -185,8 +190,17 @@ def explorer(selected: list[ArticleRecord], shown: list[ArticleRecord]) -> None:
                 st.caption(f"Nearest representative cosine: {metadata.similarity}; candidate grouping only, no confirmed event identity.")
                 st.caption(f"FinBERT {metadata.model_revision} · MiniLM {metadata.embedding_revision}")
             if detail.url:st.link_button("Original source",detail.url)
-    linked = [a for a in selected if a.event_id == detail.event_id]
-    st.markdown(f"**{'Reports in this candidate group' if approved_mode() else 'Source reports for this event'} in the current filter: {len(linked)}**")
+    members=list(st.session_state.get("approved_metadata",{}).values()) if approved_mode() else []
+    all_originals=[r.article for r in members] if members else selected
+    linked = [a for a in all_originals if a.event_id == detail.event_id]
+    if approved_mode():
+        st.markdown(f"**All preserved originals in this unverified candidate: {len(linked)}**")
+        st.caption("Candidate details include workspace originals outside the current filters.")
+        if candidate_tone_conflicts(linked):
+            st.warning("Potential contradictory financial outcomes: this candidate contains positive AND negative model labels. "
+                       "Compare the original text, company, reporting period and timestamps. Opposing tone is a review flag, not proof of a factual contradiction.")
+    else:
+        st.markdown(f"**Source reports for this event in the current filter: {len(linked)}**")
     st.dataframe(record_table(linked), width="stretch", hide_index=True)
     if approved_mode():
         st.caption("Raw reports and candidate groups are different counts. Groups use cosine ≥0.80 within 72 hours; event identity is unverified. "
@@ -234,7 +248,7 @@ def reset_filters(start: date, end: date) -> None:
     # Explicit values also reset browser widgets; deleting keys can leave their
     # old frontend values alive and restore stale filters on the next interaction.
     st.session_state.update(date_range=(start, end), sector=[], source=[],
-                            sentiment=[], event_view=True)
+                            sentiment=[], event_view=not approved_mode())
     st.session_state.pop("inspected_article", None)
 
 
@@ -257,13 +271,21 @@ def main() -> None:
     anchor = st.session_state.setdefault("demo_anchor", datetime.now(timezone.utc).date())
     st.sidebar.radio("Data workspace",["Approved-text AI demo","Illustrative fixture tour"],key="data_mode")
     if st.session_state.get("active_data_mode")!=st.session_state["data_mode"]:
-        for key in ("date_range","sector","source","sentiment","inspected_article"):
+        for key in ("date_range","sector","source","sentiment","inspected_article","event_view"):
             st.session_state.pop(key,None)
         st.session_state["active_data_mode"]=st.session_state["data_mode"]
     st.title("FinScope")
     st.caption("Financial text intelligence · Sentiment, sectors and candidate event groups")
     if approved_mode():
         articles=approved_workspace()
+        # Apply the safer initial default once to sessions surviving this release.
+        if not st.session_state.get("raw_count_default_applied"):
+            st.session_state.update(event_view=False,raw_count_default_applied=True)
+        conflicts=candidate_tone_conflicts(articles)
+        if conflicts:
+            st.warning(f"Potential contradictory financial outcomes in {len(conflicts)} unverified candidate(s): "
+                       "positive and negative model labels coexist. Compare ALL originals in News Explorer; "
+                       "filters or a representative can conceal disagreements. This is a review flag, not verified event identity or factual contradiction.")
     else:
         repository: NewsRepository = SyntheticNewsRepository(anchor)
         articles = repository.list_articles()
@@ -272,7 +294,7 @@ def main() -> None:
         st.stop()
     all_dates = sorted(a.timestamp.astimezone(timezone.utc).date() for a in articles) or [datetime.now(timezone.utc).date()]
     st.session_state.setdefault("date_range", (all_dates[0], all_dates[-1]))
-    st.session_state.setdefault("event_view", True)
+    st.session_state.setdefault("event_view", not approved_mode())
     if not approved_mode():st.warning("SYNTHETIC DEMO DATA — all headlines, dates, sources and sentiment labels are invented. "
                "Live APIs, FinBERT and embeddings are not connected. Phase 2 remains NO-GO.", icon="⚠️")
     with st.sidebar:
@@ -286,9 +308,9 @@ def main() -> None:
                                  placeholder="All sources", key="source")
         sentiments = st.multiselect("Text sentiment", SENTIMENTS,
                                     placeholder="All sentiments", key="sentiment")
-        event_view = st.toggle("Count candidate groups" if approved_mode() else "Count unique events", key="event_view",
+        event_view = st.toggle("Summarize unverified candidates" if approved_mode() else "Count unique events", key="event_view",
                                help="Filters apply first. Each event uses its earliest matching report; "
-                                    "its sentiment is not a consensus estimate.")
+                                    "its sentiment is not a consensus estimate. Raw articles are the approved-demo default; Explorer retains originals.")
         st.button("Reset filters", on_click=reset_filters,
                   args=(all_dates[0], all_dates[-1]), width="stretch")
         st.divider()

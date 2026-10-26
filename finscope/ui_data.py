@@ -122,6 +122,15 @@ def unique_events(articles: Sequence[ArticleRecord]) -> list[ArticleRecord]:
     return list(selected.values())
 
 
+def candidate_tone_conflicts(articles: Sequence[ArticleRecord]) -> dict[str, list[ArticleRecord]]:
+    """Review flag only: opposing model tones do not prove factual contradiction."""
+    groups: dict[str, list[ArticleRecord]] = {}
+    for article in articles:
+        groups.setdefault(article.event_id, []).append(article)
+    return {key: rows for key, rows in groups.items()
+            if {"Positive", "Negative"}.issubset({row.sentiment for row in rows})}
+
+
 def sector_sentiment_counts(articles: Sequence[ArticleRecord]) -> list[dict[str, str | int]]:
     """An article/event contributes to each sector it is associated with."""
     counts: Counter[tuple[str, str]] = Counter(
