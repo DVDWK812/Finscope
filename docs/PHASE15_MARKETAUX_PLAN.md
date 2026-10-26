@@ -1,6 +1,6 @@
 # Phase 1.5 Marketaux validation plan — 25 October 2026 Sydney
 
-**Status: safeguards implemented and offline-tested; sampling remains unauthorized, unexecuted and unscheduled. Zero new news-provider requests in this work.** Marketaux remains the preferred conditional candidate; production integration is NO-GO. Preserve the 24 October keyed reports unchanged. The separate GDELT one-shot retains its own authorization and controls; this plan does not start, replace or duplicate it.
+**Status: safeguards and the explicit Marketaux live-runner wiring are implemented/offline-tested; sampling remains unauthorized, unexecuted and unscheduled. Zero new Marketaux requests in this preparation.** Marketaux remains the preferred conditional candidate; production integration is NO-GO. Preserve the 24 October keyed reports unchanged. The separate GDELT one-shot retains its own authorization and controls; this plan does not start, replace or duplicate it.
 
 ## Sample and request budget
 
@@ -78,3 +78,8 @@ NewsData clarification should describe only the nonsensitive saved HTTP 200, Ret
 - There is deliberately no live CLI or scheduler. `python -m finscope.sampling --dry-run` previews the policy without credentials, ledger writes or requests. A future explicitly authorized operator must separately install a compliant nonretrying adapter/annotator and provide the quota/authorization objects; synthetic tests do not supply that authorization.
 
 The 20 new synthetic/mock tests verify durable reservations, duplicate/concurrent connection blocking, quota exhaustion, spacing, corrupt state, successful-reply holds, failure stops and text omission. The 87-test full-suite milestone passes; no real API call was made. Subsequent prototype tests are recorded in DEVELOPMENT_LOG.md.
+
+
+## Prepared runner — 26 October 2026 Sydney
+
+The [runner contract](MARKETAUX_RUNNER.md) now binds the existing adapter only in an explicitly requested, approved single-sector execution path. Default/--dry-run mode reads no approval/credentials and creates no ledger. Actual execution requires strictly scoped human-approval and fresh operator-quota files; no such files or authorization were supplied in this task. All existing SQLite/cooldown/budget/spacing/no-retry rules are reused unchanged. The CLI installs no AI or semantic reviewer and leaves unreviewed descriptions uncertain. No task was created and no live request made. This new runner supersedes earlier statements that no live wiring exists; it does not change dates/budgets, recreate GDELT, or authorize a round.
