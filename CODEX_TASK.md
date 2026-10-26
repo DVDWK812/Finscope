@@ -1,25 +1,11 @@
-# Current Codex task: guarded live-runner preparation and pinned local FinBERT
+# Current task: five-day approved-text MVP sprint
 
-**Date:** 2026-10-26 (Australia/Sydney)
-**Repository:** DVDWK812/Finscope; main only.
+Deadline: 31 October 2026 Australia/Sydney. Main only; small tested commits, push and verify exact-head Actions after milestones. Never create branches/PRs, force-push or discard user work.
 
-## Scope and controls
+Deliver the actual local FinBERT + sentence embedding pipeline in Streamlit using synthetic, self-authored or explicitly licensed text with an explicit rights attestation. Reuse the current UI/repository/model backends. Add explainable multi-label sectors/Unclassified, session-scoped persistence, source/time semantics, raw-report/candidate-group views, labelled evaluation with honest limitations, public deployment tests and three-user/demo/report documentation.
 
-Review AGENTS.md, README, API_EVALUATION.md, DECISIONS.md, DEVELOPMENT_LOG.md, PHASE15_MARKETAUX_PLAN.md, MARKETAUX_RUNNER.md and AI_PROTOTYPE.md. The completed GDELT one-shot has a retained execution marker/report and its automation was deleted. It failed at transport with no observed HTTP response. Do not retry, recreate or reschedule it.
+The immediate gate is a submitted approved financial text producing real FinBERT scores, a persisted record and updated Overview/Trends/Explorer. Mocks are unit tests only. Cosine/grouping must never be represented as confirmed event identity or as independent accuracy evidence. Pin/review model licences and artifacts. Keep input/token/retention/record limits and verify actual cold/warm inference, memory and user isolation.
 
-Prepare the Marketaux live runner around the existing guarded sampler. Default/preflight is offline; explicit future dispatch requires separate actual human authorization scoped to dates/sectors, fresh operator-confirmed account quota/reset evidence and credentials. Do not make approval/quota files on the user's behalf or execute/schedule Marketaux in preparation work. Retain SQLite pre-dispatch reservations, unknown/crash/duplicate protection, fixed windows/dates, three daily/nine total caps, 60-second spacing, cooldowns and no retries/pages/automatic waits. Do not catch up missed dates or silently change the plan. NewsData remains manually paused.
+No unapproved Marketaux data, real API ingestion, API key disclosure, crawling or production data-source approval. Existing sampler/SQLite request guards and shared cooldowns are unchanged. GDELT's completed/deleted task must not be retried/recreated. Approved-demo integration is authorized by the current user sprint and supersedes older interface-only restrictions; provider production approval remains NO-GO.
 
-The user independently authorizes a minimal local FinBERT backend using only synthetic/explicitly licensed evaluation text. Optional runtime/model asset preparation is explicit, separate setup, never an automatic import/inference download. Pin model revision, weights/tokenizer/config hashes, weight licence and runtime versions; use local-files-only, safetensors, no remote code, CPU inference mode, validated labels and no silent token truncation. Keep weights/runtime environments ignored and out of the API/UI environment. Separate actual smoke outputs from mock tests; smoke predictions are not independently validated accuracy. Embedding interfaces remain mock-only unless separately implemented/authorized.
-
-No real API record is an AI input, and no AI/API data is connected to Streamlit. No crawler, training, public data/model pipeline, provider contact, new branch or PR. Phase 2 production integration remains **NO-GO** until every source/model/data-rights and evaluation gate is independently satisfied.
-
-## Workflow and verification
-
-1. Inspect status/README/tests, fetch origin, safely switch/pull --ff-only main. Preserve unrelated work; stop on divergence; never force push or discard changes.
-2. Preserve GDELT completed proof, keyed pilot reports and full shared cooldown. No new news-provider calls. Model/package source reads and explicitly prepared model artifacts are separate from news sampling.
-3. Run the entire lightweight unittest suite, including mocked loader/runner/token-limit tests. Run all five no-network previews: benchmark, sampling, ai_prototype, marketaux_runner and finbert_backend with --dry-run. CI must not install weights or perform trained-model inference.
-4. If performing an explicitly prepared local synthetic smoke run, record actual model/revision/licence/runtime, fixture IDs, probabilities, token counts, elapsed times and limits separately from mocks, with no accuracy claim. Do not reuse old report filenames or recover discarded news text.
-5. Update development log at milestones and evaluation/decision/task documentation with observed facts and open gates. Record Codex assistance.
-6. Commit tested coherent changes directly to main, push, verify exact full remote SHA and exact-head PUSH-triggered Actions. Record post-push evidence in Issue #1 without keys, publisher text, local reports or weights. Do not claim push/CI succeeded until verified.
-
-Never print key values/fragments/hashes or commit .env, article text, restricted data, model weights, local runtime/SQLite files or raw reports. Local source-provenance/licence acknowledgements are operator attestations, not general deployment approval.
+Run all offline tests and no-HTTP previews. Record actual model/browser/deployment evidence separately from fixture results in DEVELOPMENT_LOG.md and evaluation docs. Prepare a small labelled dataset, three-person test protocol, final report and 5–7 minute demonstration. Defer optional features. Do not schedule tasks or claim future work executed. Public hosting URLs/CI/pushes must be verified before claims.

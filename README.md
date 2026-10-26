@@ -1,10 +1,39 @@
 # FinScope
 
-**AI-powered sector financial news sentiment and event intelligence (FINS5557 Track A).**
+**Approved-text financial sentiment MVP — October 26–31 delivery sprint.**
 
-This repository starts with a deliberately small **news API feasibility pilot**. The planned final app will collect financial news metadata, classify sentiment using FinBERT (or a supported user-provided model), categorize articles by sector, identify duplicate event coverage via embeddings, and display time/source/sector trends in Streamlit.
+Submit synthetic, self-authored or explicitly licensed financial news text, attest processing/storage rights, run **real local FinBERT and MiniLM**, and inspect saved scores, explainable multi-label sectors and candidate event groups in Streamlit Overview, Trends and News Explorer. This is a noncommercial course research demo. No news API is connected; Marketaux/public data-source approval is not claimed. The completed GDELT one-shot is not retried.
 
-> Status: the [Marketaux live runner](docs/MARKETAUX_RUNNER.md) is prepared and offline-tested, with sampling still unauthorized and unscheduled. The GDELT one-shot completed with a transport failure and was deleted; do not recreate/retry it. NewsData stays paused and Marketaux conditional. A [pinned local FinBERT backend](docs/AI_PROTOTYPE.md#local-finbert-backend--26-october-2026-sydney) has actual synthetic-only smoke outputs, separately from mocks; accuracy is unmeasured. **Phase 2 production integration is NO-GO.** Streamlit and AI evaluation receive no real API data.
+## Run the working application
+
+```powershell
+python -m venv .venv-ai
+.venv-ai/Scripts/python.exe -m pip install -r deploy/requirements.txt
+# Explicit one-time preparation, not an inference-time download:
+.venv-ai/Scripts/python.exe -m finscope.model_assets --prepare --acknowledge-model-licenses
+.venv-ai/Scripts/python.exe -m streamlit run streamlit_app.py
+```
+
+In the app choose **Approved-text AI demo**, provide text and its source/permission/timestamp meaning, confirm your rights and click **Run real AI analysis**. The result is saved to your session-scoped repository and reflected in all three views. The **Illustrative fixture tour** remains separately labelled; its predefined labels/events are not model evidence. If deployment has no prepared assets, an explicit **Prepare demo models** control performs the one-time setup before inference.
+
+FinBERT weights: **CC BY-NC-SA 4.0**, attribution ProsusAI / MIH AI B.V.; MiniLM: **Apache-2.0**, sentence-transformers/all-MiniLM-L6-v2. Model revisions/config/tokenizer/weights are pinned and hash-verified. Do not infer commercial or publisher-input permission from the MIT software licence. See [model evidence](docs/AI_PROTOTYPE.md) and [source rights](docs/DECISIONS.md).
+
+Records are isolated by browser-session workspace, expire after 24 hours and can be exported as JSON. Server storage on free hosts can reset after redeploy/reboot; refresh may start a new workspace. Do not submit private text. Original source and supplied/submitted timestamps are retained; published and first-seen meanings are never silently interchanged. Keyword sectors include **Unclassified** and expose matched terms. Cosine ≥0.80 within 72 hours creates **candidate groups**, not confirmed event identity. Group view uses the earliest matching representative, not sentiment consensus.
+
+## Deployment
+
+Community Cloud entrypoint: **deploy/streamlit_app.py**, branch **main**, Python **3.12**, dependency file **deploy/requirements.txt**. Do not copy local `.env`/API keys, reports, SQLite data or weights into hosting secrets/source. The app requires no API key. Docker is an alternative build recipe; its explicit build stage prepares pinned model assets. Public deployment is being tested; a URL is only reported once verified.
+
+## Verification and limitations
+
+```powershell
+.venv/Scripts/python.exe -m unittest discover -s tests -v
+.venv/Scripts/python.exe -m finscope.benchmark --dry-run
+```
+
+Unit/UI regression tests use labelled mocks; actual browser/model runs are recorded separately in DEVELOPMENT_LOG.md. Small authored evaluation and three-user testing are tracked in the sprint evidence; no general accuracy, investment-return or confirmed-event claim follows from a demonstration. Unapproved provider ingestion/display remains **NO-GO**. Team members must disclose Codex assistance and confirm the official FINS5557/INFS5557 course code.
+
+## Retained Phase 1 tooling and history
 
 ## Phase 1 features
 

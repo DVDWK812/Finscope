@@ -39,6 +39,7 @@ class StreamlitRuntimeTests(unittest.TestCase):
     def app(self):
         app = AppTest.from_file(str(APP), default_timeout=10)
         app.session_state["demo_anchor"] = ANCHOR
+        app.session_state["data_mode"] = "Illustrative fixture tour"
         app.run()
         self.assertFalse(app.exception)
         return app

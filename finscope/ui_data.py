@@ -12,9 +12,9 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Literal, Protocol, Sequence
 
 Sentiment = Literal["Positive", "Neutral", "Negative"]
-TimeKind = Literal["published", "first_seen"]
+TimeKind = Literal["published", "first_seen", "submitted"]
 SENTIMENTS = ("Positive", "Neutral", "Negative")
-SECTORS = ("Technology", "Healthcare", "Materials", "Energy", "Financials")
+SECTORS = ("Technology", "Healthcare", "Materials", "Energy", "Financials", "Unclassified")
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class ArticleRecord:
             raise ValueError("Unsupported sentiment")
         if self.timestamp.tzinfo is None or self.timestamp.utcoffset() is None:
             raise ValueError("Timestamp must include a timezone")
-        if self.timestamp_kind not in ("published", "first_seen"):
+        if self.timestamp_kind not in ("published", "first_seen", "submitted"):
             raise ValueError("Unsupported timestamp semantics")
         if self.synthetic and self.url:
             raise ValueError("Synthetic fixture must not imply a real source URL")
