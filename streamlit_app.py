@@ -325,9 +325,14 @@ def main() -> None:
         st.info("Select both start and end dates to display results.")
     shown = unique_events(selected) if event_view else selected
     group_label="candidate groups" if approved_mode() else "unique events"
-    st.caption(f"View: {group_label if event_view else 'Raw articles'} · "
-               f"{len(selected)} raw articles · {len(unique_events(selected))} {group_label} · "
-               f"{len(shown)} displayed")
+    if approved_mode():
+        st.caption(f"Charts: {'unverified candidate summaries' if event_view else 'raw articles'} · "
+                   f"{len(selected)} filtered originals · {len(unique_events(selected))} unverified candidates · "
+                   f"{len(shown)} chart items. Explorer retains original records; export includes the entire workspace.")
+    else:
+        st.caption(f"View: {group_label if event_view else 'Raw articles'} · "
+                   f"{len(selected)} raw articles · {len(unique_events(selected))} {group_label} · "
+                   f"{len(shown)} displayed")
     nav = st.navigation([
         st.Page(lambda: overview(selected, shown, event_view), title="Overview", url_path="overview",
                 icon=":material/dashboard:", default=True),

@@ -1,0 +1,41 @@
+{
+  "dataset_id": "blind-holdout-v1",
+  "status": "awaiting_independent_human_labels_not_evaluated",
+  "text_author": "Codex",
+  "provenance": "New fictional text dedicated CC0-1.0. No publisher or provider text. Text authorship is not independent labeling.",
+  "use": "All cases are held out. The earlier authored-demo-v1 is development evidence only. Do not run predictions or tune rules/thresholds using these cases until two independent human label sheets are locked.",
+  "records": [
+    {"id":"B01","text":"Fictional Oriole Bank narrowed its quarterly loss from 40 million dollars to 8 million dollars as loan defaults fell."},
+    {"id":"B02","text":"Fictional Oriole Bank increased annual profit by 10 percent, but missed its earnings forecast and doubled provisions for bad loans."},
+    {"id":"B03","text":"Fictional Oriole Bank will publish its third-quarter results on 12 November; this notice contains no results or forecast change."},
+    {"id":"B04","text":"Fictional chipmaker Celadon reported second-quarter revenue growth of 12 percent and record profit for that quarter."},
+    {"id":"B05","text":"Celadon, a fictional semiconductor manufacturer, announced record second-quarter profit alongside a 12 percent increase in second-quarter revenue."},
+    {"id":"B06","text":"Fictional chipmaker Celadon reported third-quarter revenue declined 12 percent and the company made a quarterly loss."},
+    {"id":"B07","text":"Fictional pharmaceutical firm Lumen gained approval for a new treatment, but said a large launch expense would reduce this year's earnings."},
+    {"id":"B08","text":"Fictional pharmaceutical firm Lumen did not lower its earnings forecast and said its existing outlook was unchanged."},
+    {"id":"B09","text":"Fictional mining company Garnet increased copper output, yet lower copper prices and higher costs caused a substantial drop in profit."},
+    {"id":"B10","text":"Fictional mining company Garnet withdrew its warning about a production shutdown after resolving a labour dispute; normal operations will continue."},
+    {"id":"B11","text":"Fictional solar operator Meridian signed a ten-year contract worth 30 million dollars with its first overseas customer."},
+    {"id":"B12","text":"Meridian, a fictional solar operator, announced its first overseas customer contract: a 30 million dollar agreement lasting ten years."},
+    {"id":"B13","text":"Fictional solar operator Seabrook signed a ten-year contract worth 30 million dollars with its first overseas customer."},
+    {"id":"B14","text":"Fictional insurer Tern said losses from this year's storms were lower than previously estimated and raised its profit forecast."},
+    {"id":"B15","text":"Fictional insurer Tern said losses from this year's storms were higher than previously estimated and cut its profit forecast."},
+    {"id":"B16","text":"Fictional software vendor Bracken reported flat revenue and unchanged operating profit, both in line with its published guidance."},
+    {"id":"B17","text":"Fictional company Ilex appointed a new finance director, effective next month, without issuing any earnings guidance."},
+    {"id":"B18","text":"Fictional software vendor Bracken reported revenue rose while operating profit fell because of a one-time restructuring charge; management kept next year's outlook unchanged."}
+  ],
+  "pairs": [
+    {"id":"P01","left":"B04","right":"B05"},
+    {"id":"P02","left":"B04","right":"B06"},
+    {"id":"P03","left":"B05","right":"B06"},
+    {"id":"P04","left":"B11","right":"B12"},
+    {"id":"P05","left":"B11","right":"B13"},
+    {"id":"P06","left":"B12","right":"B13"},
+    {"id":"P07","left":"B14","right":"B15"},
+    {"id":"P08","left":"B01","right":"B02"},
+    {"id":"P09","left":"B02","right":"B03"},
+    {"id":"P10","left":"B07","right":"B08"},
+    {"id":"P11","left":"B09","right":"B10"},
+    {"id":"P12","left":"B16","right":"B18"}
+  ]
+}

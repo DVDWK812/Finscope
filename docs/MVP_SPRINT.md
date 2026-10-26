@@ -1,15 +1,15 @@
 # MVP delivery sprint
 
-Deadline: 31 October 2026 Australia/Sydney. Main only, small tested commits, exact-commit PUSH CI. Kickoff and working public vertical slice: 26 October. The remaining five calendar days are 27–31 October; these are planned activities, not execution claims.
+Internal delivery target: 31 October 2026 Australia/Sydney, distinct from unverified conflicting historical deadline values (ASSESSMENT_VERIFICATION.md). Earlier course notes identify FINS5557 Applied AI in Finance T3 2026. The user will confirm the deadline; further agent Moodle access/submission is prohibited. Main only, small tested commits, exact-commit PUSH CI. Kickoff/public vertical slice: 26 October. Planned work is not execution evidence.
 
 | Date | Critical deliverable | Current evidence |
 |---|---|---|
 | 26 Oct kickoff | Submit approved text → actual FinBERT + MiniLM → SQLite → Overview/Trends/Explorer; begin public deployment | Working locally and on Community Cloud; see evaluation |
-| 27 Oct | Review provisional evaluation labels, add difficult approved examples without tuning on the test set | 12-text authored pilot completed; independent review pending |
+| 27 Oct | Raw-default/grouping-safety fix; freeze difficult blind annotation packet | 135 tests; 18 texts/12 pairs unpredicted, human labels pending; Moodle course verified, deadline conflict recorded |
 | 28 Oct | Three people independently exercise public application and export evidence | Protocol ready; no human results invented |
 | 29 Oct | Fix observed blockers, repeat affected tests and public inference; test host wake/restart | Pending actual feedback/host observations |
 | 30 Oct | Finalize report, README, limitations and 5–7 minute rehearsal | Drafts ready; team signoff pending |
-| 31 Oct | Demonstration, final evidence/export, submission | Pending |
+| 31 Oct | Internal demonstration, final evidence/export and delivery candidate | Pending; do not describe as the verified Moodle due date or submit to a closed dropbox |
 
 ## Reused architecture
 
@@ -20,7 +20,7 @@ The SQLite store is disposable, isolated by random browser-session workspace IDs
 ## Scope control and release gates
 
 - **GO: limited noncommercial approved-input demonstration.** Actual inference and persisted results are observed. Inputs require processing/storage rights; synthetic default and authored evaluation avoid publisher restrictions.
-- **Pending before assessed delivery:** three-human usability results, independent labels, host wake/restart and resource observations, rehearsal/report/course-code/team disclosure signoff.
+- **Pending human evidence:** three-human usability results, independent labels/adjudication and actual rehearsal. The 18-case packet is unpredicted; no human work is marked complete. Remaining hosting hibernation/endurance behavior is unknown. Individual names/contribution claims remain intentionally unassigned at the user's request. The user handles official deadline and submission decisions; no further agent Moodle access.
 - **NO-GO: production live-provider integration.** Multi-day financial relevance/useful permitted descriptions, publication timestamp accuracy/scope, source diversity/history/quota, public display/retention/inference/derived-output rights and independent model/event quality remain unresolved. Marketaux remains a conditional preferred financial metadata candidate, GDELT provisional. One-shot evidence remains unchanged and its deleted task is never recreated.
 
 Defer live ingestion, further API research, authenticated accounts, background workers, crawler/full text, training/fine-tuning, sophisticated sector models, event-identity claims and extra infrastructure. Add only changes needed for the demonstrable approved-text product and observed blockers.

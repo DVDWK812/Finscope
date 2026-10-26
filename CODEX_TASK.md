@@ -1,6 +1,10 @@
 # Current task: five-day approved-text MVP sprint
 
-Deadline: 31 October 2026 Australia/Sydney. Main only; small tested commits, push and verify exact-head Actions after milestones. Never create branches/PRs, force-push or discard user work.
+**Moodle access is prohibited by the user's latest instruction.** Do not open, read, navigate, sign in, accept terms, change settings, upload or submit anything there. Earlier access authorization is revoked. Never submit coursework. The user will confirm the official deadline; preserve both historical deadline values as unverified conflicting information. No unrelated external-account actions; continue FinScope development/testing/docs and authorized GitHub main work.
+
+Internal delivery target: 31 October 2026 Australia/Sydney, distinct from Moodle's conflicting course/dropbox deadline settings (docs/ASSESSMENT_VERIFICATION.md). Course verified: FINS5557 Applied AI in Finance, T3 2026. Main only; small tested commits, push and verify exact-head Actions after milestones. Never create branches/PRs, force-push or discard user work.
+
+Final delivery priority: preserve actual approved-input inference; raw counts by default; unverified candidates and opposing-tone review warnings; never collapse originals out of Explorer/export. Prepare blind human annotation without predictions or tuning on holdout labels, actual three-human testing, hosted restart/isolation/export evidence, honest contributions/AI disclosure and a three-speaker 5–7 minute demonstration. Do not claim human work or policy/deadline resolution without evidence. Keep source integration disconnected.
 
 Deliver the actual local FinBERT + sentence embedding pipeline in Streamlit using synthetic, self-authored or explicitly licensed text with an explicit rights attestation. Reuse the current UI/repository/model backends. Add explainable multi-label sectors/Unclassified, session-scoped persistence, source/time semantics, raw-report/candidate-group views, labelled evaluation with honest limitations, public deployment tests and three-user/demo/report documentation.
 

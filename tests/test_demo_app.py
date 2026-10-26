@@ -59,6 +59,16 @@ class ApprovedAppTests(unittest.TestCase):
         self.assertFalse(self.app.exception)
         self.assertFalse(self.app.toggle[0].value)
 
+    def test_summary_caption_distinguishes_chart_items_from_original_visibility(self):
+        self.app.checkbox[0].set_value(True)
+        self.app.button[0].click().run()
+        self.app.button[0].click().run()
+        self.app.toggle[0].set_value(True).run()
+        self.assertFalse(self.app.exception)
+        captions=[caption.value for caption in self.app.caption]
+        self.assertTrue(any("2 filtered originals" in c and "1 chart items" in c
+                            and "Explorer retains original records" in c for c in captions))
+
     def test_status_reports_load_and_group_limits_without_loading_a_model(self):
         with patch("finscope.demo_runtime.load_pipeline",side_effect=AssertionError("Status must not load models")):
             app=AppTest.from_function(render_approved_status).run()
