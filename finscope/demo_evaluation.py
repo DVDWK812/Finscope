@@ -41,6 +41,60 @@ def sentiment_metrics(expected, predicted):
             "macro_f1":sum(m["f1"] for m in per_class.values())/3,"confusion_actual_rows":confusion,"per_class":per_class}
 
 
+def challenge_metrics(reference, outputs, pair_outputs):
+    """Score only annotated cases/pairs; preserve uncertainty and failure coverage.
+
+    This arithmetic helper neither loads models nor certifies human provenance.
+    All case outputs (including errors) and only the selected pair outputs must
+    be supplied. Unknown event identities never become negative examples.
+    """
+    def indexed(rows):
+        result = {row["id"]: row for row in rows}
+        if not result or len(result) != len(rows):
+            raise ValueError("Nonempty unique evaluation IDs required")
+        return result
+
+    cases, pairs = indexed(reference["records"]), indexed(reference["pairs"])
+    predictions, matches = indexed(outputs), indexed(pair_outputs)
+    if cases.keys() != predictions.keys() or pairs.keys() != matches.keys():
+        raise ValueError("Report every annotated ID exactly once; no extra pairs")
+    classes = {"positive", "negative", "neutral"}
+    if any(row["label"] not in classes | {"mixed/uncertain"} for row in cases.values()):
+        raise ValueError("Invalid reference sentiment")
+    if any(row["event_label"] not in {"same-event", "different-event", "uncertain"} for row in pairs.values()):
+        raise ValueError("Invalid reference event identity")
+    for row in predictions.values():
+        if ((row.get("error") and row.get("predicted") is not None)
+                or (not row.get("error") and row.get("predicted") not in classes)):
+            raise ValueError("Each output needs either a valid prediction or an error")
+    uncertain = [key for key, row in cases.items() if row["label"] == "mixed/uncertain"]
+    failed = [key for key, row in predictions.items() if row.get("error")]
+    scored = [key for key in cases if key not in uncertain and key not in failed]
+    result = {
+        "sentiment": {
+            "total_cases": len(cases), "reference_three_class_cases": len(cases)-len(uncertain),
+            "excluded_mixed_or_uncertain": uncertain, "failed_cases": failed,
+            "scored_cases": len(scored), "scored_fraction_of_all": len(scored)/len(cases),
+            "metrics": sentiment_metrics([cases[k]["label"] for k in scored],
+                                         [predictions[k]["predicted"] for k in scored]) if scored else None,
+        },
+        "selected_pairs": len(pairs),
+        "excluded_uncertain_event_pairs": [key for key, row in pairs.items() if row["event_label"] == "uncertain"],
+    }
+    for field in ("similarity_candidate", "same_pipeline_group"):
+        if any(row.get(field) is not None and type(row[field]) is not bool for row in matches.values()):
+            raise ValueError("Pair decisions must be bool or unobserved None")
+        known = [key for key, row in pairs.items() if row["event_label"] != "uncertain"]
+        scored_pairs = [key for key in known if matches[key].get(field) is not None]
+        result[field] = {
+            "annotated_certain_pairs": len(known), "scored_pairs": len(scored_pairs),
+            "unobserved_pairs": [key for key in pairs if matches[key].get(field) is None],
+            "metrics": binary_metrics([(pairs[k]["event_label"] == "same-event", matches[k][field])
+                                       for k in scored_pairs]) if scored_pairs else None,
+        }
+    return result
+
+
 def run():
     import psutil
     from .demo_runtime import load_pipeline

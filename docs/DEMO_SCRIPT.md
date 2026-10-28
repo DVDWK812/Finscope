@@ -1,5 +1,7 @@
 # FinScope demonstration — 6:15, three substantive speaking roles
 
+**Evaluation wording update, 29 October:** When discussing the challenge, say “Provisional user-adjudicated references: 75% sentiment accuracy on 16 scorable texts, two mixed/uncertain texts excluded transparently, macro-F1 .730. Semantic-pair precision .667 on ten scorable selected pairs; an uncertain opposing-outcome pair still grouped. Reviewer independence remains unverified.” Do not present the old 12/12 authored pilot or ten-pair group score as general accuracy. Detailed [actual evidence](CHALLENGE_EVALUATION.md); no model/threshold tuning.
+
 FINS5557, Applied AI in Finance, T3 2026, Track A Tech Team. Names remain pending; A/B/C are replaceable role labels, not contribution claims. Each member speaks for about 2:05 and operates/directs part of the live app. Rehearse against a timer; user target 5–7 minutes. Exact PDF-specific format requirements remain unverified (ASSESSMENT_VERIFICATION.md).
 
 Use the public approved-input app, prepared cache, authored-demo-v1 examples and your own exported fictional-input backup. Keep the new blind holdout sealed until human labels are locked. Never display .env, account information, private reports or keys. Illustrative fixtures are not actual model evidence.

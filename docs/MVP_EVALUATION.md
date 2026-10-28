@@ -1,5 +1,7 @@
 # Approved-text MVP evaluation — 26 October 2026 UTC
 
+> **Later challenge evidence, 29 October 2026 Sydney:** [Provisional user-adjudicated evaluation](CHALLENGE_EVALUATION.md) on 18 different frozen texts returned 12/16 scorable sentiment matches (75%, macro-F1 .730); two mixed/uncertain cases are retained separately. Semantic candidates: 2 TP / 1 FP on 10 scorable pairs. Reviewer independence remains unverified. The original authored-pilot numbers below are preserved as historical results, not general accuracy. No tuning or new provider calls.
+
 Actual CPU inference, not mocks. The reproducible inputs and numeric outputs are in `evaluation/authored_demo_v1.json` and `evaluation/authored_demo_results_20261026.json`. No API/publisher text, API reports or credentials were loaded. Labels were assigned before this run by Codex while authoring fictional examples. One example repeats the prior acceptance smoke text. These are provisional convenience labels, **not independent human annotation or a held-out benchmark**.
 
 ## Models and method

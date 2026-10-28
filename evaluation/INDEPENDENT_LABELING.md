@@ -1,4 +1,6 @@
-# Blinded human labeling packet — NOT YET LABELED
+# Human labeling protocol and evaluation status
+
+> **Current status, 29 October 2026 Sydney:** Two submissions were received from different people as reported by the user. The user filled/confirmed the five adjudication decisions and explicitly instructed proceeding. We locked a **provisional user-adjudicated reference before predictions** and ran the unchanged real pipeline once: 18 outputs, no errors. [Results and provenance gaps](../docs/CHALLENGE_EVALUATION.md). Reviewer/adjudicator metadata and independence attestations are still PENDING; the original independent-label protocol below has **not** been certified complete. No attestations were invented. This packet is now evaluated, not an untouched holdout. Its original text/hash are unchanged; use a fresh holdout after any tuning. The blank template and preparation status below are historical instructions.
 
 Read [BLIND_READING_PACKET.md](BLIND_READING_PACKET.md) for the 18 texts (B01–B18) and pair lookup (P01–P12). It copies `blind_holdout_v1.json` verbatim in readable form. Text was authored by Codex; **no expected labels or model outputs are supplied**. This is a prepared packet for independent human annotation, not an independently labeled dataset yet. The previous 12-text authored pilot remains development/convenience evidence; its labels/results must not be relabeled as human ground truth.
 

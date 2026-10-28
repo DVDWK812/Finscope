@@ -1,5 +1,7 @@
 # MVP delivery sprint
 
+**29 October update:** [Provisional user-adjudicated challenge](CHALLENGE_EVALUATION.md) executed once with the real frozen models: 18 outputs, 12/16 scorable sentiment matches, semantic-pair precision .667 on 10 scorable pairs. Reviewer independence/completion attestations remain unverified; no human usability feedback is implied. The original day-plan entries below are plans/historical status, not current proof that the packet is still unpredicted. The packet is now consumed; no tuning on it.
+
 Internal delivery target: 31 October 2026 Australia/Sydney, distinct from unverified conflicting historical deadline values (ASSESSMENT_VERIFICATION.md). Earlier course notes identify FINS5557 Applied AI in Finance T3 2026. The user will confirm the deadline; further agent Moodle access/submission is prohibited. Main only, small tested commits, exact-commit PUSH CI. Kickoff/public vertical slice: 26 October. Planned work is not execution evidence.
 
 | Date | Critical deliverable | Current evidence |
@@ -20,7 +22,7 @@ The SQLite store is disposable, isolated by random browser-session workspace IDs
 ## Scope control and release gates
 
 - **GO: limited noncommercial approved-input demonstration.** Actual inference and persisted results are observed. Inputs require processing/storage rights; synthetic default and authored evaluation avoid publisher restrictions.
-- **Pending human evidence:** three-human usability results, independent labels/adjudication and actual rehearsal. The 18-case packet is unpredicted; no human work is marked complete. Remaining hosting hibernation/endurance behavior is unknown. Individual names/contribution claims remain intentionally unassigned at the user's request. The user handles official deadline and submission decisions; no further agent Moodle access.
+- **Pending human evidence:** three-human usability results, independent labels/adjudication and actual rehearsal. The 18-case packet has provisional user-adjudicated results; reviewer independence and completion attestations remain unverified. No three-human usability work is marked complete. Remaining hosting hibernation/endurance behavior is unknown. Individual names/contribution claims remain intentionally unassigned at the user's request. The user handles official deadline and submission decisions; no further agent Moodle access.
 - **NO-GO: production live-provider integration.** Multi-day financial relevance/useful permitted descriptions, publication timestamp accuracy/scope, source diversity/history/quota, public display/retention/inference/derived-output rights and independent model/event quality remain unresolved. Marketaux remains a conditional preferred financial metadata candidate, GDELT provisional. One-shot evidence remains unchanged and its deleted task is never recreated.
 
 Defer live ingestion, further API research, authenticated accounts, background workers, crawler/full text, training/fine-tuning, sophisticated sector models, event-identity claims and extra infrastructure. Add only changes needed for the demonstrable approved-text product and observed blockers.
