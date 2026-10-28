@@ -8,7 +8,9 @@ Status: **prepared, not executed by three humans**. Programmatic three-workspace
 | B | No | Pending actual person, time and observations |
 | C | No | Pending actual person, time and observations |
 
-Use only the old authored development examples for usability tasks. **Do not enter the new blind holdout into the app before independent human labels are locked.** Follow [the independent labeling packet](../evaluation/INDEPENDENT_LABELING.md) separately; do not substitute model-assisted labels for human judgment. A/B/C are participant codes, not claims that three people have participated.
+Use only the authored development examples for usability tasks. **The challenge packet is consumed and frozen: never enter B01–B18 into the app, CLI, models or rehearsal, and never tune on it.** Its existing [evaluation](CHALLENGE_EVALUATION.md) is retained with reviewer independence and completion attestations unverified. The earlier independent-labeling protocol is historical; it is not authorization to repeat evaluation. A/B/C are participant codes, not claims that three people have participated.
+
+Copy the [blank three-human evidence template](USABILITY_EVIDENCE_TEMPLATE.md) into ignored `reports/usability/` before collecting feedback. Keep completed participant records, screenshots, consent and raw comments local/private; publish only explicitly approved, anonymized aggregate findings. The blank template may be public. Do not replace or amend original annotation files with usability observations. A maintainer-operated hosted smoke check does not fill any participant slot.
 
 ## Tasks (about 10 minutes per person)
 
@@ -22,6 +24,8 @@ Use only the old authored development examples for usability tasks. **Do not ent
 8. Open System Status and report observed resource/load fields or unavailable. Note host sleep/wakeup, any model preparation prompt, exceptions, slow operations and accessibility/mobile problems. Do not repeatedly click inference while it is running.
 
 ## Feedback record (one per participant)
+
+Use the detailed template linked above to record each task as pass/fail/partial/not attempted, its actual UTC/time/assistance, observed behavior and evidence reference. Record participant confirmation only when that human supplies it; a software timestamp or maintainer statement is not their attestation.
 
 | Field | Observed value |
 |---|---|

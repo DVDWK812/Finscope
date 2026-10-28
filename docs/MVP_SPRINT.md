@@ -1,5 +1,7 @@
 # MVP delivery sprint
 
+**Final delivery freeze, 29 October:** No further inference or tuning on the consumed challenge packet. Preserve all original evidence and incomplete reviewer provenance. Current deliverables are the [final report](FINAL_REPORT.md), [three-human evidence template](USABILITY_EVIDENCE_TEMPLATE.md), [demo checklist](DEMO_CHECKLIST.md) and [verification record](DELIVERY_FREEZE.md). Dated day-plan entries below are historical plans; none authorizes a challenge rerun or claims human participation.
+
 **29 October update:** [Provisional user-adjudicated challenge](CHALLENGE_EVALUATION.md) executed once with the real frozen models: 18 outputs, 12/16 scorable sentiment matches, semantic-pair precision .667 on 10 scorable pairs. Reviewer independence/completion attestations remain unverified; no human usability feedback is implied. The original day-plan entries below are plans/historical status, not current proof that the packet is still unpredicted. The packet is now consumed; no tuning on it.
 
 Internal delivery target: 31 October 2026 Australia/Sydney, distinct from unverified conflicting historical deadline values (ASSESSMENT_VERIFICATION.md). Earlier course notes identify FINS5557 Applied AI in Finance T3 2026. The user will confirm the deadline; further agent Moodle access/submission is prohibited. Main only, small tested commits, exact-commit PUSH CI. Kickoff/public vertical slice: 26 October. Planned work is not execution evidence.

@@ -2,6 +2,8 @@
 
 **Approved-text financial sentiment MVP — October 26–31 delivery sprint.**
 
+**Final delivery freeze, 29 October:** The challenge packet is consumed: preserve its evaluation and original human evidence; do not rerun or tune on it. Reviewer independence and completion attestations remain unverified. [Freeze record](docs/DELIVERY_FREEZE.md), [three-human evidence template](docs/USABILITY_EVIDENCE_TEMPLATE.md) and [demo operator checklist](docs/DEMO_CHECKLIST.md). Raw articles remain the default; event deduplication and contradiction detection are not validated.
+
 **[Open the public FinScope demo](https://finscope-dvdwk812.streamlit.app/)** — real hosted synthetic-text inference verified on 26 October 2026. No API key required. Free hosting can sleep; first-time model preparation/cold loading takes longer than warm inference.
 
 The hosted app runs independently of the developer's computer. A later forced-reboot check measured 6.15 seconds prepared-file cold model load and 875.7–878.4 MiB current RSS (not peak or a load guarantee). Actual inference recovered after 326.5 seconds of interactive idleness; two tab sessions stayed isolated and filtered export preserved both originals. This does not verify hosting hibernation or sustained load. **Reboot cleared model assets and required the explicit preparation control again.** Export before leaving; temporary storage/workspaces can reset. See [actual hosting evidence and limitations](docs/HOSTING_VERIFICATION.md).
@@ -133,7 +135,7 @@ The repository's MIT licence covers the project software; provider data and link
 
 - Requires network to perform live tests; token-based APIs require individual developer keys.
 - Limited pilot size, provider-specific queries, and no full article text extraction.
-- FinBERT has synthetic smoke inference only, without measured accuracy; no evaluated real-news model, sector impact inference or embedding event deduplication.
+- FinBERT has approved fictional-text evaluation with provisional user-adjudicated references: 12/16 scorable agreement (75%), macro-F1 0.730159; two mixed/uncertain references excluded. Pairwise cosine precision is 0.666667 on ten scorable selected pairs. Reviewer independence/completion attestations remain unverified; no evaluated real-news accuracy, sector-impact inference, validated event deduplication or contradiction detection is claimed.
 - Marketaux free-tier result cap and NewsData latest-news window reduce comparability.
 
 ## Synthetic UI prototype
