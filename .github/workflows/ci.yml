@@ -24,6 +24,8 @@ jobs:
         run: python -m finscope.benchmark --dry-run
       - name: Optional RSS preview (no network or collection)
         run: python -m finscope.rss_collector --dry-run
+      - name: Optional HTML preview (no network or collection)
+        run: python -m finscope.html_collector --dry-run
       - name: Guarded sampler preview (no authorization or requests)
         run: python -m finscope.sampling --dry-run
       - name: AI interface preview (no weights or inference)

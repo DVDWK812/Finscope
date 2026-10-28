@@ -1,5 +1,15 @@
 # API evaluation protocol — Phase 1
 
+> **Optional HTML fallback repair, 29 October 2026 Sydney:** The RBA index collector's
+> custom `_pending` collided with Python 3.11's `HTMLParser` buffer; renamed it and
+> added regressions without weakening the original tests. One bounded local attempt
+> made exactly two GETs (robots and fixed index, both HTTP 200), stored three
+> attributed date-only records, and excluded one existing RSS URL. No article pages,
+> RSS feed or news APIs were requested. Historical index dates, blank exact times
+> and absent summaries do not establish fresh broad financial-news coverage.
+> See [HTML evidence and limitations](HTML_PROTOTYPE.md); public app/model ingestion
+> remains disconnected and all existing provider restrictions remain in force.
+
 > **Optional RSS prototype, 27 October 2026 Sydney:** A separate, manually triggered
 > RBA official media-release collector is now available; see [source terms, bounds
 > and smoke evidence](RSS_PROTOTYPE.md). Two bounded feed reads returned HTTP 200;

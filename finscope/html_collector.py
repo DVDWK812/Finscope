@@ -71,16 +71,17 @@ class _IndexParser(HTMLParser):
         self.links: list[tuple[str, str, str]] = []
         self._href: str | None = None
         self._title: list[str] = []
-        self._pending: tuple[str, str, list[str]] | None = None
+        # HTMLParser owns _pending on Python 3.11; keep release state separate.
+        self._pending_release: tuple[str, str, list[str]] | None = None
         self._ignored: list[str] = []
 
     def _flush(self) -> None:
-        if self._pending is not None:
-            href, title, nearby = self._pending
+        if self._pending_release is not None:
+            href, title, nearby = self._pending_release
             url = _release_url(href)
             if url:
-                self.links.append((url, title, _tidy(" ".join(nearby))[:500]))
-        self._pending = None
+                self.links.append((url, title, _tidy("".join(nearby))[:500]))
+        self._pending_release = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag in ("script", "style", "template"):
@@ -91,8 +92,8 @@ class _IndexParser(HTMLParser):
             self._flush()
             self._href = dict(attrs).get("href") or ""
             self._title = []
-        elif self._pending is not None and tag in ("p", "div", "li", "br", "span", "time"):
-            self._pending[2].append(" ")
+        elif self._pending_release is not None and tag in ("p", "div", "li", "br", "span", "time"):
+            self._pending_release[2].append(" ")
 
     def handle_endtag(self, tag: str) -> None:
         if self._ignored:
@@ -100,7 +101,12 @@ class _IndexParser(HTMLParser):
                 self._ignored.pop()
             return
         if tag == "a" and self._href is not None:
-            self._pending = (self._href, _tidy(" ".join(self._title))[:301], [])
+            self._pending_release = (self._href, _tidy("".join(self._title))[:301], [])
+            self._href = None
+            self._title = []
+        elif tag in ("article", "li", "tr"):
+            # A missing date must not be borrowed from the following release.
+            self._flush()
             self._href = None
             self._title = []
 
@@ -109,18 +115,20 @@ class _IndexParser(HTMLParser):
             return
         if self._href is not None:
             self._title.append(data)
-        elif self._pending is not None:
-            self._pending[2].append(data)
+        elif self._pending_release is not None:
+            self._pending_release[2].append(data)
 
     def finish(self) -> None:
         self._flush()
 
 
 def _date_info(nearby: str, url: str) -> tuple[str, str]:
-    match = DATE_TEXT.search(nearby)
-    if not match:
+    matches = list(DATE_TEXT.finditer(nearby))
+    if not matches:
         return "", ""
-    original = match.group(0)
+    original = " | ".join(match.group(0) for match in matches)
+    if len(matches) != 1:
+        return original, ""  # Ambiguous nearby dates are not publication evidence.
     try:
         parsed = datetime.strptime(original.title(), "%d %B %Y")
     except ValueError:
@@ -188,17 +196,22 @@ def parse_index(payload: bytes, *, seen_urls=(), limit: int = 3) -> dict:
     }
 
 
-def _get(url: str) -> tuple[bytes, int]:
+def _get(url: str, *, request_log: list[dict] | None = None) -> tuple[bytes, int]:
     """Only two fixed endpoints, at most one GET each, bounded and nonredirecting."""
     if url not in (INDEX_URL, ROBOTS_URL):
         raise CollectionError("unapproved_endpoint")
     started = time.monotonic()
+    request = {"url": url, "query_utc": datetime.now(timezone.utc).isoformat(),
+               "http_status": None, "received_bytes": 0}
+    if request_log is not None:
+        request_log.append(request)
     try:
         with requests.get(
             url, headers={"User-Agent": USER_AGENT,
                           "Accept": "text/html" if url == INDEX_URL else "text/plain"},
             timeout=(5, 10), allow_redirects=False, stream=True,
         ) as response:
+            request["http_status"] = response.status_code
             if response.status_code != 200:
                 raise CollectionError(f"http_{response.status_code}")
             if response.headers.get("Retry-After"):
@@ -211,6 +224,7 @@ def _get(url: str) -> tuple[bytes, int]:
             chunks = bytearray()
             for chunk in response.iter_content(chunk_size=8192):
                 chunks.extend(chunk)
+                request["received_bytes"] = len(chunks)
                 if len(chunks) > MAX_BYTES:
                     raise CollectionError("response_too_large")
                 if time.monotonic() - started > 20:
@@ -220,8 +234,14 @@ def _get(url: str) -> tuple[bytes, int]:
         raise CollectionError("transport") from None
 
 
-def collect_once(*, seen_urls=(), limit: int = 3, get=_get) -> dict:
+def collect_once(*, seen_urls=(), limit: int = 3, get=None,
+                 request_log: list[dict] | None = None) -> dict:
     """Check robots on every invocation; never visit discovered article links."""
+    if not 1 <= limit <= 10:
+        raise ValueError("limit must be between 1 and 10")
+    if get is None:
+        def get(url):
+            return _get(url, request_log=request_log)
     robots, robots_http_status = get(ROBOTS_URL)
     try:
         text = robots.decode("utf-8-sig")
@@ -259,7 +279,7 @@ def _load_store(path: Path) -> list[dict]:
                     or article.provider != "rba_html" or article.source != SOURCE
                     or article.timestamp or article.description
                     or article.timestamp_kind != "published"
-                    or not _release_url(article.url) or article.url in seen
+                    or _release_url(article.url) != article.url or not article.url or article.url in seen
                     or not isinstance(row["provenance"], dict)):
                 raise ValueError()
             seen.add(article.url)
@@ -293,7 +313,7 @@ def main(argv=None) -> int:
         "terms_url": TERMS_URL, "license_url": LICENSE_URL,
         "rights_scope": "RBA-authored index titles; exclusions apply; local review only",
         "public_app_integration": False, "article_page_requests": 0, "limit": args.limit,
-        "new_records": 0,
+        "new_records": 0, "requests": [],
     }
     try:
         store = DATA_DIR / "articles.json"
@@ -308,7 +328,8 @@ def main(argv=None) -> int:
             except rss.CollectionError:
                 raise CollectionError("invalid_rss_store_review_required") from None
             seen_urls = [r["article"]["url"] for r in rows + rss_rows]
-            result = collect_once(seen_urls=seen_urls, limit=min(args.limit, MAX_STORED - len(rows)))
+            result = collect_once(seen_urls=seen_urls, limit=min(args.limit, MAX_STORED - len(rows)),
+                                  request_log=report["requests"])
             articles = result.pop("articles")
             provenance = result.pop("provenance")
             report.update(result, status="ok",
@@ -334,6 +355,7 @@ def main(argv=None) -> int:
         lock_fd.close()
         lock.unlink()
     report["completed_utc"] = datetime.now(timezone.utc).isoformat()
+    report["network_requests"] = len(report["requests"])
     evidence = DATA_DIR / f"run_{started.strftime('%Y%m%dT%H%M%S%fZ')}.json"
     evidence.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
