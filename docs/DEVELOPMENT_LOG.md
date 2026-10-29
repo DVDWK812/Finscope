@@ -401,3 +401,10 @@ its inference and the external paid API are not claimed live verified. No privat
 or raw article text is committed. All 171 original evidence hashes remain unchanged;
 no challenge rerun/tuning/rescoring, Moodle access or coursework submission.
 Details/official interface and licence sources: LOCAL_REDESIGN.md.
+
+Final code milestone `94dc5a0` was pushed only to origin/local. Its exact full SHA
+matched the remote, and both Python 3.11/Streamlit jobs passed all 233 tests and
+previews in [Actions 40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281). A process restart retained the two
+originals and three analysis versions and rendered the committed dashboard. The
+original checkout's web-task changes were not included. Remaining source/service
+permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.

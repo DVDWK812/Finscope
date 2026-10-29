@@ -72,8 +72,9 @@ never rerun/tune/rescore it. [Freeze](DELIVERY_FREEZE.md).
 Completed: local source/permission/model interfaces, persistent originals/history,
 visual views, real authored/RBA local inference and original-link/import checks.
 M1 and the M2 compatibility repair passed both exact-commit Python 3.11 CI jobs;
-the initial M2 Streamlit-1.50 failure is preserved, not hidden. Final local-branch
-CI is checked after push. [Full dated evidence and limits](LOCAL_REDESIGN.md).
+the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commit
+`94dc5a0` also passed both exact-commit jobs and all 233 tests in [Actions
+40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281). [Full dated evidence and limits](LOCAL_REDESIGN.md).
 
 Pending: Marketaux downstream rights and stable availability; NewsData resumption
 if explicitly authorized; live Ollama inference (discovery reported unavailable);

@@ -171,3 +171,12 @@ Python 3.11 jobs in [Actions run 40851879632](https://github.com/DVDWK812/Finsco
 The earlier failed M2 run remains recorded above. Three-human usability and reviewer
 attestations remain pending; agent-operated checks are not participants.
 
+## Verified code-milestone CI — 29 October 2026 Sydney
+
+Local commit `94dc5a06ec2f024d4d0af14d7b2294bc3296040e` matched origin/local.
+Both exact-commit Python 3.11 jobs (Streamlit 1.50.0 and the supported newer range)
+passed the full 233-test suite and all offline previews in [run 40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281).
+A subsequent actual process restart served that committed local source and retained
+two originals / two latest results / three analysis versions, with no page-load
+news or external-model request. The original RBA URL opened in a separate browser
+tab. Local desktop screenshot evidence is ignored, not a public news gallery.
