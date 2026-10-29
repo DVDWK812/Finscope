@@ -18,6 +18,17 @@ def local_store():
     return LocalNewsStore(os.environ.get("FINSCOPE_LOCAL_DB", "reports/finscope_local.sqlite3"))
 
 
+def next_step(label, page, key):
+    def navigate():
+        st.session_state["workspace_page"] = page
+    st.button(label, key=key, on_click=navigate)
+
+
+def saved_handoff(items):
+    st.session_state["new_news_ids"] = [n.article_id for n in items]
+    st.session_state["handoff_article_ids"] = [n.article_id for n in items]
+
+
 def welcome(store):
     st.caption("WELCOME TO FINSCOPE")
     st.title("Your news. A clearer financial picture.")
@@ -52,20 +63,29 @@ def permission_editor(prefix, *, preview=True):
 
 
 def api_source(store):
-    label = st.selectbox("News source", list(SOURCE_OPTIONS), key="api_provider")
+    def clear_preview():
+        for key in ("news_preview", "fetch_outcome", "preview_saved"):
+            st.session_state.pop(key, None)
+    label = st.selectbox("News source", list(SOURCE_OPTIONS), key="api_provider", on_change=clear_preview)
     provider = SOURCE_OPTIONS[label]
     st.caption(SOURCE_NOTES[provider])
     if provider == "local":
         collector_ui(store)
         return
-    with st.form("fetch_news"):
+    env_key = local_credentials().get(ENV_KEYS[provider])
+    status = LocalIngestionService(store).source_status(provider, configured=bool(st.session_state.get("key_"+provider) or env_key))
+    st.caption(f"{status.state} · {status.reason}")
+    if status.last_attempt:
+        with st.expander("Last source attempt"):
+            st.caption(f"{status.last_attempt} · {status.last_outcome} · holds use UTC days")
+    with st.form("fetch_news_"+provider):
         left, right = st.columns(2)
         with left:
             key = st.text_input(f"{label} API key", type="password", key="key_"+provider, max_chars=500)
-            use_env = st.checkbox("Use project .env when the key field is empty", value=True)
-            topic = st.selectbox("News topic", list(TOPICS))
+            use_env = st.checkbox("Use project .env when the key field is empty", value=True, key="env_"+provider)
+            topic = st.selectbox("News topic", list(TOPICS), key="topic_"+provider) if provider != "finnhub" else "technology"
         with right:
-            symbol = st.text_input("Company ticker", value="NVDA", max_chars=15).strip().upper() if provider == "finnhub" else None
+            symbol = st.text_input("Company ticker", value="NVDA", max_chars=15, key="ticker_finnhub").strip().upper() if provider == "finnhub" else None
             days = st.number_input("Lookback days (account access may be narrower)", min_value=1, max_value=30, value=2,
                                    disabled=provider == "newsdata")
             remaining = st.number_input("Confirmed available request budget", min_value=0, max_value=10000, value=0)
@@ -73,7 +93,7 @@ def api_source(store):
         quota = st.checkbox("I confirm this request budget is currently available on my account")
         st.caption("One request, at most 3 preview records. Local safety cap: 3 requests/provider/UTC day; 60-second spacing. "
                    "No retries, pagination or publisher-page requests. Keys remain in memory for this browser session.")
-        fetch = st.form_submit_button("Fetch news", type="primary", disabled=provider == "newsdata")
+        fetch = st.form_submit_button("Fetch news", type="primary", disabled=status.blocked)
     if fetch:
         try:
             if not preview or not quota:
@@ -83,6 +103,7 @@ def api_source(store):
             result, items = LocalIngestionService(store).fetch(provider, topic, api_key=credential,
                             rights=rights, remaining=int(remaining), days=int(days), symbol=symbol, explicit=True)
             st.session_state["news_preview"] = items
+            st.session_state["preview_saved"] = False
             st.session_state["fetch_outcome"] = {
                 "provider": label, "status": result.status, "outcome": result.outcome,
                 "http_status": result.http_status, "records": len(items), "query_utc": utcnow().isoformat(),
@@ -109,7 +130,7 @@ def preview_news(store):
                    f"HTTP {http} · {outcome['records']} records")
         (st.success if outcome["status"] == "ok" else st.warning)(message)
         if outcome["status"] == "failed":
-            st.caption("This attempt consumed a local request reservation. Further requests to this provider are paused for this UTC day; no automatic retry or replacement result.")
+            st.caption(f"Attempt: {outcome.get('query_utc', 'unknown time')}. Read the source status above for current holds; no automatic retry.")
     items = st.session_state.get("news_preview", [])
     if not items:
         return
@@ -118,6 +139,7 @@ def preview_news(store):
     # Avoid the dataframe's built-in CSV download before retention is permitted.
     for n in items:
         with st.container(border=True):
+            st.checkbox("Select this article", value=True, key="preview_select_"+n.article_id)
             st.text(n.title)
             st.caption(f"{n.source} · {n.timestamp or n.publication_date or 'Unknown time'} ({n.timestamp_kind})")
             st.text(n.summary or "Summary unavailable")
@@ -131,11 +153,18 @@ def preview_news(store):
     if st.button("Save permitted preview to local library"):
         try:
             rights.require("retain")
-            for item in items:
+            selected = [n for n in items if st.session_state.get("preview_select_"+n.article_id)]
+            if not selected:
+                raise ValueError("Select at least one preview article")
+            for item in selected:
                 store.save_news(replace(item, rights=rights))
-            st.success(f"Saved {len(items)} originals locally. Choose Analyze to continue.")
+            saved_handoff(selected)
+            st.success(f"Saved {len(selected)} selected originals locally.")
+            st.session_state["preview_saved"] = True
         except ValueError as error:
             st.error(str(error))
+    if st.session_state.get("preview_saved"):
+        next_step("Analyze selected news →", "Analyze", "preview_next")
 
 
 def authored_text(store):
@@ -163,21 +192,28 @@ def authored_text(store):
                          title, url, source, text, stamp.isoformat(), kind),
                          ContentRights(True, rights, rights, False, reference))
             store.save_news(item)
-            st.success("Original saved locally. Choose Analyze to run the model.")
+            saved_handoff([item])
+            st.session_state["authored_saved"] = True
+            st.success("Original saved locally.")
         except ValueError as error:
             st.error(str(error))
+    if st.session_state.get("authored_saved"):
+        next_step("Analyze saved text →", "Analyze", "authored_next")
 
 
 def collector_ui(store):
-    from .local_collectors import collect_rba, import_output
-    kind=st.radio("RBA collector",["RSS feed","HTML media-release index"],horizontal=True)
+    from .local_collectors import SOURCES, collect_rba, import_output
+    source_id=st.radio("RBA collector",list(SOURCES),format_func=lambda key:SOURCES[key]["label"],horizontal=True)
+    config=SOURCES[source_id]
+    kind=config["kind"]
     st.caption("Central-bank releases only; not broad financial-news coverage. Collection checks robots and reads one fixed feed/index. Article pages are never requested.")
     preview=st.checkbox("I may preview these official RBA records locally",key="rba_preview_rights")
     rights=ContentRights(preview=preview,reference="Personal local RBA preview attestation; downstream rights unverified")
     if st.button("Collect RBA news",type="primary",disabled=not preview):
         try:
-            items=collect_rba(LocalIngestionService(store),"rss" if kind=="RSS feed" else "html",rights,explicit=True)
+            items=collect_rba(LocalIngestionService(store),kind,rights,explicit=True)
             st.session_state["news_preview"]=items
+            st.session_state["preview_saved"] = False
             st.session_state["fetch_outcome"]={"provider":"RBA "+kind,"status":"ok","outcome":"records" if items else "empty",
                         "http_status":200,"records":len(items),"query_utc":utcnow().isoformat()}
         except (ValueError,OSError):
@@ -189,6 +225,7 @@ def collector_ui(store):
             try:
                 items=import_output(uploaded.getvalue(),rights)
                 st.session_state["news_preview"]=items
+                st.session_state["preview_saved"] = False
                 st.session_state["fetch_outcome"]={"provider":"Local RBA import","status":"ok","outcome":"records",
                               "http_status":None,"records":len(items),"query_utc":utcnow().isoformat(),"network_attempted":False}
             except ValueError as error:
@@ -228,6 +265,7 @@ def analyze(store):
     items = store.list_news()
     if not items:
         st.info("Add news or approved text to your local library first.")
+        next_step("Choose a news source →", "Add news", "analysis_empty_next")
         return
     from .model_ui import controls,execute
     from .model_providers import ModelError
@@ -235,14 +273,25 @@ def analyze(store):
     if options.mode=="Local FinBERT" and not options.ready:
         options.ready=prepare_finbert()
     from .dashboard_ui import shared_filters
-    items,_,_,_=shared_filters(items,store.list_analyses())
+    analyses = store.list_analyses()
+    current_model = options.result_key()
+    items,results,_,_=shared_filters(items,analyses,for_analysis=True,analysis_model=current_model)
+    queue=st.radio("Analysis queue",["Pending for selected model", "All permitted articles"],horizontal=True,key="analysis_queue")
+    if queue == "Pending for selected model":
+        items = [n for n in items if n.article_id not in results]
     eligible = [n for n in items if n.rights.analyze and n.rights.retain]
     if len(eligible) != len(items):
         st.caption(f"{len(items)-len(eligible)} records have unverified local NLP/storage permission. Review permissions in News Explorer.")
-    selected = st.multiselect("Articles to analyze", [n.article_id for n in eligible],
+    ids = [n.article_id for n in eligible]
+    previous = st.session_state.get("analysis_articles", st.session_state.get("handoff_article_ids", []))
+    st.session_state["analysis_articles"] = [key for key in previous if key in ids]
+    def select_batch():
+        st.session_state["analysis_articles"] = ids
+    st.button("Select all pending" if queue.startswith("Pending") else "Select all shown", on_click=select_batch,disabled=not ids)
+    selected = st.multiselect("Articles to analyze", ids,
                  format_func=lambda key: next(n.title for n in eligible if n.article_id == key), key="analysis_articles")
     if st.button("Run real AI analysis", type="primary", disabled=not selected or not options.ready):
-        if options.mode=="External LLM API" and len(selected)>10:
+        if options.mode=="OpenAI API" and len(selected)>10:
             st.error("Choose at most 10 originals for one external run.")
             return
         successful, failed = 0, 0
@@ -261,11 +310,17 @@ def analyze(store):
                 except Exception:
                     failed += 1
         if successful:
-            st.success(f"Saved {successful} actual analyses to local SQLite. Open Dashboard to explore.")
+            st.success(f"Saved {successful} analyses locally.")
+            st.session_state["analysis_completed_model"] = current_model
         if failed:
             st.error(f"{failed} analyses failed. No fake prediction was substituted; previous results and originals remain intact.")
             for reason in reasons:
                 st.caption(reason)
+    if st.session_state.get("analysis_completed_model"):
+        def view_results():
+            st.session_state["workspace_page"] = "Dashboard"
+            st.session_state["local_result_model"] = st.session_state["analysis_completed_model"]
+        st.button("View sector results →", on_click=view_results, key="analysis_next")
 
 
 def dashboard(store):

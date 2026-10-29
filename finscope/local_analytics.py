@@ -7,6 +7,23 @@ from .demo_pipeline import classify_sectors
 from .ui_data import SECTORS, SENTIMENTS
 
 
+def result_models(analyses):
+    return sorted({model_key(a) for a in analyses})
+
+
+def default_result_model(analyses):
+    # Prefer the pinned backend, never fall back to another model family.
+    from .model_assets import manifest
+    pinned = manifest("finbert")["revision"]
+    finbert = sorted((a for a in analyses if a.family == "FinBERT"),
+                     key=lambda a: (a.revision == pinned, a.analyzed_at, a.analysis_id))
+    return model_key(finbert[-1]) if finbert else "FinBERT · No saved results"
+
+
+def article_day(item, basis="record"):
+    return item.published_day if basis == "published" else item.record_date
+
+
 def model_key(analysis):
     return f"{analysis.family} · {analysis.model_id} · {analysis.revision}"
 
@@ -21,6 +38,8 @@ class Filters:
     models: tuple = ()
     search: str = ""
     include_unknown_dates: bool = False
+    date_basis: str = "record"
+    require_results: bool = True
 
 
 def select_articles(news, analyses, filters):
@@ -34,7 +53,8 @@ def select_articles(news, analyses, filters):
     selected = []
     for item in news:
         result = latest.get(item.article_id)
-        day = date.fromisoformat(item.record_date) if item.record_date else None
+        value = article_day(item, filters.date_basis)
+        day = date.fromisoformat(value) if value else None
         if day is None and (filters.start or filters.end) and not filters.include_unknown_dates:
             continue
         if day is not None and (filters.start and day < filters.start or filters.end and day > filters.end):
@@ -45,7 +65,7 @@ def select_articles(news, analyses, filters):
             continue
         if filters.sentiments and (result is None or result.label not in filters.sentiments):
             continue
-        if filters.models and result is None:
+        if filters.models and result is None and filters.require_results:
             continue
         if filters.search.casefold() not in " ".join((item.title, item.summary, item.source, item.company)).casefold():
             continue
@@ -66,13 +86,13 @@ def sector_counts(news, results):
              "Not analyzed": sum(sector in n.sectors and n.article_id not in results for n in news)} for sector in SECTORS]
 
 
-def daily_counts(news, results, start, end):
+def daily_counts(news, results, start, end, *, date_basis="record"):
     if start > end or (end-start).days > 3660:
         raise ValueError("Choose a date range of at most 10 years")
     rows = []
     day = start
     while day <= end:
-        values = [n for n in news if n.record_date == day.isoformat()]
+        values = [n for n in news if article_day(n, date_basis) == day.isoformat()]
         rows.append({"Date": day.isoformat(), **{s: sum(n.article_id in results and results[n.article_id].label == s
                         for n in values) for s in SENTIMENTS},
                      "Not analyzed": sum(n.article_id not in results for n in values)})
@@ -80,14 +100,14 @@ def daily_counts(news, results, start, end):
     return rows
 
 
-def heatmap_cells(news, results, start, end, sectors=SECTORS):
+def heatmap_cells(news, results, start, end, sectors=SECTORS, *, date_basis="record"):
     if start > end or (end-start).days > 366:
         raise ValueError("Heatmap supports at most 367 daily columns; narrow the date range")
     cells = []
     day = start
     while day <= end:
         for sector in sectors:
-            records = [n for n in news if n.record_date == day.isoformat() and sector in n.sectors]
+            records = [n for n in news if article_day(n, date_basis) == day.isoformat() and sector in n.sectors]
             labels = Counter(results[n.article_id].label for n in records if n.article_id in results)
             total, count = len(records), sum(labels.values())
             cells.append({"Date": day.isoformat(), "Sector": sector, "Articles": total,

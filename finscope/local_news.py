@@ -73,6 +73,11 @@ class NewsItem:
                 if self.timestamp else self.publication_date)
 
     @property
+    def published_day(self):
+        """Never substitute first-seen, submitted, ingestion or inference time."""
+        return self.record_date if self.timestamp_kind == "published" else ""
+
+    @property
     def analysis_text(self):
         return self.title + ("\n" + self.summary if self.summary else "")
 
@@ -200,16 +205,23 @@ class FetchBlocked(ValueError):
     """Fixed local reason, never an exception or remote response body."""
 
 
+@dataclass(frozen=True)
+class SourceStatus:
+    state: str
+    reason: str
+    blocked: bool = False
+    last_attempt: str = ""
+    last_outcome: str = ""
+
+
 class LocalIngestionService:
     def __init__(self, store, *, cooldown_path=COOLDOWN_PATH, study_path=LEDGER_PATH,
                  transport=_http_get_json, clock=utcnow):
         self.store, self.cooldown_path, self.study_path = store, Path(cooldown_path), Path(study_path)
         self.transport, self.clock = transport, clock
 
-    def _reserve(self, provider, remaining):
-        now = self.clock()
-        if type(remaining) is not int or not 1 <= remaining <= 10000:
-            raise FetchBlocked("Confirm a positive remaining account quota before Fetch")
+    def _check_holds(self, provider, now, rows):
+        """Shared read-only guard for status and transactional reservation."""
         try:
             holds = load_cooldowns(self.cooldown_path)
         except (OSError, ValueError):
@@ -234,25 +246,53 @@ class LocalIngestionService:
                 if isinstance(error, FetchBlocked):
                     raise
                 raise FetchBlocked("Existing study ledger needs review") from None
+        today = 0
+        for reserved, completed, status, hold in rows:
+            start = datetime.fromisoformat(reserved).astimezone(timezone.utc)
+            end = datetime.fromisoformat(completed or reserved).astimezone(timezone.utc)
+            if status == "pending":
+                raise FetchBlocked("A previous request has an unknown outcome; inspect the local ledger")
+            if hold and datetime.fromisoformat(hold) > now:
+                raise FetchBlocked("Provider Retry-After hold is active")
+            if now-end < timedelta(seconds=60):
+                raise FetchBlocked("Wait at least 60 seconds between provider requests")
+            if start.date() == now.astimezone(timezone.utc).date():
+                today += 1
+                if status == "failed":
+                    raise FetchBlocked("A provider failure stopped further requests for this UTC day")
+        if today >= 3:
+            raise FetchBlocked("Local safety cap reached: 3 requests/provider/UTC day")
+
+    def source_status(self, provider, *, configured):
+        """No probe or reservation. Historical failures are not permanent outages."""
+        if provider == "newsdata":
+            return SourceStatus("Paused", "Existing manual pause; no requests allowed", True)
+        with closing(self.store.connect()) as db:
+            rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=? ORDER BY reserved_at", (provider,)).fetchall()
+        last = rows[-1] if rows else None
+        stamp, outcome = (last[1] or last[0], last[2]) if last else ("", "")
+        try:
+            self._check_holds(provider, self.clock(), rows)
+        except (FetchBlocked, ValueError, OSError):
+            import sys
+            error = sys.exception()
+            reason = str(error) if isinstance(error, FetchBlocked) else "Local request state needs review"
+            return SourceStatus("Failed" if outcome == "failed" else "Paused", reason, True, stamp, outcome)
+        if not configured:
+            return SourceStatus("Not configured", "Enter this source's key or configure its local .env variable", False, stamp, outcome)
+        if outcome == "ok":
+            return SourceStatus("Available", "Last request succeeded; this is not a live connection probe", False, stamp, outcome)
+        return SourceStatus("Untested", "Configured; no current successful connection check", False, stamp, outcome)
+
+    def _reserve(self, provider, remaining):
+        now = self.clock()
+        if type(remaining) is not int or not 1 <= remaining <= 10000:
+            raise FetchBlocked("Confirm a positive remaining account quota before Fetch")
         request_id = uuid4().hex
         with closing(self.store.connect()) as db:
             db.execute("BEGIN IMMEDIATE")
             rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
-            today = 0
-            for reserved, completed, status, hold in rows:
-                start, end = datetime.fromisoformat(reserved), datetime.fromisoformat(completed or reserved)
-                if status == "pending":
-                    raise FetchBlocked("A previous request has an unknown outcome; inspect the local ledger")
-                if hold and datetime.fromisoformat(hold) > now:
-                    raise FetchBlocked("Provider Retry-After hold is active")
-                if now-end < timedelta(seconds=60):
-                    raise FetchBlocked("Wait at least 60 seconds between provider requests")
-                if start.date() == now.date():
-                    today += 1
-                    if status == "failed":
-                        raise FetchBlocked("A provider failure stopped further requests for this UTC day")
-            if today >= 3:
-                raise FetchBlocked("Local safety cap reached: 3 requests/provider/UTC day")
+            self._check_holds(provider, now, rows)
             db.execute("INSERT INTO local_requests(id,provider,reserved_at,status) VALUES (?,?,?,?)",
                        (request_id, provider, now.isoformat(), "pending"))
             db.commit()  # Durable intent before dispatch, including transport failures.

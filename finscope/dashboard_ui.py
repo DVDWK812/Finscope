@@ -7,38 +7,61 @@ import pandas as pd
 import streamlit as st
 
 from .local_analytics import (Filters, daily_counts, evidence_graph, heatmap_cells,
-                            model_key, overview_counts, sector_counts, select_articles)
+                            model_key, overview_counts, sector_counts, select_articles,
+                            default_result_model, result_models)
 from .ui_data import SECTORS, SENTIMENTS
 
 COLORS = ["#16856b", "#8b97a8", "#dc6b72", "#d9dee6"]
 
 
-def shared_filters(news, analyses):
-    dates = sorted(date.fromisoformat(n.record_date) for n in news if n.record_date)
+def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
+    dates = sorted(date.fromisoformat(n.published_day) for n in news if n.published_day)
     start, end = (dates[0], dates[-1]) if dates else (datetime.now(timezone.utc).date(),)*2
+    old_range = st.session_state.get("local_dates", (start, end))
+    outside = [n for n in news if n.published_day and len(old_range) == 2
+               and not old_range[0] <= date.fromisoformat(n.published_day) <= old_range[1]]
+    if outside:
+        new_ids = set(st.session_state.get("new_news_ids", []))
+        new_count = sum(n.article_id in new_ids for n in outside)
+        st.info(f"{new_count} new records outside the current date range." if new_count else
+                f"{len(outside)} saved records outside the current date range.")
+        def widen_dates():
+            st.session_state["local_dates"] = (start, end)
+        st.button("Include all saved publication dates", on_click=widen_dates, key="widen_local_dates")
     left, middle, right = st.columns([2, 2, 2])
     with left:
-        selected = st.date_input("Date range (UTC record dates)", value=(start, end), key="local_dates")
+        selected = st.date_input("Publication date range (UTC)", value=(start, end), key="local_dates")
     with middle:
         sectors = st.multiselect("Sectors", SECTORS, key="local_sectors", placeholder="All sectors")
     with right:
         search = st.text_input("Search news", key="local_search", placeholder="Headlines, summaries or source")
     with st.expander("More filters", expanded=False):
-        a, b, c = st.columns(3)
+        a, b = st.columns(2)
         with a:
             sources = st.multiselect("Sources", sorted({n.source for n in news}), key="local_sources")
         with b:
-            sentiments = st.multiselect("Sentiment", SENTIMENTS, key="local_sentiments")
-        with c:
-            models = st.multiselect("Model / revision", sorted({model_key(a) for a in analyses}), key="local_models")
-        unknown = st.checkbox("Include records with unknown dates", key="local_unknown_dates")
-        st.caption("Dates retain published / first-seen / submitted meaning. Date-only collector records stay date-only. "
-                   "Unknown-date records never enter daily charts. Sector matches use any selected label.")
+            sentiments = [] if for_analysis else st.multiselect("Sentiment", SENTIMENTS, key="local_sentiments")
+        unknown = st.checkbox("Include unknown publication dates (separate from daily charts)", value=True, key="local_unknown_dates")
+    if for_analysis:
+        models = (analysis_model,) if analysis_model else ()
+    else:
+        choices = result_models(analyses)
+        default = default_result_model(analyses)
+        if default not in choices:
+            choices.insert(0, default)
+        if st.session_state.get("local_result_model") not in choices:
+            st.session_state["local_result_model"] = default
+        current = st.selectbox("Results model", choices, key="local_result_model",
+                              format_func=lambda value: " · ".join(value.split(" · ")[:2]))
+        models = (current,)
+    undated = sum(not n.published_day for n in news)
+    if undated:
+        st.caption(f"{undated} originals have no publication date; first-seen/submission dates are not publication dates.")
     if len(selected) != 2:
         st.info("Select both start and end dates.")
         return [], {}, start, end
     selected_news, results = select_articles(news, analyses, Filters(selected[0], selected[1], tuple(sectors), tuple(sources),
-                          tuple(sentiments), tuple(models), search, unknown))
+                          tuple(sentiments), tuple(models), search, unknown, "published", False))
     return selected_news, results, selected[0], selected[1]
 
 

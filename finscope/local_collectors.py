@@ -7,6 +7,13 @@ from .api_sources import Article, QueryResult
 from .local_news import FetchBlocked, NewsItem, utcnow
 from . import rss_collector, html_collector
 
+# Fixed, reviewed collector registry. Adding a source requires its own validation
+# and permission review; no user URL or generic crawling adapter is accepted.
+SOURCES = {
+    "rba_rss": {"label": "RBA RSS feed", "kind": "rss", "scope": "Official central-bank media releases", "url": rss_collector.FEED_URL},
+    "rba_html": {"label": "RBA HTML media-release index", "kind": "html", "scope": "Official central-bank release index; dates only, no article body", "url": html_collector.INDEX_URL},
+}
+
 
 def collector_items(articles, provenance, rights):
     rights.require("preview")

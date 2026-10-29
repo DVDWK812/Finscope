@@ -105,3 +105,5 @@ second bounded check had transport failure and stopped further daily requests;
 NLP/retention rights remain gated. NewsData stays manually paused; Finnhub company
 scope is distinct. No provider winner/public rights approval or frozen-evaluation
 change. See LOCAL_REDESIGN.md for actual evidence and interface/licence references.
+
+- 30 October 2026 Sydney — local usability milestone: separate pending-analysis queue from result filters, select one results model (FinBERT default), preserve publication precision and explicit date widening, source status from existing holds/ledger, selected-preview and next-step actions. No provider/model call on reads; offline verification only.

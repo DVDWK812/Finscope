@@ -408,3 +408,5 @@ previews in [Actions 40856308281](https://github.com/DVDWK812/Finscope/actions/r
 originals and three analysis versions and rendered the committed dashboard. The
 original checkout's web-task changes were not included. Remaining source/service
 permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
+
+- 30 October 2026 Sydney: local flow milestone, 243 offline tests and benchmark dry run passed. Original 171 frozen evidence hashes unchanged. No live API requests or safeguards reset.

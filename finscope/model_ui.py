@@ -6,7 +6,7 @@ import streamlit as st
 from .api_sources import local_credentials
 from .model_providers import ExternalLLMProvider, FinBERTProvider, ModelError, OllamaProvider, OPENAI_MODELS
 
-MODES = ["Local FinBERT", "Local Ollama", "External LLM API"]
+MODES = ["Local FinBERT", "Local Ollama", "OpenAI API"]
 
 
 @dataclass
@@ -20,26 +20,41 @@ class RunSettings:
     permission_reference: str = ""
     ready: bool = True
 
+    def result_key(self):
+        from .model_assets import manifest
+        if self.mode == "Local FinBERT":
+            info = manifest("finbert")
+            return f"FinBERT · {info['model_id']} · {info['revision']}"
+        if self.mode == "OpenAI API":
+            return f"External LLM · openai/{self.model} · {self.model}"
+        digest = st.session_state.get("installed_ollama_models", {}).get(self.model, "")
+        return f"Local Ollama · {self.model} · {digest}"
+
 
 def controls(prefix="analysis"):
     default=st.session_state.get("default_analysis_mode",MODES[0])
     key="analysis_model" if prefix=="analysis" else prefix+"_model"
-    mode=st.selectbox("Analysis model",MODES,index=MODES.index(default),key=key)
+    mode=st.selectbox("Analysis model",MODES,index=MODES.index(default) if default in MODES else 0,key=key)
     if prefix=="analysis":
         st.session_state["default_analysis_mode"]=mode
     options=RunSettings(mode)
     if mode=="Local FinBERT":
         from .model_assets import assets_present
         options.ready=all(assets_present(kind) for kind in ("finbert","minilm"))
-        st.caption("Pinned CPU FinBERT + MiniLM · No API key · Genuine three-class probabilities")
+        st.caption("Available · Local model files present · No API key" if options.ready else "Not configured · Local model files missing")
         if not options.ready:
             st.info("Prepare the pinned models from Analyze before running FinBERT.")
     elif mode=="Local Ollama":
-        st.caption("Installed local GGUF models at 127.0.0.1:11434 only. No model pull, remote tag or public endpoint.")
+        state = st.session_state.get("ollama_status", "Untested · List models to check localhost:11434")
+        st.caption(state)
         if st.button("List installed Ollama models",key=prefix+"_ollama_list"):
             try:
                 st.session_state["installed_ollama_models"]=OllamaProvider().installed_models()
+                st.session_state["ollama_status"] = "Available · Local service responded; installed models listed"
+                st.rerun()
             except ModelError as error:
+                st.session_state["installed_ollama_models"] = {}
+                st.session_state["ollama_status"] = "Failed · " + str(error)
                 st.error(str(error))
         installed=st.session_state.get("installed_ollama_models",{})
         options.model=st.selectbox("Installed local model",list(installed),index=None,key=prefix+"_ollama_model")
@@ -54,9 +69,10 @@ def controls(prefix="analysis"):
             options.permission_reference=st.text_input("Permission reference covering local use and external transmission",max_chars=300,key=prefix+"_external_ref")
             options.external_rights=st.checkbox("My permission covers sending these selected texts to OpenAI",key=prefix+"_external_rights")
         options.consent=st.checkbox("Send the selected permitted headline/summary text to OpenAI when I click Run",key=prefix+"_send_consent")
-        st.caption("Optional paid API. One request/article; at most 10 articles/run. No tools or publisher fetching. "
-                   "Labels/rationales are model-generated, without calibrated probabilities. API provider retention policies apply; store=false is requested.")
-        options.ready=options.consent
+        credential=options.api_key or (local_credentials().get("OPENAI_API_KEY") if options.use_env else None)
+        st.caption("Untested · OpenAI key configured; no connection probe" if credential else "Not configured · OpenAI API key required")
+        st.caption("Optional paid transmission: one headline/summary request per article, at most 10/run; store=false requested, provider retention policies apply.")
+        options.ready=bool(credential) and options.consent
     return options
 
 
@@ -66,7 +82,7 @@ def execute(item,store,settings):
         return FinBERTProvider(cached_pipeline).analyze(item,store)
     if settings.mode=="Local Ollama":
         return OllamaProvider().analyze(item,store,model=settings.model)
-    if settings.mode!="External LLM API":
+    if settings.mode!="OpenAI API":
         raise ModelError("Choose a supported analysis mode")
     credential=settings.api_key or (local_credentials().get("OPENAI_API_KEY") if settings.use_env else None)
     if settings.external_rights and settings.permission_reference.strip():

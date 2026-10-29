@@ -104,7 +104,7 @@ class ProductUITests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertTrue(any(b.label=="List installed Ollama models" for b in app.button))
         self.assertTrue(next(b for b in app.button if b.label=="Run real AI analysis").disabled)
-        app.selectbox(key="analysis_model").set_value("External LLM API").run()
+        app.selectbox(key="analysis_model").set_value("OpenAI API").run()
         self.assertFalse(app.exception)
         self.assertEqual(app.text_input(key="analysis_openai_key").proto.type,TextInput.PASSWORD)
         self.assertFalse(app.checkbox(key="analysis_send_consent").value)
