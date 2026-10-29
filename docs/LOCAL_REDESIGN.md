@@ -75,3 +75,13 @@ a process restart retained the milestone-1 original/model result. All six views,
 heatmap controls and the node graph rendered; graph/article interaction is checked
 separately from data-unit tests. No provider request or frozen packet/model rerun
 was made during milestone 2. Exact-commit CI is checked after push.
+
+Milestone-2 commit `59ce95a068511e379b8e77d80e447cf9adaf7dcb` initially
+failed the Streamlit 1.50 CI job: layered Vega-Lite server selections were not
+supported. The newer-version job's test steps passed but the matrix job was
+cancelled. This is retained as failed evidence, not reported as a clean pass.
+The compatibility repair uses client-side graph pan/zoom plus the browser-verified
+accessible article-reference selector, with no layered server-selection callback.
+No tests or supported-version checks were removed. The repaired full offline suite
+and benchmark dry run pass; exact repaired-commit CI is verified after push.
+

@@ -361,3 +361,12 @@ groups for originals. 213 offline tests plus benchmark dry run pass. Local brows
 restart retained the real milestone-1 saved result and all views rendered. M1
 exact-commit CI passed both Streamlit jobs (run 40849128698). No new provider call,
 challenge evaluation or cloud deployment. See LOCAL_REDESIGN.md for qualifications.
+
+## Local graph compatibility repair — 29 October 2026 Sydney
+
+M2 run 40850851316 exposed Streamlit 1.50's layered-chart server-selection
+restriction (two product UI failures). Preserved the failed result, retained all
+tests and replaced that callback with client graph zoom/pan and an accessible
+article-reference selector already verified in the localhost browser. The repaired
+213-test suite and benchmark preview pass. M3 work remains uncommitted separately;
+this commit contains only the graph compatibility fix and this evidence.

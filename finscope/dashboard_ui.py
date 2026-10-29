@@ -113,31 +113,28 @@ def article_details(item, result, store):
 
 def graph(news, results, store):
     st.subheader("Evidence relationships")
-    st.caption("Select a node or choose an article below to inspect its original. Scroll/drag to zoom/pan. Edges show metadata, keyword evidence and unverified cosine candidates; no causal relationships.")
+    st.caption("Choose an article below to inspect its original. Scroll/drag to zoom/pan. Edges show metadata, keyword evidence and unverified cosine candidates; no causal relationships.")
     data = evidence_graph(news, results)
     x_axis = {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [-.5,4.5]}}
     y_axis = {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0,1]}}
-    selection = st.vega_lite_chart({
+    st.vega_lite_chart({
         "layer": [
             {"data": {"values": data["edges"]}, "mark": {"type": "rule", "color": "#d8e2e0", "opacity": .65},
              "encoding": {"x": x_axis, "y": y_axis,
                           "x2": {"field": "x2"}, "y2": {"field": "y2"}, "tooltip": [{"field": "relationship"}, {"field": "evidence"}]}},
-            {"data": {"values": data["nodes"]}, "params": [{"name": "article_pick", "select": {"type": "point", "fields": ["article_id"], "on": "click", "clear": "dblclick"}},
-                         {"name": "graph_zoom", "select": "interval", "bind": "scales"}],
+            {"data": {"values": data["nodes"]}, "params": [{"name": "graph_zoom", "select": "interval", "bind": "scales"}],
              "mark": {"type": "circle", "size": 180},
              "encoding": {"x": x_axis, "y": y_axis,
                           "color": {"field": "kind", "type": "nominal", "legend": {"orient": "bottom"}},
                           "tooltip": [{"field": "label"}, {"field": "kind"}, {"field": "article_id"}]}},
             {"data": {"values": data["nodes"]}, "mark": {"type": "text", "dy": -18, "fontSize": 10, "limit": 140},
              "encoding": {"x": x_axis, "y": y_axis, "text": {"field": "display_label"}}}
-        ], "height": 420}, key="local_evidence_graph", on_select="rerun", selection_mode="article_pick", width="stretch")
-    picked = selection.get("selection", {}).get("article_pick", []) if selection else []
-    selected_id = picked[0].get("article_id") if picked else None
+        ], "height": 420}, key="local_evidence_graph", width="stretch")
     by_id = {n.article_id: n for n in news}
     accessible_id = st.selectbox("Graph article reference", list(by_id), index=None,
                      format_func=lambda key: by_id[key].title+" · "+by_id[key].source,
                      key="local_graph_article", placeholder="Choose an original article")
-    selected_id = accessible_id or selected_id
+    selected_id = accessible_id
     if selected_id in by_id:
         article_details(by_id[selected_id], results.get(selected_id), store)
     with st.expander("Inspect graph evidence"):
