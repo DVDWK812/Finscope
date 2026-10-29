@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;color:#253a37;background:transparent}
+button{font:inherit;cursor:pointer;border:1px solid #cad8d4;border-radius:5px;padding:6px;background:#fff;color:#203f37}
+button:focus-visible,[role=button]:focus-visible{outline:3px solid #18775f;outline-offset:2px}
+.scroll{overflow:auto;padding:8px 4px 14px}table{border-collapse:separate;border-spacing:3px;min-width:100%;font-size:12px}th{font-weight:500;white-space:nowrap}th:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:130px}
+.cell{min-width:55px;min-height:45px;width:100%;font-size:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px}.cell small{font-size:10px}.chosen{outline:3px solid #173f36;outline-offset:-3px}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;padding:6px}
+svg{display:block;background:#f7faf9;border:1px solid #e2ebe8;border-radius:10px;width:100%;height:430px;touch-action:pan-y}
+.node{cursor:pointer}.node:hover circle,.node:focus circle{stroke:#163f35;stroke-width:3}.label{font-size:11px;fill:#263f37;pointer-events:none}.edge{stroke:#b7cac3;stroke-width:1.5}.toolbar{display:flex;gap:8px;align-items:center;margin:5px 0}.toolbar span{font-size:12px;color:#526b63}
+</style></head><body><main id="root"></main>
+<script>
+// Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
+const root=document.getElementById('root');let args={},counter=0;
+function post(type,extra={}){parent.postMessage({isStreamlitMessage:true,type,...extra},'*')}
+function resize(){post('streamlit:setFrameHeight',{height:document.documentElement.scrollHeight})}
+function el(tag,text,attrs={}){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
+function svgEl(tag,attrs={}){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
+function choose(id){root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}
+function heatmap(data){
+const dates=[...new Set(data.cells.map(c=>c.Date))],sectors=[...new Set(data.cells.map(c=>c.Sector))];
+const lookup=new Map(data.cells.map(c=>[c.Date+'|'+c.Sector,c]));const wrap=el('div',undefined,{class:'scroll'}),table=el('table',undefined,{'aria-label':'Sector by publication date heatmap'});
+const header=el('tr');header.append(el('th','Sector / date'));for(const day of dates)header.append(el('th',day.slice(5),{title:day}));table.append(header);
+const max=Math.max(1,...data.cells.map(c=>c.Articles));
+for(const sector of sectors){const row=el('tr');row.append(el('th',sector,{scope:'row'}));for(const day of dates){const c=lookup.get(day+'|'+sector),id=day+'|'+sector;
+const state=!c.Articles?'No local news':!c.Analyzed?'Not analyzed':c.Positive===0&&c.Negative===0?'Neutral':`Balance ${c.Balance.toFixed(2)}`;
+const label=`${day} · ${sector} · ${c.Articles} articles · ${c.Analyzed} analyzed · ${state}`;
+const b=el('button',undefined,{class:'cell','data-id':id,'aria-label':label,title:label+` · Positive ${c.Positive}, Neutral ${c.Neutral}, Negative ${c.Negative} · ${c.Sample}`});
+let color='#f1f3f5';if(c.Articles&&!c.Analyzed)color='#fff0cf';else if(c.Articles){if(data.metric==='Article volume')color=`hsl(162 37% ${94-48*c.Articles/max}%)`;else color=c.Balance===0?'#d4dce6':c.Balance>0?`hsl(162 43% ${89-35*c.Balance}%)`:`hsl(354 55% ${89+35*c.Balance}%)`}
+b.style.background=color;b.append(el('span',data.metric==='Article volume'?String(c.Articles):!c.Articles?'—':!c.Analyzed?'?':c.Balance.toFixed(2)),el('small',c.Articles?`n=${c.Analyzed}${c.Analyzed<3?' · low':''}`:'no news'));
+if(args.selected===id)b.classList.add('chosen');b.onclick=()=>choose(id);const td=el('td');td.append(b);row.append(td)}table.append(row)}wrap.append(table);root.append(wrap);
+root.append(el('div','Grey: no local news · Amber: not analyzed · Blue-grey: neutral balance · n: analyzed sample; n<3 low sample',{class:'legend'}));
+}
+function graph(data){
+let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),svg=svgEl('svg',{viewBox:'0 0 1100 500','aria-label':'Interactive evidence graph',role:'group'}),group=svgEl('g');svg.append(group);
+for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',label,{'aria-label':label});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${550*(1-scale)},${250*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span','Click a node to see related articles; hover a link for its evidence.'));root.append(toolbar,svg);
+const colors={'Article':'#217c65','Sector':'#c08b28','Text entity':'#5475ba','Keyword theme':'#9a679e','Company query':'#a88156','Source':'#88969c','Unverified candidate':'#b5715c'};
+const point=n=>[70+n.x*235,35+n.y*425];
+for(const edge of data.edges){const a=point({x:edge.x,y:edge.y}),b=point({x:edge.x2,y:edge.y2});const line=svgEl('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:'edge'});const title=svgEl('title');title.textContent=`${edge.relationship}: ${edge.evidence}`;line.append(title);group.append(line)}
+for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${n.kind}: ${n.label}`});const circle=svgEl('circle',{r:n.kind==='Article'?10:8,fill:colors[n.kind]||'#667',stroke:args.selected===n.id?'#193e33':'#fff','stroke-width':args.selected===n.id?4:2}),text=svgEl('text',{class:'label',y:-17,'text-anchor':'middle'});text.textContent=n.display_label;const title=svgEl('title');title.textContent=`${n.kind}: ${n.label}`;const hit=svgEl('rect',{x:-85,y:-31,width:170,height:48,fill:'transparent'});g.append(hit,circle,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
+const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${kind}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
+}
+addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;args=e.data.args;root.replaceChildren();if(args.kind==='graph')graph(args.data);else heatmap(args.data);resize()});
+new ResizeObserver(resize).observe(root);post('streamlit:componentReady',{apiVersion:1});
+</script></body></html>

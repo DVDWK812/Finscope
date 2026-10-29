@@ -2,6 +2,7 @@
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, timedelta
+import re
 
 from .demo_pipeline import classify_sectors
 from .ui_data import SECTORS, SENTIMENTS
@@ -118,7 +119,20 @@ def heatmap_cells(news, results, start, end, sectors=SECTORS, *, date_basis="rec
     return cells
 
 
-def evidence_graph(news, results):
+def text_evidence(text, phrase):
+    match = re.search(r"\b"+re.escape(phrase)+r"s?\b", text, re.IGNORECASE)
+    return text[max(0,match.start()-45):match.end()+65].replace("\n", " ") if match else ""
+
+
+ENTITY_NAMES = ("Reserve Bank of Australia", "Federal Reserve", "European Central Bank",
+                "NVIDIA", "Microsoft", "Apple Inc.")
+THEMES = {"Earnings / results": ("earnings", "revenue", "profit"),
+          "Monetary policy": ("interest rate", "monetary policy", "inflation"),
+          "Appointments": ("appointment", "appointed"), "Risk management": ("risk",),
+          "Semiconductors": ("semiconductor", "chipmaker")}
+
+
+def evidence_graph(news, results, *, show_sources=True, show_text=False, show_similar=True):
     nodes, edges = {}, []
     group_counts = Counter(a.candidate_id for a in results.values() if a.candidate_id)
     def node(identity, kind, label, article_id=""):
@@ -130,24 +144,40 @@ def evidence_graph(news, results):
                       "evidence": evidence, "article_id": article_id})
     for item in news:
         node("article:"+item.article_id, "Article", item.title, item.article_id)
-        source = "source:"+item.source
-        node(source, "Source", item.source)
-        edge(item.article_id, source, "provider_source", "Original provider/collector source metadata")
+        if show_sources:
+            source = "source:"+item.source
+            node(source, "Source", item.source)
+            edge(item.article_id, source, "provider_source", "Original provider/collector source metadata: "+item.source)
         sector_evidence = classify_sectors(item.analysis_text)
         for sector in item.sectors:
             identity = "sector:"+sector
             node(identity, "Sector", sector)
-            edge(item.article_id, identity, "keyword_sector", ", ".join(sector_evidence.get(sector, [])) or "No keyword match; Unclassified")
+            matches = sector_evidence.get(sector, [])
+            edge(item.article_id, identity, "keyword_sector", text_evidence(item.analysis_text, matches[0]) if matches else "No keyword match; Unclassified")
+        if show_text:
+            for name in ENTITY_NAMES:
+                evidence = text_evidence(item.analysis_text, name)
+                if evidence:
+                    identity = "entity:"+name
+                    node(identity, "Text entity", name)
+                    edge(item.article_id, identity, "literal_text_mention", evidence)
+            for theme, words in THEMES.items():
+                evidence = next((snippet for word in words if (snippet := text_evidence(item.analysis_text, word))), "")
+                if evidence:
+                    identity = "theme:"+theme
+                    node(identity, "Keyword theme", theme)
+                    edge(item.article_id, identity, "keyword_theme", evidence)
         if item.company:
             identity = "company:"+item.company
             node(identity, "Company query", item.company)
             edge(item.article_id, identity, "returned_for_ticker", "Ticker-specific company-news query; not a verified company mention or causal link")
         result = results.get(item.article_id)
-        if result and result.candidate_id and group_counts[result.candidate_id] > 1:
+        if show_similar and result and result.candidate_id and group_counts[result.candidate_id] > 1:
             identity = "candidate:"+result.candidate_id
             node(identity, "Unverified candidate", "Candidate "+result.candidate_id[:6])
             edge(item.article_id, identity, "unverified_cosine_candidate", f"MiniLM {result.embedding_revision}; predeclared cosine/time rule, not confirmed event identity")
-    columns = {"Source": 0, "Sector": 1, "Article": 2, "Company query": 3, "Unverified candidate": 4}
+    columns = {"Source": 4, "Sector": 0, "Article": 1, "Text entity": 2, "Keyword theme": 3,
+               "Company query": 2, "Unverified candidate": 4}
     for kind, column in columns.items():
         members = [n for n in nodes.values() if n["kind"] == kind]
         for index, member in enumerate(members):
@@ -156,3 +186,32 @@ def evidence_graph(news, results):
         left, right = nodes[relation["from"]], nodes[relation["to"]]
         relation.update(x=left["x"], y=left["y"], x2=right["x"], y2=right["y"])
     return {"nodes": list(nodes.values()), "edges": edges}
+
+
+def graph_view(news, results, *, sector, article_limit=8, node_limit=40, show_sources=False, show_similar=False):
+    focused = sorted((n for n in news if sector in n.sectors), key=lambda n:(n.published_day,n.article_id),reverse=True)
+    options = dict(show_sources=show_sources,show_text=True,show_similar=show_similar)
+    full = evidence_graph(focused,results,**options)
+    visible=[]
+    for item in focused[:article_limit]:
+        candidate=evidence_graph([*visible,item],results,**options)
+        if len(candidate['nodes']) > node_limit:
+            break
+        visible.append(item)
+    data=evidence_graph(visible,results,**options)
+    return data, full, focused
+
+
+def graph_members(data, node_id):
+    node=next((n for n in data['nodes'] if n['id']==node_id),None)
+    if not node:
+        return set()
+    if node['kind']=='Article':
+        return {node['article_id']}
+    return {e['article_id'] for e in data['edges'] if e['to']==node_id}
+
+
+def cell_members(news, cell):
+    if not isinstance(cell,dict):
+        return []
+    return [n for n in news if n.published_day==cell.get('Date') and cell.get('Sector') in n.sectors]

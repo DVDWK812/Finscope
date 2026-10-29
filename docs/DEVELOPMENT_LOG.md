@@ -410,3 +410,5 @@ original checkout's web-task changes were not included. Remaining source/service
 permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
 
 - 30 October 2026 Sydney: local flow milestone, 243 offline tests and benchmark dry run passed. Original 171 frozen evidence hashes unchanged. No live API requests or safeguards reset.
+
+- 30 October 2026 Sydney: 250 offline tests and dry run passed. Actual browser heatmap-cell and graph article/theme/sector clicks opened the licensed RBA original/related records. No news/model requests from chart interactions; console had sidebar-theme warnings, no chart exception.

@@ -8,10 +8,15 @@ import streamlit as st
 
 from .local_analytics import (Filters, daily_counts, evidence_graph, heatmap_cells,
                             model_key, overview_counts, sector_counts, select_articles,
-                            default_result_model, result_models)
+                            default_result_model, result_models, graph_view, graph_members, cell_members)
 from .ui_data import SECTORS, SENTIMENTS
 
 COLORS = ["#16856b", "#8b97a8", "#dc6b72", "#d9dee6"]
+
+
+def keep_valid_selection(key, choices):
+    if key in st.session_state and st.session_state[key] not in choices:
+        del st.session_state[key]
 
 
 def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
@@ -80,24 +85,45 @@ def sector_chart(news, results):
     st.caption("Multi-sector articles count once per assigned sector; sector totals can exceed the raw article total.")
 
 
-def heatmap(news, results, start, end):
+def heatmap(news, results, start, end, store):
     st.subheader("Date × sector")
     metric = st.radio("Heatmap measure", ["Article volume", "Sentiment balance"], horizontal=True)
     try:
-        cells = heatmap_cells(news, results, start, end)
+        cells = heatmap_cells(news, results, start, end, date_basis="published")
     except ValueError as error:
         st.info(str(error)); return
-    field = "Articles" if metric == "Article volume" else "Balance"
-    st.vega_lite_chart({"data": {"values": cells}, "mark": {"type": "rect", "cornerRadius": 3},
-        "encoding": {"x": {"field": "Date", "type": "ordinal", "axis": {"labelAngle": -40}},
-            "y": {"field": "Sector", "type": "nominal", "sort": list(SECTORS)},
-            "color": {"condition": {"test": "datum.Articles == 0 || datum.Analyzed == 0" if field == "Balance" else "datum.Articles == 0", "value": "#edf0f3"},
-                      "field": field, "type": "quantitative", "scale": {"domain": [-1, 0, 1], "range": ["#dc6b72", "#f7f9fc", "#16856b"]} if field == "Balance" else {"scheme": "tealblues"}},
-            "tooltip": [{"field": key, "type": "quantitative" if key in {"Articles", "Analyzed", "Balance", *SENTIMENTS} else "nominal"}
-                        for key in ("Date", "Sector", "Articles", "Analyzed", *SENTIMENTS, "Balance", "Sample")]},
-        "height": 280}, width="stretch")
-    st.caption("Grey means no local records / no available analysis, not zero news coverage. Hover for sample counts. "
-               "Balance = (positive − negative) / analyzed articles; n<3 is a low-sample flag, not a reliable estimate.")
+    from .chart_interactions import interactive_chart, chart_scope
+    data={"cells":cells,"metric":metric,"model":st.session_state.get("local_result_model"),"articles":[n.article_id for n in news]}
+    scope=chart_scope('heatmap',data)
+    if st.session_state.get('heatmap_scope') != scope:
+        st.session_state['heatmap_selected']=None
+        st.session_state['heatmap_scope']=scope
+    clicked=interactive_chart('heatmap',data,key='local_heatmap',selected=st.session_state.get('heatmap_selected'))
+    if clicked:
+        st.session_state['heatmap_selected']=clicked
+    st.caption("Click a cell for local articles; balance = (positive − negative) / analyzed, with low samples flagged.")
+    selected=st.session_state.get('heatmap_selected')
+    if selected:
+        day,sector=selected.split('|',1)
+        records=cell_members(news,{'Date':day,'Sector':sector})
+        st.subheader(f"{sector} · {day}")
+        st.caption(f"{len(records)} local originals · {sum(n.article_id in results for n in records)} analyzed")
+        related_articles(records,results,store,context='heatmap')
+    undated=[n for n in news if not n.published_day]
+    if undated:
+        with st.expander(f"Unknown publication date: {len(undated)} originals"):
+            related_articles(undated,results,store,context='heatmap_unknown')
+
+
+def related_articles(news, results, store, *, context):
+    if not news:
+        st.info("No local articles in this selection.")
+        return
+    by_id={n.article_id:n for n in news}
+    keep_valid_selection(context+'_related',by_id)
+    key=st.selectbox("Related articles",list(by_id),format_func=lambda key:by_id[key].title,
+                     key=context+'_related')
+    article_details(by_id[key],results.get(key),store,context=context)
 
 
 def article_details(item, result, store, *, context="explorer"):
@@ -171,24 +197,39 @@ def article_details(item, result, store, *, context="explorer"):
 
 def graph(news, results, store):
     st.subheader("Evidence relationships")
-    st.caption("Choose an article below to inspect its original. Scroll/drag to zoom/pan. Edges show metadata, keyword evidence and unverified cosine candidates; no causal relationships.")
-    data = evidence_graph(news, results)
-    x_axis = {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [-.5,4.5]}}
-    y_axis = {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0,1]}}
-    st.vega_lite_chart({
-        "layer": [
-            {"data": {"values": data["edges"]}, "mark": {"type": "rule", "color": "#d8e2e0", "opacity": .65},
-             "encoding": {"x": x_axis, "y": y_axis,
-                          "x2": {"field": "x2"}, "y2": {"field": "y2"}, "tooltip": [{"field": "relationship"}, {"field": "evidence"}]}},
-            {"data": {"values": data["nodes"]}, "params": [{"name": "graph_zoom", "select": "interval", "bind": "scales"}],
-             "mark": {"type": "circle", "size": 180},
-             "encoding": {"x": x_axis, "y": y_axis,
-                          "color": {"field": "kind", "type": "nominal", "legend": {"orient": "bottom"}},
-                          "tooltip": [{"field": "label"}, {"field": "kind"}, {"field": "article_id"}]}},
-            {"data": {"values": data["nodes"]}, "mark": {"type": "text", "dy": -18, "fontSize": 10, "limit": 140},
-             "encoding": {"x": x_axis, "y": y_axis, "text": {"field": "display_label"}}}
-        ], "height": 420}, key="local_evidence_graph", width="stretch")
-    by_id = {n.article_id: n for n in news}
+    sectors=sorted({s for n in news for s in n.sectors})
+    left,right=st.columns([2,1])
+    with left:
+        keep_valid_selection('graph_sector',sectors)
+        focus=st.selectbox("Graph sector",sectors,key='graph_sector')
+    with right:
+        expanded=st.checkbox("Expand graph",key='graph_expand')
+    with st.expander("Graph layers"):
+        sources=st.checkbox("Show source nodes",key='graph_sources')
+        similar=st.checkbox("Show unverified similarity groups",key='graph_similar')
+    data,full,focused=graph_view(news,results,sector=focus,article_limit=30 if expanded else 8,
+                              node_limit=120 if expanded else 40,show_sources=sources,show_similar=similar)
+    st.caption(f"Showing {len(data['nodes'])}/{len(full['nodes'])} nodes · {sum(n['kind']=='Article' for n in data['nodes'])}/{len(focused)} articles in {focus}.")
+    from .chart_interactions import interactive_chart, chart_scope
+    data['model']=st.session_state.get('local_result_model')
+    scope=chart_scope('graph',data)
+    if st.session_state.get('graph_scope') != scope:
+        st.session_state['graph_selected']=None
+        st.session_state['graph_scope']=scope
+    clicked=interactive_chart('graph',data,key='local_evidence_graph',selected=st.session_state.get('graph_selected'))
+    if clicked:
+        st.session_state['graph_selected']=clicked
+    selected=st.session_state.get('graph_selected')
+    if selected:
+        node=next(n for n in data['nodes'] if n['id']==selected)
+        records=[n for n in focused if n.article_id in graph_members(full,selected)]
+        st.subheader(node['kind']+": "+node['label'])
+        st.caption(f"{len(records)} related originals in the current filters")
+        for evidence in [e for e in full['edges'] if e['from']==selected or e['to']==selected][:12]:
+            st.caption(evidence['relationship']+" · "+evidence['evidence'])
+        related_articles(records,results,store,context='graph_node')
+    by_id = {n.article_id: n for n in focused}
+    keep_valid_selection('local_graph_article',by_id)
     accessible_id = st.selectbox("Graph article reference", list(by_id), index=None,
                      format_func=lambda key: by_id[key].title+" · "+by_id[key].source,
                      key="local_graph_article", placeholder="Choose an original article")
@@ -202,6 +243,7 @@ def graph(news, results, store):
 
 def explorer(news, results, store):
     ordered = sorted(news, key=lambda n: (n.record_date, n.article_id), reverse=True)
+    keep_valid_selection('local_inspected_article',[n.article_id for n in ordered])
     st.dataframe(pd.DataFrame([{"Article ID": n.article_id, "Title": n.title,
         "Date": n.timestamp or n.publication_date or "Unknown", "Source": n.source, "Sector": ", ".join(n.sectors),
         "Sentiment": results[n.article_id].label if n.article_id in results else "Not analyzed",
@@ -215,7 +257,7 @@ def explorer(news, results, store):
 
 def dashboard(store):
     st.title("News intelligence")
-    st.caption("Your local news library · Raw originals · One latest matching model result per article")
+    st.caption("Your local news library")
     all_news, analyses = store.list_news(), store.list_analyses()
     if not all_news:
         for col, label in zip(st.columns(4), ["Saved originals", "Analyzed articles", "Sources", "Pending analysis"]):
@@ -241,7 +283,7 @@ def dashboard(store):
             else:
                 st.info("Run analysis to see sentiment distribution.")
         with right:
-            st.subheader("Source coverage")
+            st.subheader("Articles by source")
             counts_by_source = pd.Series([n.source for n in news]).value_counts().rename("Raw articles")
             st.bar_chart(counts_by_source, horizontal=True, color="#16856b", height=260)
         sector_chart(news, results)
@@ -252,13 +294,13 @@ def dashboard(store):
     with trends:
         st.subheader("Daily sentiment")
         try:
-            table = pd.DataFrame(daily_counts(news, results, start, end)).set_index("Date")
+            table = pd.DataFrame(daily_counts(news, results, start, end,date_basis="published")).set_index("Date")
             st.line_chart(table, color=COLORS, height=320, y_label="Raw articles")
             st.caption("Zero means no matching records in your local library. Published, first-seen, submitted and date-only meanings remain attached to originals; this is not exhaustive market coverage.")
         except ValueError as error:
             st.info(str(error))
     with matrix:
-        heatmap(news, results, start, end)
+        heatmap(news, results, start, end,store)
     with network:
         graph(news, results, store)
     with articles:

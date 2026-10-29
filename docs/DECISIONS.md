@@ -107,3 +107,5 @@ scope is distinct. No provider winner/public rights approval or frozen-evaluatio
 change. See LOCAL_REDESIGN.md for actual evidence and interface/licence references.
 
 - 30 October 2026 Sydney — local usability milestone: separate pending-analysis queue from result filters, select one results model (FinBERT default), preserve publication precision and explicit date widening, source status from existing holds/ledger, selected-preview and next-step actions. No provider/model call on reads; offline verification only.
+
+- 30 October 2026 Sydney — local chart milestone: dependency-free local Components v1 graph/heatmap return scoped click selections; no external scripts, inference or data requests. Graph focuses one sector with capped nodes, source layer off, literal entities/keyword themes and inspectable snippets; ticker-query edges remain query provenance.
