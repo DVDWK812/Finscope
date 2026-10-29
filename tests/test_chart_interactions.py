@@ -60,6 +60,35 @@ class EvidenceInteractionTests(unittest.TestCase):
         self.assertIsNone(selected_value(event,scope,{'b'}))
         self.assertIsNone(selected_value(None,scope,{'a'}))
 
+    def test_count_charts_validate_without_categorical_scale_bindings(self):
+        import altair as alt
+        from finscope.dashboard_ui import source_chart,sector_chart,timeline_chart
+        specs=[]
+        with patch('streamlit.vega_lite_chart',side_effect=lambda spec,**kw:specs.append(spec)):
+            source_chart([self.original])
+            sector_chart([self.original],{})
+            timeline_chart([self.original],{},date(2026,10,29),date(2026,10,30))
+        for spec in specs:
+            alt.Chart.from_dict(spec).to_json(validate=True)
+            self.assertNotIn('params',spec)
+        trend=specs[-1]['data']['values']
+        self.assertEqual(sum(r['Articles'] for r in trend),1)
+        self.assertEqual(specs[-1]['encoding']['y']['scale']['domain'],[0,1])
+
+    def test_single_sentiment_donut_has_finite_explicit_angles(self):
+        import altair as alt
+        import math
+        from finscope.dashboard_ui import distribution_chart
+        with patch('streamlit.vega_lite_chart') as chart:
+            distribution_chart({'a':self.result})
+        spec=chart.call_args.args[0]
+        alt.Chart.from_dict(spec).to_json(validate=True)
+        rows=spec['data']['values']
+        self.assertEqual(len(rows),1)
+        self.assertEqual((rows[0]['Sentiment'],rows[0]['Articles'],rows[0]['Start']),('Neutral',1,0))
+        self.assertAlmostEqual(rows[0]['End'],2*math.pi)
+        self.assertIsNone(spec['encoding']['theta']['scale'])
+
 
 class ChartUITests(unittest.TestCase):
     setUp=product_test.ProductUITests.setUp

@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from datetime import date, datetime, timezone
 import json
+import math
 
 import pandas as pd
 import streamlit as st
@@ -108,23 +109,55 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
 
 
 def distribution_chart(results):
-    rows = [{"Sentiment": sentiment, "Articles": sum(a.label == sentiment for a in results.values())} for sentiment in SENTIMENTS]
+    rows,angle=[],0
+    total=max(1,len(results))
+    for sentiment in SENTIMENTS:
+        count=sum(a.label==sentiment for a in results.values())
+        end=angle+count/total*2*math.pi
+        if count:
+            rows.append({'Sentiment':sentiment,'Articles':count,'Start':angle,'End':end})
+        angle=end
     st.vega_lite_chart({"data": {"values": rows}, "mark": {"type": "arc", "innerRadius": 65},
-        "encoding": {"theta": {"field": "Articles", "type": "quantitative"},
+        "encoding": {"theta": {"field": "End", "type": "quantitative", "scale":None},"theta2":{"field":"Start"},
                      "color": {"field": "Sentiment", "type": "nominal", "scale": {"domain": list(SENTIMENTS), "range": COLORS[:3]}},
                      "tooltip": [{"field": "Sentiment"}, {"field": "Articles", "type": "quantitative"}]},
         "height": 260}, width="stretch")
 
 
 def sector_chart(news, results):
-    table = pd.DataFrame(display_sector_counts(news, results)).set_index("Sector")
-    st.bar_chart(table, color=COLORS, stack=True, height=300, x_label="Keyword sector", y_label="Raw articles")
+    table=display_sector_counts(news,results)
+    rows=[{'Sector':r['Sector'],'Sentiment':label,'Articles':r[label]} for r in table for label in (*SENTIMENTS,'Not analyzed')]
+    upper=max(1,max((sum(r[label] for label in (*SENTIMENTS,'Not analyzed')) for r in table),default=0))
+    st.vega_lite_chart({'data':{'values':rows},'mark':'bar','encoding':{
+        'x':{'field':'Sector','type':'ordinal','sort':list(SECTORS)},
+        'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},
+        'tooltip':[{'field':'Sector'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':300},width='stretch')
     st.caption("Multi-sector articles count once per assigned sector; sector totals can exceed the raw article total.")
 
 
 def display_sector_counts(news, results):
     selected=st.session_state.get('local_sectors',[])
     return [r for r in sector_counts(news,results) if not selected or r['Sector'] in selected]
+
+
+def source_chart(news):
+    from collections import Counter
+    counts=Counter(n.source for n in news)
+    st.vega_lite_chart({'data':{'values':[{'Source':k,'Articles':v} for k,v in counts.items()]},'mark':{'type':'bar','color':COLORS[0]},
+        'encoding':{'x':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,max(counts.values(),default=1)]}},
+        'y':{'field':'Source','type':'nominal','sort':'-x'},'tooltip':[{'field':'Source'},{'field':'Articles','type':'quantitative'}]},'height':260},width='stretch')
+
+
+def timeline_chart(news, results, start, end):
+    table=daily_counts(news,results,start,end,date_basis='published')
+    rows=[{'Date':r['Date'],'Sentiment':label,'Articles':r[label]} for r in table for label in (*SENTIMENTS,'Not analyzed')]
+    upper=max(1,max((r['Articles'] for r in rows),default=0))
+    st.vega_lite_chart({'data':{'values':rows},'mark':{'type':'line','point':True},'encoding':{
+        'x':{'field':'Date','type':'ordinal','title':'Publication date','axis':{'labelAngle':-40}},
+        'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},
+        'tooltip':[{'field':'Date'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':320},width='stretch')
 
 
 def heatmap(news, results, start, end, store):
@@ -337,8 +370,7 @@ def dashboard(store):
                 st.info("Run analysis to see sentiment distribution.")
         with right:
             st.subheader("Articles by source")
-            counts_by_source = pd.Series([n.source for n in news]).value_counts().rename("Raw articles")
-            st.bar_chart(counts_by_source, horizontal=True, color="#16856b", height=260)
+            source_chart(news)
         sector_chart(news, results)
     with sectors:
         st.subheader("Sector sentiment")
@@ -347,8 +379,7 @@ def dashboard(store):
     with trends:
         st.subheader("Daily sentiment")
         try:
-            table = pd.DataFrame(daily_counts(news, results, start, end,date_basis="published")).set_index("Date")
-            st.line_chart(table, color=COLORS, height=320, y_label="Raw articles")
+            timeline_chart(news,results,start,end)
             st.caption("Publication dates only; zero means no matching local records, not full market coverage.")
         except ValueError as error:
             st.info(str(error))
