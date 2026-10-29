@@ -68,7 +68,8 @@ class NewsItem:
 
     @property
     def record_date(self):
-        return self.timestamp[:10] or self.publication_date
+        return (datetime.fromisoformat(self.timestamp).astimezone(timezone.utc).date().isoformat()
+                if self.timestamp else self.publication_date)
 
     @property
     def analysis_text(self):

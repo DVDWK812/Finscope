@@ -111,11 +111,13 @@ def preview_news(store):
         return
     st.subheader("News preview")
     st.caption("Fetched successfully does not mean approved for analysis or storage. Only returned headlines/summaries are available; full publisher text was not fetched.")
-    st.dataframe(pd.DataFrame([{"Title": n.title, "Source": n.source,
-                    "Publication time": n.timestamp or n.publication_date or "Unknown",
-                    "Time meaning": n.timestamp_kind, "Summary": n.summary or "Unavailable",
-                    "Original URL": n.url} for n in items]), hide_index=True, width="stretch",
-                    column_config={"Original URL": st.column_config.LinkColumn()})
+    # Avoid the dataframe's built-in CSV download before retention is permitted.
+    for n in items:
+        with st.container(border=True):
+            st.text(n.title)
+            st.caption(f"{n.source} · {n.timestamp or n.publication_date or 'Unknown time'} ({n.timestamp_kind})")
+            st.text(n.summary or "Summary unavailable")
+            st.link_button("Open original article", n.url)
     rights = permission_editor("preview")
     if st.button("Save permitted preview to local library"):
         try:
@@ -220,24 +222,8 @@ def analyze(store):
 
 
 def dashboard(store):
-    st.title("News intelligence")
-    news, latest = store.list_news(), store.latest_analyses()
-    st.caption("Local library · Raw original articles · Latest selected model result per article")
-    for col, (label, value) in zip(st.columns(4), [("Saved originals", len(news)), ("Analyzed articles", len(latest)),
-                      ("Sources", len({n.source for n in news})), ("Pending analysis", len(news)-len(latest))]):
-        col.metric(label, value)
-    if not news:
-        st.info("Your library is ready. Choose Add news to fetch a source or save approved text.")
-        return
-    counts = pd.DataFrame([{"Sector": sector, "Sentiment": latest[n.article_id].label, "Articles": 1}
-                    for n in news if n.article_id in latest for sector in n.sectors])
-    if not counts.empty:
-        st.bar_chart(counts.pivot_table(index="Sector", columns="Sentiment", values="Articles", aggfunc="sum", fill_value=0), stack=True)
-    st.dataframe(pd.DataFrame([{"Title": n.title, "Sector": ", ".join(n.sectors), "Source": n.source,
-                   "Time": n.timestamp or n.publication_date or "Unknown", "Sentiment": latest[n.article_id].label if n.article_id in latest else "Not analyzed",
-                   "Original URL": n.url} for n in news]), hide_index=True, width="stretch",
-                   column_config={"Original URL": st.column_config.LinkColumn()})
-    st.download_button("Export local library", json.dumps(store.export(), indent=2), "finscope-local.json", "application/json")
+    from .dashboard_ui import dashboard as render_dashboard
+    render_dashboard(store)
 
 
 def about():

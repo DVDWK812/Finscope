@@ -62,3 +62,11 @@ Primary-source details checked 29 October; teammates should read relevant sectio
 | Repository evidence linked above; [development log](DEVELOPMENT_LOG.md), [AI-assistance record](CONTRIBUTIONS_AND_AI_DISCLOSURE.md) | FinScope-specific measurements, provenance, known assistance and pending human claims |
 
 Maintenance: update only when new evidence is verified; attach its date/source and distinguish completed/pending. Preserve historical measurements and all frozen artifacts byte-for-byte; never rerun/tune/rescore the consumed challenge. Retain the user-confirmed absence of required headings; adapt only if the team supplies revised requirements. Codex maintains this synopsis and technical documentation; the members own academic prose, interpretation and final submission. No final-report PDF or coursework submission is generated.
+
+## Local product visual update — 29 October 2026
+
+Milestone 2 adds six shared-filter raw-article views, sample-aware heatmap and
+selectable source/sector/ticker-query/unverified-candidate graph with original
+article details/history. 213 offline tests and a local browser/restart check passed;
+these are engineering checks, not human usability or new model accuracy evidence.
+[Current local evidence](LOCAL_REDESIGN.md).

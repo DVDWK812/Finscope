@@ -351,3 +351,13 @@ All 202 offline tests and benchmark dry run pass. [Detailed evidence](LOCAL_REDE
 Legacy UI regressions remain intact against their retained entrypoint; new tests
 exercise the local product. Main-only push and exact-commit CI follow validation.
 
+## Local redesign milestone 2 — 29 October 2026 Sydney
+
+Shared raw-original filters now drive six visual views, including sample-aware
+heatmap, metadata/keyword/candidate evidence graph and article drill-down/history.
+Preview cards avoid accidental CSV export before retention consent. Source times
+and date-only/unknown precision are preserved; counts never substitute candidate
+groups for originals. 213 offline tests plus benchmark dry run pass. Local browser
+restart retained the real milestone-1 saved result and all views rendered. M1
+exact-commit CI passed both Streamlit jobs (run 40849128698). No new provider call,
+challenge evaluation or cloud deployment. See LOCAL_REDESIGN.md for qualifications.

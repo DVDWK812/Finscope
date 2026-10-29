@@ -72,5 +72,22 @@ class ProductUITests(unittest.TestCase):
         self.assertEqual(second.text_input(key="key_marketaux").value, "")
         self.assertNotIn("PRIVATE-UNIT-SECRET", str(LocalNewsStore(self.db).export()))
 
+    def test_shared_filters_heatmap_graph_and_drilldown_render_together(self):
+        store = LocalNewsStore(self.db)
+        first, second = item(), item(source="Second authored source")
+        store.save_news(first); store.save_news(second)
+        from finscope.local_news import analyze_finbert
+        analyze_finbert(first,store,pipeline()); analyze_finbert(second,store,pipeline())
+        app = self.app("Dashboard")
+        self.assertEqual([t.label for t in app.tabs], ["Overview", "Sector sentiment", "Trends", "Heatmap", "Evidence graph", "News Explorer"])
+        app.multiselect(key="local_sources").set_value([first.source]).run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.metric[0].value,"1")
+        self.assertEqual(app.selectbox(key="local_inspected_article").value,first.article_id)
+        self.assertTrue(any(first.title==h.value for h in app.subheader))
+        app.selectbox(key="local_graph_article").set_value(first.article_id).run()
+        self.assertFalse(app.exception)
+        self.assertGreaterEqual(sum(first.title==h.value for h in app.subheader),2)
+
 
 if __name__ == "__main__": unittest.main()

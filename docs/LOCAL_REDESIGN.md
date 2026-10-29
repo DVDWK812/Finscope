@@ -47,7 +47,31 @@ checks); benchmark dry run passed with no provider calls. Legacy demo UI tests
 now explicitly call the retained legacy fixture entrypoint; new AppTest coverage
 exercises the actual local-first entrypoint. Exact-commit CI is checked after push.
 
-Remaining milestones: shared visual analytics/heatmap/evidence graph/drill-down;
-external structured LLM/local Ollama/fixed collectors and UI polish. The complete
+Milestone 1 exact commit `f411de2691376f4b89ae6f0fa795c7d134a3afbd` matched origin/main;
+both Python 3.11 / Streamlit-version jobs passed in [Actions run 40849128698](https://github.com/DVDWK812/Finscope/actions/runs/40849128698).
+Remaining after milestone 2: external structured LLM/local Ollama/fixed collectors and UI polish. The complete
 real-Marketaux-to-FinBERT acceptance remains gated by actual downstream permission,
 not replaced by the authored-text result.
+
+## Milestone 2: shared visual analytics and evidence drill-down
+
+Implemented Overview, Sector sentiment, Trends, Date × Sector heatmap,
+interactive evidence graph and News Explorer. One shared date/sector/source/
+sentiment/model/search filter selects originals before every view; latest matching
+model analysis per original avoids double counting reanalyses. Sector membership
+is multi-label, explicitly separate from raw counts. Unknown times remain unknown;
+date-only records retain that precision. Missing heatmap cells have null sentiment
+balance, sample counts and n<3 flags rather than fabricated neutral observations.
+
+Graph edges are limited to source metadata, matched sector keywords, ticker-feed
+query provenance and unverified cosine candidates. Article selections resolve
+original IDs; no company causation or confirmed event identity is inferred. Explorer
+shows originals, source links, separate probabilities/rationales, history and
+candidate members outside the filters. Fetched previews use cards rather than an
+export-enabled grid before retention permission is supplied.
+
+213 offline tests and benchmark dry run pass. Actual localhost browser reload after
+a process restart retained the milestone-1 original/model result. All six views,
+heatmap controls and the node graph rendered; graph/article interaction is checked
+separately from data-unit tests. No provider request or frozen packet/model rerun
+was made during milestone 2. Exact-commit CI is checked after push.
