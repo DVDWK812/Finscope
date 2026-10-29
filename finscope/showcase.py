@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import streamlit as st
 
-from .showcase_data import END, START, SECTORS, SENTIMENTS, examples, graph, select
+from .showcase_data import END, START, SECTORS, SENTIMENTS, examples, graph, graph_overview, select, word_cloud_terms
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
 PAGES = ("Home", "User Guide", "Dashboard Preview", "Knowledge Graph", "News Explorer", "Get FinScope")
@@ -210,27 +210,132 @@ def story(row, details=False):
         st.caption("Fictional sample only. No publisher URL exists; no original-article link is fabricated.")
 
 
-def knowledge_graph():
-    heading("Follow the connections", "An illustrative graph linking fictional companies, industries, articles, sources and candidate events.")
-    company = st.selectbox("Fictional company", sorted({r.company for r in examples()}), key="graph_company")
-    data = graph(examples(), company)
+def render_relationship_graph(data, height=440):
+    """Small deterministic graph: edges and labels have inspectable tooltips."""
     plot({"layer": [
-        {"data": {"values": data["edges"]}, "mark": {"type": "rule", "color": "#476079", "opacity": .65},
+        {"data": {"values": data["edges"]},
+         "mark": {"type": "rule", "color": "#536c85", "opacity": .62, "strokeWidth": 1.6},
+         "encoding": {
+             "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+             "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+             "x2": {"field": "x2"}, "y2": {"field": "y2"},
+             "tooltip": [{"field": "relationship", "title": "Relationship"},
+                         {"field": "count", "title": "Example reports"},
+                         {"field": "article_id", "title": "Example evidence"}]}},
+        {"data": {"values": data["nodes"]},
+         "mark": {"type": "circle", "size": 900, "stroke": "#101d30", "strokeWidth": 2},
+         "encoding": {
+             "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+             "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+             "color": {"field": "kind", "type": "nominal", "title": "Node type",
+                       "scale": {"domain": ["Industry", "Company", "Article", "Unverified candidate", "Source"],
+                                 "range": ["#e9c776", "#60e5bc", "#9dbfff", "#d4adff", "#f69e9e"]},
+                       "legend": {"orient": "bottom", "columns": 3}},
+             "tooltip": [{"field": "name", "title": "Node"},
+                         {"field": "kind", "title": "Type"},
+                         {"field": "detail", "title": "Context"}]}},
+        {"data": {"values": data["nodes"]},
+         "mark": {"type": "text", "dy": -23, "color": "#e0ebf9", "fontSize": 11,
+                  "limit": 150, "fontWeight": "bold"},
          "encoding": {"x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
                       "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-                      "x2": {"field": "x2"}, "y2": {"field": "y2"}, "tooltip": [{"field": "relationship"}, {"field": "article_id"}]}},
-        {"data": {"values": data["nodes"]}, "mark": {"type": "circle", "size": 700, "opacity": 1, "stroke": "#101d30", "strokeWidth": 2},
-         "encoding": {"x": {"field": "x", "type": "quantitative", "axis": None}, "y": {"field": "y", "type": "quantitative", "axis": None},
-                      "color": {"field": "kind", "type": "nominal", "title": "Entity type", "legend": {"orient": "bottom", "columns": 2}, "scale": {"range": ["#60e5bc", "#9dbfff", "#e9c776", "#d4adff", "#f69e9e"]}},
-                      "tooltip": [{"field": "name"}, {"field": "kind"}]}},
-        {"data": {"values": data["nodes"]}, "mark": {"type": "text", "dy": -22, "color": "#d6e2f2", "fontSize": 11, "limit": 130},
-         "encoding": {"x": {"field": "x", "type": "quantitative", "axis": None}, "y": {"field": "y", "type": "quantitative", "axis": None}, "text": {"field": "name"}}}],
-        "height": 430, "resolve": {"scale": {"color": "independent"}}}, width="stretch")
-    st.caption("Every relationship is authored for this preview. Candidate membership does not establish event identity, factual contradiction or a real financial relationship.")
-    rows = [r for r in examples() if r.company == company]
-    chosen = st.selectbox("Inspect an illustrative article", [r.article_id for r in rows], key="graph_article")
-    story(next(r for r in rows if r.article_id == chosen), details=True)
+                      "text": {"field": "label"}}}],
+          "height": height, "resolve": {"scale": {"color": "independent"}})
 
+
+def headline_cloud(records):
+    terms = word_cloud_terms(records)
+    if not terms:
+        st.info("No headline terms are available for this illustrative selection.")
+        return
+    columns = (14, 38, 63, 87)
+    rows = (13, 37, 61, 85)
+    words = []
+    for index, item in enumerate(terms):
+        words.append({"word": item["term"], "count": item["count"],
+                      "x": columns[index % 4], "y": rows[index // 4],
+                      "font": min(34, 18 + 6 * (item["count"] - 1))})
+    plot({"data": {"values": words},
+          "mark": {"type": "text", "fontWeight": "bold"},
+          "encoding": {
+              "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+              "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
+              "text": {"field": "word"},
+              "size": {"field": "font", "type": "quantitative", "scale": None, "legend": None},
+              "color": {"field": "count", "type": "quantitative",
+                        "scale": {"range": ["#9fb9d7", "#60e5bc"]}, "legend": None},
+              "tooltip": [{"field": "word", "title": "Headline term"},
+                          {"field": "count", "title": "Example headlines"}]},
+          "height": 300})
+    with st.expander("Which headlines contain these words?"):
+        term = st.selectbox("Select a word", [item["term"] for item in terms], key="graph_cloud_word")
+        selected = next(item for item in terms if item["term"] == term)
+        matches = [record for record in records if record.article_id in selected["article_ids"]]
+        st.dataframe([{"Date": r.day.isoformat(), "Title": r.title,
+                       "Company": r.company, "Illustrative tone": r.sentiment} for r in matches],
+                     hide_index=True, width="stretch")
+
+
+def knowledge_graph():
+    heading("Explore the news connections",
+            "See how fictional companies, sectors, publishers and unverified candidate groups relate.")
+    all_rows = examples()
+    perspective = st.radio("Graph perspective", ("Company focus", "Industry network"),
+                           horizontal=True, key="graph_perspective")
+    company = st.selectbox("Fictional company", sorted({r.company for r in all_rows}),
+                           key="graph_company")
+    rows = [r for r in all_rows if r.company == company]
+    if perspective == "Industry network":
+        a, b, c = st.columns(3)
+        a.metric("Fictional companies", len({r.company for r in all_rows}))
+        b.metric("Illustrated sectors", len({r.sector for r in all_rows}))
+        c.metric("Illustrative source reports", len(all_rows))
+        st.subheader("Industry → Company → Source")
+        render_relationship_graph(graph_overview(all_rows), height=480)
+        st.caption("Lines reflect authored example classifications and fictional source coverage. "
+                   "Their tooltips show how many example reports support each link.")
+        st.dataframe([
+            {"Company": name,
+             "Sector": next(r.sector for r in all_rows if r.company == name),
+             "Positive": sum(r.company == name and r.sentiment == "Positive" for r in all_rows),
+             "Neutral": sum(r.company == name and r.sentiment == "Neutral" for r in all_rows),
+             "Negative": sum(r.company == name and r.sentiment == "Negative" for r in all_rows)}
+            for name in sorted({r.company for r in all_rows})], hide_index=True, width="stretch")
+    else:
+        a, b, c, d = st.columns(4)
+        a.metric("Fictional reports", len(rows))
+        b.metric("Candidate groups", len({r.candidate for r in rows}))
+        c.metric("Illustrative sources", len({r.source for r in rows}))
+        d.metric("Positive / Negative", f'{sum(r.sentiment == "Positive" for r in rows)} / '
+                                      f'{sum(r.sentiment == "Negative" for r in rows)}')
+        st.subheader("Company → Articles → Candidates / Sources")
+        render_relationship_graph(graph(all_rows, company))
+        st.caption("Report nodes are identified by SYN codes. Hover over a node or link to inspect "
+                   "its fictional evidence. Candidate links are NOT confirmed event identity.")
+        st.subheader("Potentially related reports")
+        groups = sorted({r.candidate for r in rows})
+        st.dataframe([
+            {"Candidate": candidate,
+             "Original reports": len([r for r in rows if r.candidate == candidate]),
+             "Illustrative tone(s)": ", ".join(sorted({r.sentiment for r in rows if r.candidate == candidate})),
+             "Report IDs": ", ".join(r.article_id for r in rows if r.candidate == candidate)}
+            for candidate in groups], hide_index=True, width="stretch")
+        chosen = st.selectbox("Inspect an illustrative article",
+                              [r.article_id for r in rows], key="graph_article",
+                              format_func=lambda ident: next(
+                                  f"{r.article_id} · {r.title}" for r in rows if r.article_id == ident))
+        story(next(r for r in rows if r.article_id == chosen), details=True)
+
+    st.divider()
+    st.subheader("Headline word cloud")
+    scope = st.radio("Text scope", ("All fictional headlines", "Selected company"),
+                     horizontal=True, key="graph_cloud_scope")
+    cloud_rows = all_rows if scope == "All fictional headlines" else rows
+    st.caption(f"{len(cloud_rows)} authored fictional headlines · Size reflects how many titles "
+               "contain each word, not model importance or real-world frequency. "
+               "Generic words and fictional company names are excluded.")
+    headline_cloud(cloud_rows)
+    st.caption(DEMO_LABEL + " · No news collection or model analysis occurs here.")
 
 def explorer():
     heading("Stay close to the original", "Browse fictional headlines to see the intended news-exploration experience. Real source links belong to the local product.")

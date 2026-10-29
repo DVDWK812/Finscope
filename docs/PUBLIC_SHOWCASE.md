@@ -34,3 +34,31 @@ After feature commit `fc065c3e801314cbdf762c6c542fdce073a1010b` was pushed to or
 The showcase-only workflow [40854256012](https://github.com/DVDWK812/Finscope/actions/runs/40854256012) passed using only public requirements. Initial matrix [40854256048](https://github.com/DVDWK812/Finscope/actions/runs/40854256048) failed on Streamlit 1.50 because the new test used the newer `AppTest.file_uploader` convenience property; the newer job was cancelled after its test/preview steps passed. Retained the failure honestly and repaired the test to use the public `app.get("file_uploader")` query. The no-upload assertion, all existing tests, supported versions and runtime boundaries remain unchanged. The repaired candidate's **220 tests pass**. Exact repair-commit PUSH CI is verified at handover; its final SHA/results stay in ignored local evidence to avoid a claim about this commit's future CI.
 
 No provider requests, challenge inference/tuning, private-record publication, Moodle access or submission occurred in this split. The three members still own the academic report; only the concise synopsis is maintained. Uncommitted local-product changes remain owned elsewhere and excluded, rather than silently incorporated into this release.
+
+
+## Knowledge Graph / headline word cloud enhancement — 30 October 2026 Sydney
+
+The public synthetic showcase now offers two complementary relation perspectives.
+**Industry network** aggregates the 24 authored reports into fictional
+industry → company → reporting-source links, with per-link report counts and a
+small sector/company sentiment breakdown. **Company focus** uses deterministic
+layered company → original article → candidate/source connections, with
+article IDs, original dates, distinct authored illustrative context, potential
+candidate membership and original-report detail. Hover tooltips expose the
+relationship basis. Grouping remains unverified, with no real-world or causal
+claim.
+
+The Knowledge Graph page also includes a dependency-free, headline-derived
+**word cloud**. Terms are lowercase English words from authored headlines;
+generic filler and company names are excluded. Each report contributes no
+more than one count to a term. The default cloud uses the 24 examples; a
+selector switches to the chosen company's four headlines. Word size reflects
+the actual fictional-example headline-document count, not LLM importance,
+statistical significance or observed market frequency. An optional drill-down
+lists the exact source examples for a selected word. No publisher content,
+private labels, API keys, weights, requests or new deployment dependencies
+are introduced. The previous historical synthetic-evidence boundary stands.
+
+This enhancement does not alter or execute the full local app, frozen
+sentiment/evaluation packets, provider adapters, inference or model assets.
+The deployment and compatibility tests are validated separately after push.

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
-from finscope.showcase_data import END, START, examples, graph, select
+from finscope.showcase_data import END, START, examples, graph, graph_overview, select, word_cloud_terms
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -120,3 +120,49 @@ class FictionalDataTests(unittest.TestCase):
             self.assertIn(edge["to"], ids)
             self.assertIn(edge["article_id"], {r.article_id for r in rows})
         self.assertEqual(graph(rows, "Nonexistent"), {"nodes": [], "edges": []})
+
+
+    def test_industry_network_aggregates_only_fixture_evidence(self):
+        rows = examples()
+        network = graph_overview(rows)
+        self.assertEqual(len([n for n in network["nodes"] if n["kind"] == "Company"]), 6)
+        self.assertEqual(len([n for n in network["nodes"] if n["kind"] == "Industry"]), 6)
+        self.assertEqual(len([n for n in network["nodes"] if n["kind"] == "Source"]), 3)
+        ids = {n["id"] for n in network["nodes"]}
+        self.assertTrue(network["edges"])
+        self.assertTrue(all(e["from_id"] in ids and e["to_id"] in ids
+                            and e["count"] >= 1 for e in network["edges"]))
+        source_edges = [e for e in network["edges"]
+                        if e["relationship"] == "Fictional source reports on company"]
+        self.assertEqual(sum(e["count"] for e in source_edges), 24)
+        self.assertEqual(graph_overview([]), {"nodes": [], "edges": []})
+
+    def test_word_cloud_counts_fixture_titles_not_filler_text(self):
+        records = examples()
+        terms = word_cloud_terms(records)
+        self.assertTrue(terms)
+        self.assertLessEqual(len(terms), 16)
+        self.assertEqual(terms, word_cloud_terms(records))
+        self.assertNotIn("fictional", {item["term"] for item in terms})
+        self.assertNotIn("aster", {item["term"] for item in terms})
+        self.assertTrue(all(item["count"] == len(item["article_ids"]) for item in terms))
+        self.assertTrue(all(set(item["article_ids"]) <= {r.article_id for r in records}
+                            for item in terms))
+        self.assertEqual(word_cloud_terms(records, limit=0), [])
+        company_rows = [r for r in records if r.company == "Aster Circuits"]
+        small = word_cloud_terms(company_rows)
+        self.assertTrue(small)
+        self.assertTrue(all(item["count"] <= 4 for item in small))
+        self.assertEqual(word_cloud_terms([], limit=16), [])
+
+    def test_graph_word_cloud_and_perspective_controls_render(self):
+        # This method runs as a data test but exercises the public AppTest entrypoint.
+        app = AppTest.from_file(str(ROOT / "deploy/streamlit_app.py"), default_timeout=15).run()
+        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("Headline word cloud" in h.value for h in app.subheader))
+        app.radio(key="graph_perspective").set_value("Industry network").run()
+        self.assertFalse(app.exception)
+        app.radio(key="graph_cloud_scope").set_value("Selected company").run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("authored fictional headlines" in c.value for c in app.caption))
