@@ -338,3 +338,16 @@ Added explicit text/source/time/rights input, session-scoped 24-hour SQLite pers
 Manually prepared and hash-verified sentence-transformers/all-MiniLM-L6-v2 revision 1110a243fdf4706b3f48f1d95db1a4f5529b4d41 (Apache-2.0). Real attention-mask mean-pooling/normalized embeddings reuse the CPU runtime. Actual browser submission of the authored default chipmaker text returned Positive, probabilities 0.9536037445/0.0196151976/0.0267810132, saved a record and changed Overview to 1 raw article/1 candidate group. The initial browser run exposed a chipmaker keyword gap (Unclassified); added an explicit chipmaker rule and retained the initial result as observed rather than rewriting its history. Sector tests now cover that term and fallback.
 
 All original 115 regressions plus 6 pipeline and 2 approved-form tests pass: **123 tests**. These new automated form/model-boundary tests use explicit mocks; they are not described as real inference. Local real-model browser evidence is separate. Prepared Community Cloud entrypoint/dependencies and a Docker build recipe (not yet claimed built/deployed). Hosting login is user-completed; deployment is the next gate. Commit/push and exact-head CI are verified after publication. Accuracy, memory/cold start, labelled evaluation and three-human feedback remain to be measured/prepared. Codex assistance recorded; no production data-source approval.
+# Local redesign milestone 1 — 29 October 2026 Sydney
+
+Followed the user's local-first correction: persistent local SQLite, first-run
+guide, three adapter choices, masked/project-.env credentials, explicit bounded
+fetch/preview and independent content rights. Preserved study/shared holds and
+all frozen evaluation. No cloud deployment work, GDELT retry or Moodle access.
+Actual browser Marketaux request: 09:18:28.562382 UTC, HTTP 200, three records,
+one call; retention/NLP remain gated. Separate approved authored-text actual local
+FinBERT: Positive, .952976/.021392/.025632, 136.73 ms, saved SQLite/sector view.
+All 202 offline tests and benchmark dry run pass. [Detailed evidence](LOCAL_REDESIGN.md).
+Legacy UI regressions remain intact against their retained entrypoint; new tests
+exercise the local product. Main-only push and exact-commit CI follow validation.
+

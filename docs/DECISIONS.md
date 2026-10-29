@@ -77,3 +77,18 @@ GO applies to readiness engineering and separately authorized synthetic/licensed
 The saved one-shot is **not yet due** (25 October 09:00 Sydney). No execution report or attempt marker was found; no HTTP status, latency, record count or new NLP text can be attributed to it. It was not classified as a cooldown skip. The audit made zero provider calls and preserved the existing schedule and cooldown. Only the original three GDELT responses remain measured evidence; optional-provider rows remain skipped for missing credentials. Every source gate above remains open, so Phase 2 is **NO-GO** and GDELT provisional.
 
 Current main includes the user's authorized offline UI prototype (`8f7d730`), preserved during safe fast-forward. Its invented fixtures and manually assigned illustrative labels are not real provider coverage, model output or permission evidence. All 47 offline tests and the dry run pass; exact-head push CI is checked after publishing this audit. Keep the local computer awake/online and Codex running at the scheduled time through completion; it need not stay on continuously beforehand.
+# Local-first architecture supersedes cloud product requirements — 29 October 2026
+
+Latest user correction: primary runtime is Streamlit on the user's own localhost,
+with persistent local SQLite, `.env`/masked credentials, local FinBERT/MiniLM and
+optional localhost Ollama/consented external LLM. Cloud deployment/session/cache
+work is no longer a product acceptance target. Historical evidence below remains
+dated and preserved. Main-only milestones and exact-commit CI remain required.
+
+Explicit local product fetching is authorized within available quota and existing
+holds, separately from the unchanged research sampler. Marketaux returned HTTP
+200 / three preview records in one local browser request on 29 October; downstream
+storage/NLP/transmission remain unverified and gated. NewsData remains manually
+paused. See [actual local evidence](LOCAL_REDESIGN.md); no public-use approval,
+provider winner or model-accuracy claim follows.
+

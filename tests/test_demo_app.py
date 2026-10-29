@@ -8,6 +8,11 @@ from streamlit.testing.v1 import AppTest
 from finscope.demo_pipeline import DemoPipeline
 
 
+def render_retained_demo_app():
+    from streamlit_app import legacy_fixture_main
+    legacy_fixture_main()
+
+
 def render_approved_status():
     import streamlit as st
     from streamlit_app import status
@@ -32,7 +37,7 @@ class ApprovedAppTests(unittest.TestCase):
                  patch("finscope.demo_runtime.load_pipeline",return_value=engine),
                  patch("requests.sessions.Session.request",side_effect=AssertionError("No news/model HTTP in unit tests"))]
         for item in patches:item.start();self.addCleanup(item.stop)
-        self.app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/"streamlit_app.py"),default_timeout=15).run()
+        self.app=AppTest.from_function(render_retained_demo_app,default_timeout=15).run()
 
     def test_approved_text_to_saved_result_and_overview_uses_the_pipeline(self):
         self.assertFalse(self.app.exception)

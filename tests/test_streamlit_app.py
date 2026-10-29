@@ -11,6 +11,11 @@ APP = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 ANCHOR = date(2026, 10, 24)
 
 
+def render_retained_fixture_app():
+    from streamlit_app import legacy_fixture_main
+    legacy_fixture_main()
+
+
 def render_view(page, event_view=True, filters=None):
     """Render the same page functions used by navigation, without private AppTest APIs."""
     from datetime import date
@@ -37,7 +42,7 @@ class StreamlitRuntimeTests(unittest.TestCase):
         self.addCleanup(lambda: self.http.assert_not_called())
 
     def app(self):
-        app = AppTest.from_file(str(APP), default_timeout=10)
+        app = AppTest.from_function(render_retained_fixture_app, default_timeout=10)
         app.session_state["demo_anchor"] = ANCHOR
         app.session_state["data_mode"] = "Illustrative fixture tour"
         app.run()

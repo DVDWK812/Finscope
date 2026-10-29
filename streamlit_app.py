@@ -252,7 +252,7 @@ def reset_filters(start: date, end: date) -> None:
     st.session_state.pop("inspected_article", None)
 
 
-def main() -> None:
+def legacy_fixture_main() -> None:
     st.set_page_config(page_title="FinScope | Financial Text Intelligence", page_icon="📈", layout="wide")
     st.markdown("""
         <style>
@@ -343,6 +343,11 @@ def main() -> None:
         st.Page(status, title="System Status", url_path="status", icon=":material/info:"),
     ])
     nav.run()
+
+
+def main() -> None:
+    from finscope.product_ui import main as local_main
+    local_main()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,17 @@
 
 Evidence current: **29 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
+**Latest architecture correction, 29 October:** the product is now a local-first
+single-user Streamlit application on localhost with persistent local SQLite.
+Cloud hosting is historical deployment evidence, not a product requirement.
+Milestone 1 delivered first-run guidance, masked/.env provider connectors and
+separate fetch/preview/storage/NLP permissions. One actual local Marketaux request
+returned HTTP 200 / three preview records; their downstream rights remain gated.
+A separate approved authored-text browser run verified pinned local FinBERT/MiniLM,
+saved probabilities and sector analytics; 202 offline tests passed. Details and
+remaining milestones: [local redesign evidence](LOCAL_REDESIGN.md). Historical
+measurements below retain their original scope; the frozen challenge is unchanged.
+
 **Structure:** the user confirmed on 29 October that there are **no required section headings**. The outline below is for team reference and can be expanded freely ([assessment notes](ASSESSMENT_VERIFICATION.md)). No Moodle access is permitted.
 
 ## Objective and scope

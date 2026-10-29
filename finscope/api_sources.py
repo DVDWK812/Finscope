@@ -222,7 +222,8 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
     return records, len(raw)
 
 
-def build_request(provider: str, topic: str, now: datetime, days: int, limit: int, key: str | None):
+def build_request(provider: str, topic: str, now: datetime, days: int, limit: int, key: str | None,
+                  *, symbol: str | None = None):
     """Return (url, params, headers, query_mode, note). No network operation."""
     if topic not in TOPICS:
         raise ValueError(f"Unsupported topic: {topic}")
@@ -232,7 +233,9 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
         raise ValueError("now must be timezone-aware")
     now = now.astimezone(timezone.utc)
     keyword = TOPICS[topic]["keyword"]
-    symbol = TOPICS[topic]["symbol"]
+    symbol = symbol or TOPICS[topic]["symbol"]
+    if not re.fullmatch(r"[A-Z][A-Z0-9.\-]{0,14}", symbol):
+        raise ValueError("Use a valid company ticker")
     earlier = now - timedelta(days=days)
     headers = {"Accept": "application/json", "User-Agent": "FinScope-research-prototype/0.1"}
     if provider == "gdelt":
@@ -270,6 +273,9 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
     )
 
 
+_LOCAL_CREDENTIALS = object()
+
+
 def fetch_provider(
     provider: str,
     topic: str,
@@ -279,17 +285,21 @@ def fetch_provider(
     limit: int = 3,
     timeout: float = 15,
     transport: GetJSON = _http_get_json,
+    api_key: str | None | object = _LOCAL_CREDENTIALS,
+    symbol: str | None = None,
 ) -> QueryResult:
     if days < 1 or limit < 1 or timeout <= 0:
         raise ValueError("days, limit and timeout must be positive")
     if now is None:
         now = datetime.now(timezone.utc)
     env_key = ENV_KEYS[provider]
-    key = local_credentials().get(env_key) if env_key else None
+    # Omission preserves the benchmark's .env workflow. Explicit None/blank
+    # never falls back to a different credential, including in UI sessions.
+    key = (local_credentials().get(env_key) if env_key else None) if api_key is _LOCAL_CREDENTIALS else api_key
     if env_key and not key:
         return QueryResult(provider, topic, "not_run", "skipped", [],
                            note=f"Missing {env_key} in local .env", outcome="missing_credentials")
-    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key)
+    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol)
     started = time.perf_counter()
     http_status = None
     rate_headers = {}

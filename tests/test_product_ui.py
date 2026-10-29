@@ -1,0 +1,76 @@
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+from streamlit.testing.v1 import AppTest
+from streamlit.proto.TextInput_pb2 import TextInput
+
+from finscope.local_news import LocalNewsStore
+from test_local_news import item, pipeline
+
+APP = Path(__file__).resolve().parents[1]/"streamlit_app.py"
+
+
+class ProductUITests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.db = Path(self.temp.name)/"local.sqlite3"
+        for mocker in [patch.dict("os.environ", {"FINSCOPE_LOCAL_DB": str(self.db)}),
+                       patch("requests.sessions.Session.request", side_effect=AssertionError("UI must be offline")),
+                       patch("finscope.model_assets.assets_present", return_value=True),
+                       patch("streamlit_app.cached_pipeline", return_value=pipeline())]:
+            mocker.start(); self.addCleanup(mocker.stop)
+
+    def app(self, page=None):
+        if page:
+            LocalNewsStore(self.db).set_setting("guide_completed", True)
+        app = AppTest.from_file(str(APP), default_timeout=15)
+        if page:
+            app.session_state["workspace_page"] = page
+        app.run()
+        self.assertFalse(app.exception)
+        return app
+
+    def test_first_visit_guide_and_persistent_returning_user(self):
+        app = self.app()
+        self.assertEqual(app.button[0].label, "Get Started")
+        self.assertEqual(len(app.subheader), 4)
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(LocalNewsStore(self.db).setting("guide_completed"))
+        returning = self.app()
+        self.assertEqual(returning.title[0].value, "News intelligence")
+        self.assertFalse(any(b.label == "Get Started" for b in returning.button))
+
+    def test_three_masked_provider_connectors_and_pause(self):
+        app = self.app("Add news")
+        for provider in ("Marketaux", "Finnhub", "NewsData.io"):
+            app.selectbox(key="api_provider").set_value(provider).run()
+            self.assertFalse(app.exception)
+            key = {"Marketaux":"marketaux", "Finnhub":"finnhub", "NewsData.io":"newsdata"}[provider]
+            self.assertEqual(app.text_input(key="key_"+key).proto.type, TextInput.PASSWORD)
+            fetch = next(b for b in app.button if b.label == "Fetch news")
+            self.assertEqual(fetch.disabled, provider == "NewsData.io")
+
+    def test_default_finbert_pipeline_save_and_returning_library(self):
+        store = LocalNewsStore(self.db)
+        original = item(); store.save_news(original)
+        app = self.app("Analyze")
+        self.assertEqual(app.selectbox(key="analysis_model").value, "Local FinBERT")
+        app.multiselect(key="analysis_articles").set_value([original.article_id]).run()
+        next(b for b in app.button if b.label == "Run real AI analysis").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(store.latest_analyses()[original.article_id].label, "Positive")
+        app.radio(key="workspace_page").set_value("Dashboard").run()
+        self.assertFalse(app.exception)
+        self.assertEqual([m.value for m in app.metric][:2], ["1", "1"])
+
+    def test_no_credentials_in_local_export_and_separate_browser_widgets(self):
+        first = self.app("Add news")
+        first.text_input(key="key_marketaux").set_value("PRIVATE-UNIT-SECRET").run()
+        second = self.app("Add news")
+        self.assertEqual(second.text_input(key="key_marketaux").value, "")
+        self.assertNotIn("PRIVATE-UNIT-SECRET", str(LocalNewsStore(self.db).export()))
+
+
+if __name__ == "__main__": unittest.main()
