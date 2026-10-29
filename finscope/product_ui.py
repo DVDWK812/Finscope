@@ -64,7 +64,7 @@ def permission_editor(prefix, *, preview=True):
 
 def api_source(store):
     def clear_preview():
-        for key in ("news_preview", "fetch_outcome", "preview_saved"):
+        for key in ("news_preview", "fetch_outcome", "preview_saved", "public_collection_report"):
             st.session_state.pop(key, None)
     label = st.selectbox("News source", list(SOURCE_OPTIONS), key="api_provider", on_change=clear_preview)
     provider = SOURCE_OPTIONS[label]
@@ -144,21 +144,33 @@ def preview_news(store):
             st.text(n.title)
             st.caption(f"{n.source} · {n.timestamp or n.publication_date or 'Unknown time'} ({n.timestamp_kind})")
             st.text(n.summary or "Summary unavailable")
-            if n.provider in {"rba_rss","rba_html"}:
+            if n.provider in {"rba_rss","rba_html","abs_html","accc_rss"}:
                 try:
                     st.caption(json.loads(n.provenance).get("attribution","Reserve Bank of Australia"))
                 except (ValueError,TypeError):
                     pass
             st.link_button("Open original article", n.url)
-    rights = permission_editor("preview")
+    def source_licensed(item):
+        try:return item.rights.retain and json.loads(item.provenance).get('source_license_applied') is True
+        except (ValueError,TypeError):return False
+    licensed=all(source_licensed(item) for item in items)
+    if licensed:
+        st.caption('Registered CC BY 4.0 text: local storage and NLP permitted with saved attribution; external sending remains off.')
+        rights=None
+    else:
+        rights=permission_editor("preview")
     if st.button("Save permitted preview to local library"):
         try:
-            rights.require("retain")
             selected = [n for n in items if st.session_state.get("preview_select_"+n.article_id)]
             if not selected:
                 raise ValueError("Select at least one preview article")
+            prepared=[]
             for item in selected:
-                store.save_news(replace(item, rights=rights))
+                granted=item.rights if source_licensed(item) else rights
+                granted.require('retain')
+                prepared.append(replace(item,rights=granted))
+            for item in prepared:
+                store.save_news(item)
             saved_handoff(selected)
             st.success(f"Saved {len(selected)} selected originals locally.")
             st.session_state["preview_saved"] = True
@@ -205,8 +217,14 @@ def authored_text(store):
 
 def collector_ui(store):
     from .local_collectors import SOURCES, collect_rba, import_output
-    source_id=st.radio("RBA collector",list(SOURCES),format_func=lambda key:SOURCES[key]["label"],horizontal=True)
+    def clear_fixed_preview():
+        for key in ('news_preview','fetch_outcome','preview_saved','public_collection_report'):
+            st.session_state.pop(key,None)
+    source_id=st.radio("Fixed collector source",list(SOURCES),format_func=lambda key:SOURCES[key]["label"],key='fixed_source',on_change=clear_fixed_preview)
     config=SOURCES[source_id]
+    if source_id in {'abs_html','accc_rss'}:
+        licensed_collector_ui(store,source_id,config)
+        return
     kind=config["kind"]
     st.caption("Fixed RBA central-bank feed/index only; not a general crawler or multi-sector news feed.")
     status=LocalIngestionService(store).source_status('rba',configured=True)
@@ -234,6 +252,37 @@ def collector_ui(store):
                               "http_status":None,"records":len(items),"query_utc":utcnow().isoformat(),"network_attempted":False}
             except ValueError as error:
                 st.error(str(error))
+    preview_news(store)
+
+
+def licensed_collector_ui(store,source_id,config):
+    from .public_sources import collect_source
+    service=LocalIngestionService(store)
+    state=service.source_status(config['bucket'],configured=True)
+    if not config.get('enabled'):
+        st.warning('Unavailable · '+config['access_status'])
+        st.link_button('Source licence and exclusions',config['terms_url'])
+        return
+    st.caption(f"{state.state} · {config['scope']}")
+    if state.blocked:st.warning(state.reason)
+    st.link_button('Source licence and exclusions',config['terms_url'])
+    limit=st.number_input('Records to parse from one response',min_value=1,max_value=50,value=30,key=source_id+'_parse_limit',
+        help='Record count is separate from HTTP budget: at most two GETs (robots + one fixed entry), no pagination/retry or linked article fetching.')
+    if st.button('Fetch official news',type='primary',disabled=state.blocked):
+        try:
+            with st.spinner('Reading robots and one fixed source…'):
+                items,report=collect_source(service,source_id,limit=int(limit),explicit=True)
+            st.session_state['news_preview']=items
+            st.session_state['preview_saved']=False
+            st.session_state['public_collection_report']=report
+            st.session_state['fetch_outcome']={'provider':config['label'],'status':'ok','outcome':'records',
+                'http_status':200,'records':len(items),'query_utc':report['query_utc']}
+            st.rerun()
+        except (FetchBlocked,OSError) as error:
+            st.error(str(error) if isinstance(error,FetchBlocked) else 'Local collection evidence could not be saved; inspect the request ledger before another attempt.')
+    report=st.session_state.get('public_collection_report')
+    if report:
+        st.caption(f"{len(report['requests'])}/{report['http_request_budget']} HTTP requests · {report['records']} parsed records · {config['license']}")
     preview_news(store)
 
 

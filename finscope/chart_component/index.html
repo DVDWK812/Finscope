@@ -11,9 +11,11 @@ svg{display:block;background:#f7faf9;border:1px solid #e2ebe8;border-radius:10px
 </style></head><body><main id="root"></main>
 <script>
 // Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
-const root=document.getElementById('root');let args={},counter=0;
+const root=document.getElementById('root');let args={},counter=0,lastHeight=null;
 function post(type,extra={}){parent.postMessage({isStreamlitMessage:true,type,...extra},'*')}
-function resize(){post('streamlit:setFrameHeight',{height:document.documentElement.scrollHeight})}
+// A host render can trigger ResizeObserver again at the same size. Avoid a
+// frame-height/render loop that replaces SVG nodes during a pointer click.
+function resize(){const height=document.documentElement.scrollHeight;if(height!==lastHeight){lastHeight=height;post('streamlit:setFrameHeight',{height})}}
 function el(tag,text,attrs={}){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
 function svgEl(tag,attrs={}){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
 function choose(id){root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}

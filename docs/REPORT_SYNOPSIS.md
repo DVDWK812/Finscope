@@ -18,7 +18,7 @@ the organization below is optional. No Moodle access or coursework submission.
 
 ## Architecture and methods
 
-Source adapter / fixed RBA collector / approved text → preview and distinct usage
+Source adapter / fixed RBA or ABS collector / approved text → preview and distinct usage
 permissions → local originals → selected model → versioned SQLite results → shared
 filters → Overview, Sector sentiment, Trends, Heatmap, Evidence graph and Explorer.
 [Implementation/evidence](LOCAL_REDESIGN.md), [local setup](../README.md).
@@ -77,6 +77,8 @@ the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commi
 40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281). [Full dated evidence and limits](LOCAL_REDESIGN.md).
 
 30 October local usability check: **261 offline tests** plus dry run; actual browser RBA local import, pinned FinBERT reanalysis (Neutral), SQLite history, sector results, original URL, and heatmap/graph node clicks verified. Two originals remain two after reanalysis; no new news API or external LLM requests. Ollama service discovery unavailable; live inference remains pending. This is engineering acceptance, not accuracy or human usability evidence.
+
+30 October real-source follow-up: ABS robots/index HTTP 200 at 29 October 16:18 UTC yielded **20 new licensed headlines/date-only records**, saved and actually analyzed by pinned local FinBERT/MiniLM; one reanalysis added history, not an original. Real library: ABS 20 + existing RBA 1, 27 August–29 October; Energy 1, Financials 1, Unclassified 19 (authored development text excluded). Three classified sectors remain unmet. ACCC RSS returned 403 once and is disabled. Browser heatmap/article/sector-node clicks and ABS original verified; source text is headline-only. These checks are engineering acceptance, not an accuracy evaluation; frozen evidence remains unchanged.
 
 Pending: Marketaux downstream rights and stable availability; NewsData resumption
 if explicitly authorized; live Ollama inference (discovery reported unavailable);

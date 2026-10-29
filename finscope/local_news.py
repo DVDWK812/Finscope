@@ -28,7 +28,7 @@ SOURCE_NOTES = {
     "marketaux": "Financial keyword feed · at most 3 records/request on the free plan. Date filters do not guarantee free historical access.",
     "newsdata": "Latest feed only, approximately 48 hours; free access may be delayed. No archive request is made. Existing manual pause remains active.",
     "finnhub": "Ticker-specific company news, not sector-wide coverage. Date-range access depends on your plan; no complete-history claim.",
-    "local": "Fixed RBA RSS or media-release index only. No arbitrary websites or full-article crawling.",
+    "local": "Fixed RBA and ABS sources; ACCC access is currently unavailable. No arbitrary websites, pagination or article-body crawling.",
 }
 
 
@@ -128,6 +128,9 @@ class LocalNewsStore:
                     reserved_at TEXT NOT NULL, completed_at TEXT, status TEXT NOT NULL, hold_until TEXT);
                 CREATE TABLE IF NOT EXISTS local_permission_history (article_id TEXT NOT NULL,
                     changed_at TEXT NOT NULL, previous_rights TEXT NOT NULL, new_rights TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS local_collector_http (id TEXT PRIMARY KEY, action_id TEXT NOT NULL,
+                    source_id TEXT NOT NULL, url TEXT NOT NULL, started_at TEXT NOT NULL, completed_at TEXT,
+                    status TEXT NOT NULL, http_status INTEGER, response_bytes INTEGER);
             """)
             db.commit()
 
@@ -381,7 +384,7 @@ def analyze_finbert(item, store, pipeline):
                         candidate_id=record.article.event_id if has_exact_time else "", embedding_revision=record.embedding_revision,
                         similarity=record.similarity, elapsed_ms=record.inference_ms,
                         demo_record=_demo_payload(record) if has_exact_time else None,
-                        provenance={"output_kind":"actual_model_inference","text_basis":"headline_and_supplied_summary",
+                        provenance={"output_kind":"actual_model_inference","text_basis":"headline_and_supplied_summary" if item.summary else "headline_only",
                                     "temporal_grouping":"unverified_candidate" if has_exact_time else "disabled_unknown_publication_time"})
     store.save_analysis(analysis)
     return analysis

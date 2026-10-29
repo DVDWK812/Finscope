@@ -12,6 +12,24 @@ from . import rss_collector, html_collector
 SOURCES = {
     "rba_rss": {"label": "RBA RSS feed", "kind": "rss", "scope": "Official central-bank media releases", "url": rss_collector.FEED_URL},
     "rba_html": {"label": "RBA HTML media-release index", "kind": "html", "scope": "Official central-bank release index; dates only, no article body", "url": html_collector.INDEX_URL},
+    "abs_html": {"label":"ABS media releases", "kind":"abs_html", "publisher":"Australian Bureau of Statistics",
+        "enabled":True,"access_status":"HTTP 200 verified 2026-10-29T16:18:13Z",
+        "bucket":"abs", "url":"https://www.abs.gov.au/media-centre/media-releases", "robots":"https://www.abs.gov.au/robots.txt",
+        "scope":"Official release-index headlines and publication dates; one page, no article bodies",
+        "terms_url":"https://www.abs.gov.au/website-privacy-copyright-and-disclaimer",
+        "attribution":"Source: Australian Bureau of Statistics, © Commonwealth of Australia",
+        "derivative_attribution":"Based on Australian Bureau of Statistics material; FinScope analysis, no ABS endorsement",
+        "exclusions":"Third-party content, logos, trademarks, microdata and separately restricted material excluded",
+        "license":"CC BY 4.0", "license_url":"https://creativecommons.org/licenses/by/4.0/", "verified_on":"2026-10-30 Australia/Sydney"},
+    "accc_rss": {"label":"ACCC media releases RSS", "kind":"accc_rss", "publisher":"Australian Competition and Consumer Commission",
+        "enabled":False,"access_status":"HTTP 403 observed 2026-10-29T16:19:05Z; no retry or alternative endpoint attempted",
+        "bucket":"accc", "url":"https://www.accc.gov.au/rss/media_releases.xml", "robots":"https://www.accc.gov.au/robots.txt",
+        "scope":"Official RSS headlines and supplied descriptions; no linked pages, media or attachments",
+        "terms_url":"https://www.accc.gov.au/about-us/using-our-website/disclaimer-and-copyright",
+        "attribution":"Source: ACCC © Commonwealth of Australia",
+        "derivative_attribution":"Source: Based on ACCC data or other content; FinScope analysis, no ACCC endorsement",
+        "exclusions":"Third-party content, logos, Coat of Arms and separately restricted material excluded",
+        "license":"CC BY 4.0", "license_url":"https://creativecommons.org/licenses/by/4.0/", "verified_on":"2026-10-30 Australia/Sydney"},
 }
 
 

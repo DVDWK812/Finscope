@@ -100,6 +100,10 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
     undated = sum(not n.published_day for n in news)
     if undated:
         st.caption(f"Library: {undated} originals have no publication date; excluded from daily charts.")
+    # Streamlit removes widget keys on pages where they are not rendered. Keep
+    # defaults too, so adding data cannot silently widen the previous window.
+    for key in FILTER_KEYS:
+        if key in st.session_state:remember_filter(key)
     if len(selected) != 2:
         st.info("Select both start and end dates.")
         return [], {}, start, end
@@ -208,9 +212,10 @@ def article_details(item, result, store, *, context="explorer"):
         st.caption('Synthetic development text')
     st.write(f"**{result.label if result else 'Not analyzed'}** · {', '.join(item.sectors)}"+
              (f" · {result.family}" if result else ''))
-    if item.provider in {"rba_rss","rba_html"}:
+    if item.provider in {"rba_rss","rba_html","abs_html","accc_rss"}:
         try:
-            st.caption(json.loads(item.provenance).get("attribution","Reserve Bank of Australia")+" · AI analysis is derived; no RBA endorsement.")
+            origin=json.loads(item.provenance)
+            st.caption(origin.get("attribution","Reserve Bank of Australia")+' · '+origin.get('derivative_attribution','AI analysis is derived; no RBA endorsement.'))
         except (ValueError,TypeError):
             pass
     if item.summary:

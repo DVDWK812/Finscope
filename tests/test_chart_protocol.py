@@ -1,0 +1,38 @@
+"""Exercise the shipped component's resize protocol with an offline parent."""
+from pathlib import Path
+import shutil
+import subprocess
+import unittest
+
+
+class ChartProtocolTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('node'), 'Node.js is needed for the component protocol check')
+    def test_parent_render_feedback_settles_and_real_height_changes_are_reported(self):
+        # Simulate a host that rerenders after setFrameHeight. A same-size render
+        # must settle, or replacing SVG nodes can swallow pointer/focus events.
+        script = r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync(process.argv[1],'utf8'),source=html.split('<script>')[1].split('</script>')[0];
+let renders=0,observer,receive;const queue=[],messages=[];
+const element=()=>({style:{},setAttribute(){},append(){},replaceChildren(){renders++},
+  querySelectorAll(){return []},classList:{remove(){},add(){}}});
+const root=element(),document={getElementById:()=>root,createElement:element,createElementNS:element,
+  documentElement:{scrollHeight:500}};
+const render=()=>receive({source:parent,data:{type:'streamlit:render',args:{kind:'graph',scope:'authored',data:{nodes:[],edges:[]}}}});
+const parent={postMessage(message){messages.push(message);if(message.type==='streamlit:setFrameHeight')queue.push(render,()=>observer());}};
+vm.runInNewContext(source,{document,parent,addEventListener:(_,fn)=>receive=fn,
+  ResizeObserver:class{constructor(fn){observer=fn}observe(){}},Date});
+render();let steps=0;while(queue.length&&steps++<20)queue.shift()();
+assert.equal(queue.length,0,'same-height frame/render feedback must settle');
+assert.equal(messages.filter(m=>m.type==='streamlit:setFrameHeight').length,1);
+for(let i=0;i<100;i++)observer();
+assert.equal(messages.filter(m=>m.type==='streamlit:setFrameHeight').length,1);
+document.documentElement.scrollHeight=650;observer();
+while(queue.length&&steps++<40)queue.shift()();
+assert.equal(queue.length,0);assert.deepEqual(messages.filter(m=>m.type==='streamlit:setFrameHeight').map(m=>m.height),[500,650]);
+console.log('component protocol settled; real height changes retained');
+"""
+        component = Path(__file__).resolve().parents[1] / 'finscope/chart_component/index.html'
+        result = subprocess.run([shutil.which('node'), '-e', script, str(component)],
+                                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
