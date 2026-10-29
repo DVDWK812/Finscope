@@ -96,7 +96,8 @@ class ChartUITests(unittest.TestCase):
 
     def test_refresh_search_and_graph_layers_do_not_request_or_analyze(self):
         self.stored()
-        with patch('finscope.model_ui.execute',side_effect=AssertionError('No implicit model run')):
+        with patch('finscope.model_ui.execute',side_effect=AssertionError('No implicit model run')) as run_model, \
+             patch('requests.sessions.Session.request',side_effect=AssertionError('No implicit HTTP')) as http:
             app=self.app('Dashboard')
             app.run()
             app.text_input(key='local_search').set_value('NVIDIA').run()
@@ -104,3 +105,5 @@ class ChartUITests(unittest.TestCase):
             app.checkbox(key='graph_expand').check().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(LocalNewsStore(self.db).list_analyses()),0)
+            run_model.assert_not_called()
+            http.assert_not_called()

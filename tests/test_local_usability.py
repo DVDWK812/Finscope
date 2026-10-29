@@ -9,7 +9,8 @@ import unittest
 from unittest.mock import patch
 
 from finscope.local_analytics import default_result_model, model_key, select_articles, Filters
-from finscope.local_news import Analysis, LocalIngestionService, LocalNewsStore
+from finscope.local_news import Analysis, LocalIngestionService, LocalNewsStore, FetchBlocked
+from finscope.api_sources import HTTPResponse
 from test_local_news import item, NOW
 import test_product_ui as product_test
 
@@ -59,6 +60,25 @@ class SourceStateTests(unittest.TestCase):
         self.assertEqual(status.state,'Available')
         self.assertIn('not a live',status.reason)
         self.assertEqual(before,self.store.path.read_bytes())
+
+    def test_all_three_api_credentials_do_not_cross_provider_boundaries(self):
+        calls=[]
+        def transport(url,params,headers,timeout):
+            calls.append((url,params,headers))
+            return HTTPResponse([] if 'finnhub' in url else {'data':[]},200,{})
+        self.service.transport=transport
+        from test_local_news import RIGHTS
+        with patch.dict('os.environ',{'MARKETAUX_API_KEY':'ENV-MARKET-SECRET','NEWSDATA_API_KEY':'ENV-NEWSDATA-SECRET','FINNHUB_API_KEY':'ENV-FINNHUB-SECRET'}):
+            self.service.fetch('marketaux','technology',api_key='UI-MARKET-SECRET',rights=RIGHTS,remaining=1,explicit=True)
+            self.service.fetch('finnhub','technology',api_key='UI-FINNHUB-SECRET',symbol='NVDA',rights=RIGHTS,remaining=1,explicit=True)
+            with self.assertRaises(FetchBlocked):
+                self.service.fetch('newsdata','technology',api_key='UI-NEWSDATA-SECRET',rights=RIGHTS,remaining=1,explicit=True)
+        self.assertEqual(len(calls),2)
+        self.assertIn('UI-MARKET-SECRET',str(calls[0])); self.assertNotIn('FINNHUB',str(calls[0]))
+        self.assertIn('UI-FINNHUB-SECRET',str(calls[1])); self.assertNotIn('MARKET',str(calls[1]))
+        self.assertNotIn('ENV-',str(calls));self.assertNotIn('NEWSDATA',str(calls))
+        for secret in ('UI-MARKET-SECRET','UI-FINNHUB-SECRET','UI-NEWSDATA-SECRET'):
+            self.assertNotIn(secret.encode(),self.store.path.read_bytes())
 
 
 class FlowUITests(unittest.TestCase):
@@ -114,6 +134,78 @@ class FlowUITests(unittest.TestCase):
         app.selectbox(key='local_result_model').set_value(model_key(external)).run()
         self.assertFalse(app.exception)
 
+    def test_filter_preferences_survive_analysis_navigation_without_hiding_pending(self):
+        store=LocalNewsStore(self.db); original=item();store.save_news(original)
+        app=self.app('Dashboard')
+        app.multiselect(key='local_sentiments').set_value(['Negative']).run()
+        self.assertEqual(app.metric[0].value,'0')
+        app.radio(key='workspace_page').set_value('Analyze').run()
+        self.assertEqual(app.multiselect(key='analysis_articles').options,[original.title])
+        app.radio(key='workspace_page').set_value('Dashboard').run()
+        self.assertEqual(app.multiselect(key='local_sentiments').value,['Negative'])
+        self.assertEqual(app.metric[0].value,'0')
+
+    def test_unknown_new_record_can_be_included_without_inventing_dates(self):
+        original=item();LocalNewsStore(self.db).save_news(original)
+        app=self.app('Dashboard')
+        app.checkbox(key='local_unknown_dates').uncheck().run()
+        app.session_state['new_news_ids']=[original.article_id];app.run()
+        self.assertEqual(app.metric[0].value,'0')
+        next(b for b in app.button if b.label=='Include unknown publication dates').click().run()
+        self.assertEqual(app.metric[0].value,'1')
+        self.assertEqual(LocalNewsStore(self.db).list_news()[0].published_day,'')
+
+    def test_probability_revision_and_ids_are_inside_collapsed_details(self):
+        from finscope.local_news import analyze_finbert
+        from test_local_news import pipeline
+        store=LocalNewsStore(self.db);original=item();store.save_news(original)
+        analyze_finbert(original,store,pipeline())
+        app=self.app('Dashboard')
+        history=next(e for e in app.expander if e.label=='Provenance, permissions and analysis history')
+        self.assertFalse(history.proto.expanded)
+        self.assertTrue(any('Revision:' in c.value for c in history.caption))
+        self.assertTrue(history.dataframe)
+        listing=next(d.value for d in app.dataframe if 'Title' in d.value.columns)
+        self.assertNotIn('Article ID',listing.columns)
+        self.assertFalse(any('Revision:' in c.value for c in app.main.caption if c not in history.caption))
+
+    def test_local_import_preview_save_and_finbert_need_no_news_key(self):
+        from test_local_news import RIGHTS
+        original=item(provider='rba_rss',timestamp_kind='published',url='https://www.rba.gov.au/media-releases/2026/mr-26-29.html')
+        app=self.app('Add news')
+        with patch('finscope.product_ui.local_credentials',side_effect=AssertionError('Local collector/FinBERT must not read news keys')):
+            app.selectbox(key='api_provider').set_value('Local Collector').run()
+            app.session_state['news_preview']=[replace(original,rights=replace(RIGHTS,retain=False,analyze=False))]
+            app.run()
+            app.text_input(key='preview_reference').set_value('Authored offline collector fixture').run()
+            app.checkbox(key='preview_retain').check().run()
+            app.checkbox(key='preview_analyze').check().run()
+            next(b for b in app.button if b.label=='Save permitted preview to local library').click().run()
+            next(b for b in app.button if b.label=='Analyze selected news →').click().run()
+            self.assertEqual(app.selectbox(key='analysis_model').value,'Local FinBERT')
+            self.assertEqual(app.multiselect(key='analysis_articles').value,[original.article_id])
+            next(b for b in app.button if b.label=='Run real AI analysis').click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(len(LocalNewsStore(self.db).list_analyses()),1)
+            next(b for b in app.button if b.label=='View sector results →').click().run()
+            self.assertEqual(app.radio(key='workspace_page').value,'Dashboard')
+
+    def test_selected_sector_limits_charts_and_graph_not_original_metadata(self):
+        original=item(sectors=('Financials','Technology'),timestamp_kind='published')
+        store=LocalNewsStore(self.db);store.save_news(original)
+        seen=[]
+        def component(**args):
+            if args['kind']=='heatmap':seen.append(args['data']['cells'])
+        with patch('finscope.chart_interactions._chart',side_effect=component):
+            app=self.app('Dashboard')
+            app.multiselect(key='local_sectors').set_value(['Financials']).run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key='graph_sector').options,['Financials'])
+        self.assertEqual({c['Sector'] for c in seen[-1]},{'Financials'})
+        table=next(d.value for d in app.dataframe if 'Sector' in d.value.columns and 'Not analyzed' in d.value.columns)
+        self.assertEqual(table['Sector'].tolist(),['Financials'])
+        self.assertEqual(store.list_news()[0].sectors,('Financials','Technology'))
+
 
 class PublicationScopeTests(unittest.TestCase):
     def test_no_invented_publication_day_from_import_or_submission(self):
@@ -129,3 +221,29 @@ class PublicationScopeTests(unittest.TestCase):
     def test_default_model_never_falls_back_to_external(self):
         analysis=Analysis('b','x','Negative','External LLM','other','v1','2026-10-29T00:00:00Z')
         self.assertEqual(default_result_model([analysis]),'FinBERT · No saved results')
+
+    def test_detail_publication_label_preserves_unknown_and_date_precision(self):
+        from finscope.dashboard_ui import publication_label
+        self.assertEqual(publication_label(item()),'Publication date unknown')
+        self.assertEqual(publication_label(item(timestamp_kind='published',timestamp='',publication_date='2026-10-29')),
+                         'Published 2026-10-29 (date only)')
+
+
+class ExternalStatusTests(unittest.TestCase):
+    setUp=SourceStateTests.setUp
+    def test_external_pending_and_hold_are_read_from_persistent_state(self):
+        from finscope.model_ui import external_status
+        self.assertEqual(external_status(self.store),('Untested · No successful connection check',False))
+        with closing(self.store.connect()) as db:
+            db.execute("INSERT INTO local_model_requests(id,backend,reserved_at,status) VALUES ('a','openai',?,'pending')",(NOW.isoformat(),))
+            db.commit()
+        self.assertTrue(external_status(self.store)[1])
+
+    def test_external_historical_failure_is_not_an_active_hold(self):
+        from finscope.model_ui import external_status
+        with closing(self.store.connect()) as db:
+            db.execute("INSERT INTO local_model_requests(id,backend,reserved_at,completed_at,status) VALUES ('b','openai',?,?,'failed')",(NOW.isoformat(),NOW.isoformat()))
+            db.commit()
+        text,blocked=external_status(self.store)
+        self.assertTrue(text.startswith('Failed · Last request failed:'))
+        self.assertFalse(blocked)

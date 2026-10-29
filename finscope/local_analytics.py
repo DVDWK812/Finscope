@@ -124,7 +124,7 @@ def text_evidence(text, phrase):
     return text[max(0,match.start()-45):match.end()+65].replace("\n", " ") if match else ""
 
 
-ENTITY_NAMES = ("Reserve Bank of Australia", "Federal Reserve", "European Central Bank",
+ENTITY_NAMES = ("Reserve Bank of Australia", "RBA", "Federal Reserve", "European Central Bank",
                 "NVIDIA", "Microsoft", "Apple Inc.")
 THEMES = {"Earnings / results": ("earnings", "revenue", "profit"),
           "Monetary policy": ("interest rate", "monetary policy", "inflation"),

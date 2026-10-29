@@ -1,5 +1,7 @@
 """Shared explicit model controls for a run or an individual original."""
 from dataclasses import dataclass, field, replace
+from contextlib import closing
+from datetime import datetime
 
 import streamlit as st
 
@@ -31,7 +33,21 @@ class RunSettings:
         return f"Local Ollama · {self.model} · {digest}"
 
 
-def controls(prefix="analysis"):
+def external_status(store):
+    from .local_news import utcnow
+    with closing(store.connect()) as db:
+        rows=db.execute("SELECT status,hold_until,completed_at FROM local_model_requests WHERE backend='openai' ORDER BY reserved_at").fetchall()
+    if any(status=='pending' for status,_,_ in rows):
+        return 'Paused · Previous request outcome unknown; review local model ledger', True
+    if any(hold and datetime.fromisoformat(hold)>utcnow() for _,hold,_ in rows):
+        return 'Paused · External model Retry-After hold is active', True
+    if rows:
+        status,_,stamp=rows[-1]
+        return ('Available · Last request succeeded: ' if status=='ok' else 'Failed · Last request failed: ')+(stamp or 'unknown time'),False
+    return 'Untested · No successful connection check',False
+
+
+def controls(prefix="analysis", *, store=None):
     default=st.session_state.get("default_analysis_mode",MODES[0])
     key="analysis_model" if prefix=="analysis" else prefix+"_model"
     mode=st.selectbox("Analysis model",MODES,index=MODES.index(default) if default in MODES else 0,key=key)
@@ -55,8 +71,10 @@ def controls(prefix="analysis"):
             except ModelError as error:
                 st.session_state["installed_ollama_models"] = {}
                 st.session_state["ollama_status"] = "Failed · " + str(error)
-                st.error(str(error))
+                st.rerun()
         installed=st.session_state.get("installed_ollama_models",{})
+        if st.session_state.get(prefix+'_ollama_model') not in installed:
+            st.session_state.pop(prefix+'_ollama_model',None)
         options.model=st.selectbox("Installed local model",list(installed),index=None,key=prefix+"_ollama_model")
         options.ready=bool(options.model)
         if not installed:
@@ -70,9 +88,10 @@ def controls(prefix="analysis"):
             options.external_rights=st.checkbox("My permission covers sending these selected texts to OpenAI",key=prefix+"_external_rights")
         options.consent=st.checkbox("Send the selected permitted headline/summary text to OpenAI when I click Run",key=prefix+"_send_consent")
         credential=options.api_key or (local_credentials().get("OPENAI_API_KEY") if options.use_env else None)
-        st.caption("Untested · OpenAI key configured; no connection probe" if credential else "Not configured · OpenAI API key required")
+        status,blocked=external_status(store) if store else ('Untested · No successful connection check',False)
+        st.caption(status if credential else 'Not configured · OpenAI API key required')
         st.caption("Optional paid transmission: one headline/summary request per article, at most 10/run; store=false requested, provider retention policies apply.")
-        options.ready=bool(credential) and options.consent
+        options.ready=bool(credential) and options.consent and not blocked
     return options
 
 

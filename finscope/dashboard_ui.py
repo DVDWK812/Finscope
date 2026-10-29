@@ -19,7 +19,31 @@ def keep_valid_selection(key, choices):
         del st.session_state[key]
 
 
+FILTER_KEYS = ('local_dates','local_sectors','local_search','local_sources','local_sentiments',
+               'local_unknown_dates','local_result_model')
+
+
+def remember_filter(key):
+    st.session_state.setdefault('filter_preferences',{})[key] = st.session_state[key]
+
+
+def restore_filters():
+    for key,value in st.session_state.get('filter_preferences',{}).items():
+        if key in FILTER_KEYS and key not in st.session_state:
+            st.session_state[key]=value
+
+
+def publication_label(item):
+    if item.timestamp_kind == 'published' and item.timestamp:
+        stamp=datetime.fromisoformat(item.timestamp).astimezone(timezone.utc)
+        return 'Published '+stamp.strftime('%d %b %Y, %H:%M UTC')
+    if item.timestamp_kind == 'published' and item.publication_date:
+        return 'Published '+item.publication_date+' (date only)'
+    return 'Publication date unknown'
+
+
 def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
+    restore_filters()
     dates = sorted(date.fromisoformat(n.published_day) for n in news if n.published_day)
     start, end = (dates[0], dates[-1]) if dates else (datetime.now(timezone.utc).date(),)*2
     old_range = st.session_state.get("local_dates", (start, end))
@@ -32,21 +56,30 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
                 f"{len(outside)} saved records outside the current date range.")
         def widen_dates():
             st.session_state["local_dates"] = (start, end)
+            remember_filter('local_dates')
         st.button("Include all saved publication dates", on_click=widen_dates, key="widen_local_dates")
+    hidden_unknown = [n for n in news if not n.published_day and n.article_id in st.session_state.get('new_news_ids', [])]
+    if hidden_unknown and not st.session_state.get('local_unknown_dates',True):
+        st.info(f"{len(hidden_unknown)} new records have unknown publication dates and are outside the current range.")
+        def include_unknown():
+            st.session_state['local_unknown_dates']=True
+            remember_filter('local_unknown_dates')
+        st.button('Include unknown publication dates',on_click=include_unknown)
     left, middle, right = st.columns([2, 2, 2])
     with left:
-        selected = st.date_input("Publication date range (UTC)", value=(start, end), key="local_dates")
+        selected = st.date_input("Publication date range (UTC)", value=(start, end), key="local_dates",on_change=remember_filter,args=('local_dates',),
+                                 help='Exact timestamps use UTC; date-only records keep their original calendar day. Unknown publication dates stay separate.')
     with middle:
-        sectors = st.multiselect("Sectors", SECTORS, key="local_sectors", placeholder="All sectors")
+        sectors = st.multiselect("Sectors", SECTORS, key="local_sectors", placeholder="All sectors",on_change=remember_filter,args=('local_sectors',))
     with right:
-        search = st.text_input("Search news", key="local_search", placeholder="Headlines, summaries or source")
+        search = st.text_input("Search news", key="local_search", placeholder="Headlines, summaries or source",on_change=remember_filter,args=('local_search',))
     with st.expander("More filters", expanded=False):
         a, b = st.columns(2)
         with a:
-            sources = st.multiselect("Sources", sorted({n.source for n in news}), key="local_sources")
+            sources = st.multiselect("Sources", sorted({n.source for n in news}), key="local_sources",on_change=remember_filter,args=('local_sources',))
         with b:
-            sentiments = [] if for_analysis else st.multiselect("Sentiment", SENTIMENTS, key="local_sentiments")
-        unknown = st.checkbox("Include unknown publication dates (separate from daily charts)", value=True, key="local_unknown_dates")
+            sentiments = [] if for_analysis else st.multiselect("Sentiment", SENTIMENTS, key="local_sentiments",on_change=remember_filter,args=('local_sentiments',))
+        unknown = st.checkbox("Include unknown publication dates (separate from daily charts)", value=True, key="local_unknown_dates",on_change=remember_filter,args=('local_unknown_dates',))
     if for_analysis:
         models = (analysis_model,) if analysis_model else ()
     else:
@@ -56,12 +89,16 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
             choices.insert(0, default)
         if st.session_state.get("local_result_model") not in choices:
             st.session_state["local_result_model"] = default
-        current = st.selectbox("Results model", choices, key="local_result_model",
-                              format_func=lambda value: " · ".join(value.split(" · ")[:2]))
+        def model_label(value):
+            parts=value.split(' · ')
+            name=' · '.join(parts[:2])
+            return name+' · '+parts[-1][:8] if sum(v.startswith(name+' · ') for v in choices)>1 else name
+        current = st.selectbox("Results model", choices, key="local_result_model",format_func=model_label,
+                              on_change=remember_filter,args=('local_result_model',))
         models = (current,)
     undated = sum(not n.published_day for n in news)
     if undated:
-        st.caption(f"{undated} originals have no publication date; first-seen/submission dates are not publication dates.")
+        st.caption(f"Library: {undated} originals have no publication date; excluded from daily charts.")
     if len(selected) != 2:
         st.info("Select both start and end dates.")
         return [], {}, start, end
@@ -80,16 +117,21 @@ def distribution_chart(results):
 
 
 def sector_chart(news, results):
-    table = pd.DataFrame(sector_counts(news, results)).set_index("Sector")
+    table = pd.DataFrame(display_sector_counts(news, results)).set_index("Sector")
     st.bar_chart(table, color=COLORS, stack=True, height=300, x_label="Keyword sector", y_label="Raw articles")
     st.caption("Multi-sector articles count once per assigned sector; sector totals can exceed the raw article total.")
+
+
+def display_sector_counts(news, results):
+    selected=st.session_state.get('local_sectors',[])
+    return [r for r in sector_counts(news,results) if not selected or r['Sector'] in selected]
 
 
 def heatmap(news, results, start, end, store):
     st.subheader("Date × sector")
     metric = st.radio("Heatmap measure", ["Article volume", "Sentiment balance"], horizontal=True)
     try:
-        cells = heatmap_cells(news, results, start, end, date_basis="published")
+        cells = heatmap_cells(news, results, start, end, sectors=st.session_state.get('local_sectors') or SECTORS, date_basis="published")
     except ValueError as error:
         st.info(str(error)); return
     from .chart_interactions import interactive_chart, chart_scope
@@ -128,26 +170,31 @@ def related_articles(news, results, store, *, context):
 
 def article_details(item, result, store, *, context="explorer"):
     st.subheader(item.title)
-    st.caption(f"{item.source} · {item.provider} · {item.timestamp or item.publication_date or 'Unknown date'} ({item.timestamp_kind})")
+    st.caption(f"{item.source} · {publication_label(item)}")
+    if item.provider=='authored_synthetic':
+        st.caption('Synthetic development text')
+    st.write(f"**{result.label if result else 'Not analyzed'}** · {', '.join(item.sectors)}"+
+             (f" · {result.family}" if result else ''))
     if item.provider in {"rba_rss","rba_html"}:
         try:
             st.caption(json.loads(item.provenance).get("attribution","Reserve Bank of Australia")+" · AI analysis is derived; no RBA endorsement.")
         except (ValueError,TypeError):
             pass
-    st.text(item.summary or "No summary supplied. Analysis can use a permitted headline only.")
-    st.caption("Text available: headline + supplied summary; this is not full publisher text.")
+    if item.summary:
+        st.text(item.summary)
+    st.caption("Headline + supplied summary; not full article text." if item.summary else "Headline only; no summary or full article supplied.")
     if item.url:
         st.link_button("Open original article", item.url)
-    if result:
-        st.write(f"**{result.label}** · {result.family} · {result.model_id}")
-        if result.probabilities is not None:
-            st.dataframe(pd.DataFrame([result.probabilities]), hide_index=True, width="stretch")
-        if result.rationale:
-            st.text("Model-generated rationale: "+result.rationale)
-        st.caption(f"Revision: {result.revision} · Analyzed: {result.analyzed_at}")
-    else:
-        st.info("Not analyzed. Select this original on the Analyze page after confirming its permissions.")
+    if not result:
+        from .product_ui import next_step
+        next_step('Analyze news →','Analyze',context+'_'+item.article_id+'_next')
     with st.expander("Provenance, permissions and analysis history"):
+        if result:
+            st.caption(f"{result.model_id} · Revision: {result.revision} · Analyzed: {result.analyzed_at}")
+            if result.probabilities is not None:
+                st.dataframe(pd.DataFrame([result.probabilities]),hide_index=True,width='stretch')
+            if result.rationale:
+                st.text('Model-generated rationale: '+result.rationale)
         st.write({"article_id": item.article_id, "fetched_at": item.fetched_at,
                   "timestamp_meaning": item.timestamp_kind, "publication_date_only": item.publication_date,
                   "provenance": item.provenance, "permissions": asdict(item.rights)})
@@ -173,7 +220,7 @@ def article_details(item, result, store, *, context="explorer"):
     with st.expander("Reanalyze this original",expanded=False):
         from .model_ui import controls,execute
         from .model_providers import ModelError
-        settings=controls(prefix)
+        settings=controls(prefix,store=store)
         if st.button("Reanalyze this article",key=prefix+"_reanalyze",disabled=not settings.ready or not item.rights.analyze):
             try:
                 with st.spinner("Running the selected model on this original…"):
@@ -197,7 +244,8 @@ def article_details(item, result, store, *, context="explorer"):
 
 def graph(news, results, store):
     st.subheader("Evidence relationships")
-    sectors=sorted({s for n in news for s in n.sectors})
+    allowed=st.session_state.get('local_sectors',[])
+    sectors=sorted({s for n in news for s in n.sectors if not allowed or s in allowed})
     left,right=st.columns([2,1])
     with left:
         keep_valid_selection('graph_sector',sectors)
@@ -207,6 +255,7 @@ def graph(news, results, store):
     with st.expander("Graph layers"):
         sources=st.checkbox("Show source nodes",key='graph_sources')
         similar=st.checkbox("Show unverified similarity groups",key='graph_similar')
+        st.caption("Entities are literal text matches; themes and similarity groups are unverified, with no causal claims or model calls.")
     data,full,focused=graph_view(news,results,sector=focus,article_limit=30 if expanded else 8,
                               node_limit=120 if expanded else 40,show_sources=sources,show_similar=similar)
     st.caption(f"Showing {len(data['nodes'])}/{len(full['nodes'])} nodes · {sum(n['kind']=='Article' for n in data['nodes'])}/{len(focused)} articles in {focus}.")
@@ -225,14 +274,16 @@ def graph(news, results, store):
         records=[n for n in focused if n.article_id in graph_members(full,selected)]
         st.subheader(node['kind']+": "+node['label'])
         st.caption(f"{len(records)} related originals in the current filters")
-        for evidence in [e for e in full['edges'] if e['from']==selected or e['to']==selected][:12]:
-            st.caption(evidence['relationship']+" · "+evidence['evidence'])
         related_articles(records,results,store,context='graph_node')
+        with st.expander('Relationship evidence'):
+            for evidence in [e for e in full['edges'] if e['from']==selected or e['to']==selected]:
+                st.text(evidence['relationship']+" · "+evidence['evidence'])
     by_id = {n.article_id: n for n in focused}
     keep_valid_selection('local_graph_article',by_id)
-    accessible_id = st.selectbox("Graph article reference", list(by_id), index=None,
-                     format_func=lambda key: by_id[key].title+" · "+by_id[key].source,
-                     key="local_graph_article", placeholder="Choose an original article")
+    with st.expander('Accessible article selector'):
+        accessible_id = st.selectbox("Graph article reference", list(by_id), index=None,
+                         format_func=lambda key: by_id[key].title+" · "+by_id[key].source,
+                         key="local_graph_article", placeholder="Choose an original article")
     selected_id = accessible_id
     if selected_id in by_id:
         article_details(by_id[selected_id], results.get(selected_id), store,context="graph")
@@ -242,13 +293,13 @@ def graph(news, results, store):
 
 
 def explorer(news, results, store):
-    ordered = sorted(news, key=lambda n: (n.record_date, n.article_id), reverse=True)
+    ordered = sorted(news, key=lambda n: (n.published_day, n.article_id), reverse=True)
     keep_valid_selection('local_inspected_article',[n.article_id for n in ordered])
-    st.dataframe(pd.DataFrame([{"Article ID": n.article_id, "Title": n.title,
-        "Date": n.timestamp or n.publication_date or "Unknown", "Source": n.source, "Sector": ", ".join(n.sectors),
+    st.dataframe(pd.DataFrame([{"Title": n.title,
+        "Published": publication_label(n), "Source": n.source, "Sector": ", ".join(n.sectors),
         "Sentiment": results[n.article_id].label if n.article_id in results else "Not analyzed",
         "Model": results[n.article_id].family if n.article_id in results else "—", "Original URL": n.url} for n in ordered]),
-        hide_index=True, width="stretch", column_config={"Original URL": st.column_config.LinkColumn()})
+        hide_index=True, width="stretch", column_config={"Original URL": st.column_config.LinkColumn(display_text='Open original')})
     record_id = st.selectbox("Inspect an article", [n.article_id for n in ordered], key="local_inspected_article",
                   format_func=lambda key: next(n.title+" · "+n.source for n in ordered if n.article_id == key))
     if record_id:
@@ -265,11 +316,13 @@ def dashboard(store):
         st.info("Your library is ready. Choose Add news to fetch a source or save approved text.")
         return
     news, results, start, end = shared_filters(all_news, analyses)
+    synthetic=sum(n.provider=='authored_synthetic' for n in news)
+    if synthetic:
+        st.caption(f'{synthetic} synthetic development originals included in this local selection')
     counts = overview_counts(news, results)
     for col, (label, value) in zip(st.columns(4), [("Original articles", counts["raw_articles"]), ("Analyzed articles", counts["analyzed"]),
                   ("Sources", counts["sources"]), ("Pending analysis", counts["unanalysed"])]):
         col.metric(label, value)
-    st.caption(f"All views use the same {len(news)} filtered originals. Multi-sector assignments can contribute to multiple sector cells. Candidate groups never replace raw counts.")
     if not news:
         st.info("No articles match these filters. Widen the date range or clear filters.")
         return
@@ -290,13 +343,13 @@ def dashboard(store):
     with sectors:
         st.subheader("Sector sentiment")
         sector_chart(news, results)
-        st.dataframe(pd.DataFrame(sector_counts(news, results)), hide_index=True, width="stretch")
+        st.dataframe(pd.DataFrame(display_sector_counts(news, results)), hide_index=True, width="stretch")
     with trends:
         st.subheader("Daily sentiment")
         try:
             table = pd.DataFrame(daily_counts(news, results, start, end,date_basis="published")).set_index("Date")
             st.line_chart(table, color=COLORS, height=320, y_label="Raw articles")
-            st.caption("Zero means no matching records in your local library. Published, first-seen, submitted and date-only meanings remain attached to originals; this is not exhaustive market coverage.")
+            st.caption("Publication dates only; zero means no matching local records, not full market coverage.")
         except ValueError as error:
             st.info(str(error))
     with matrix:

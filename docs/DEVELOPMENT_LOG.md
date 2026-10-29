@@ -412,3 +412,5 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
 - 30 October 2026 Sydney: local flow milestone, 243 offline tests and benchmark dry run passed. Original 171 frozen evidence hashes unchanged. No live API requests or safeguards reset.
 
 - 30 October 2026 Sydney: 250 offline tests and dry run passed. Actual browser heatmap-cell and graph article/theme/sector clicks opened the licensed RBA original/related records. No news/model requests from chart interactions; console had sidebar-theme warnings, no chart exception.
+
+- 30 October 2026 Sydney: 259 offline tests and benchmark dry run passed. Browser imported existing licensed RBA metadata without HTTP, saved the same original, ran actual pinned FinBERT (Neutral, 145.11 ms excluding load, 2026-10-29T15:06:31.704522Z), opened sector results and the RBA original URL. Library remains 2 originals / 4 historical analyses; API reservations remain 2 and external model requests 0. Graph article/sector/theme/entity clicks and heatmap clicks verified. Explicit Ollama discovery unavailable; inference remains mock-only. NewsData manual pause and Marketaux current UTC-day failure hold unchanged.

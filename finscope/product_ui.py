@@ -34,8 +34,8 @@ def welcome(store):
     st.title("Your news. A clearer financial picture.")
     st.write("Fetch financial news, analyze its tone and explore the original evidence — on your computer.")
     steps = [("01", "Choose a news source", "Connect your API key or use the fixed RBA collector."),
-             ("02", "Choose an AI model", "Start with local FinBERT; other model options are optional."),
-             ("03", "Fetch and analyze", "Preview the text, confirm its permitted use, then run analysis."),
+             ("02", "Fetch and select news", "Preview actual records and confirm their permitted use."),
+             ("03", "Choose a model and analyze", "Start with local FinBERT; no model API key is needed."),
              ("04", "Explore the evidence", "Filter sectors and dates, compare trends and open original articles.")]
     for col, (number, title, text) in zip(st.columns(4), steps):
         with col, st.container(border=True):
@@ -73,7 +73,8 @@ def api_source(store):
         collector_ui(store)
         return
     env_key = local_credentials().get(ENV_KEYS[provider])
-    status = LocalIngestionService(store).source_status(provider, configured=bool(st.session_state.get("key_"+provider) or env_key))
+    status = LocalIngestionService(store).source_status(provider, configured=bool(st.session_state.get("key_"+provider) or
+                (env_key if st.session_state.get('env_'+provider,True) else None)))
     st.caption(f"{status.state} · {status.reason}")
     if status.last_attempt:
         with st.expander("Last source attempt"):
@@ -86,13 +87,13 @@ def api_source(store):
             topic = st.selectbox("News topic", list(TOPICS), key="topic_"+provider) if provider != "finnhub" else "technology"
         with right:
             symbol = st.text_input("Company ticker", value="NVDA", max_chars=15, key="ticker_finnhub").strip().upper() if provider == "finnhub" else None
-            days = st.number_input("Lookback days (account access may be narrower)", min_value=1, max_value=30, value=2,
-                                   disabled=provider == "newsdata")
+            days = (2 if provider == 'newsdata' else st.number_input("Lookback days (account access may be narrower)",
+                                   min_value=1, max_value=30, value=2))
             remaining = st.number_input("Confirmed available request budget", min_value=0, max_value=10000, value=0)
         preview = st.checkbox("I may access and preview these records locally for my personal noncommercial use")
         quota = st.checkbox("I confirm this request budget is currently available on my account")
-        st.caption("One request, at most 3 preview records. Local safety cap: 3 requests/provider/UTC day; 60-second spacing. "
-                   "No retries, pagination or publisher-page requests. Keys remain in memory for this browser session.")
+        with st.expander('Request safeguards'):
+            st.caption("One request, up to 3 records; 3 requests/provider/UTC day, 60-second spacing, existing holds preserved; no automatic retries or publisher-page requests.")
         fetch = st.form_submit_button("Fetch news", type="primary", disabled=status.blocked)
     if fetch:
         try:
@@ -135,7 +136,7 @@ def preview_news(store):
     if not items:
         return
     st.subheader("News preview")
-    st.caption("Fetched successfully does not mean approved for analysis or storage. Only returned headlines/summaries are available; full publisher text was not fetched.")
+    st.caption("Select headlines/summaries to keep; storage and NLP require the permissions below.")
     # Avoid the dataframe's built-in CSV download before retention is permitted.
     for n in items:
         with st.container(border=True):
@@ -168,6 +169,7 @@ def preview_news(store):
 
 
 def authored_text(store):
+    st.caption('Development fixtures stay labelled synthetic; licensed text requires your permission reference.')
     with st.form("authored_news"):
         title = st.text_input("Title", value="Synthetic chipmaker earnings update", max_chars=160)
         text = st.text_area("Financial text", value="Fictional chipmaker Aster reported a 20 percent rise in revenue and record quarterly profits.", max_chars=1800)
@@ -206,10 +208,12 @@ def collector_ui(store):
     source_id=st.radio("RBA collector",list(SOURCES),format_func=lambda key:SOURCES[key]["label"],horizontal=True)
     config=SOURCES[source_id]
     kind=config["kind"]
-    st.caption("Central-bank releases only; not broad financial-news coverage. Collection checks robots and reads one fixed feed/index. Article pages are never requested.")
+    st.caption("Fixed RBA central-bank feed/index only; not a general crawler or multi-sector news feed.")
+    status=LocalIngestionService(store).source_status('rba',configured=True)
+    st.caption(f'{status.state} · {status.reason}')
     preview=st.checkbox("I may preview these official RBA records locally",key="rba_preview_rights")
     rights=ContentRights(preview=preview,reference="Personal local RBA preview attestation; downstream rights unverified")
-    if st.button("Collect RBA news",type="primary",disabled=not preview):
+    if st.button("Collect RBA news",type="primary",disabled=not preview or status.blocked):
         try:
             items=collect_rba(LocalIngestionService(store),kind,rights,explicit=True)
             st.session_state["news_preview"]=items
@@ -269,7 +273,7 @@ def analyze(store):
         return
     from .model_ui import controls,execute
     from .model_providers import ModelError
-    options=controls()
+    options=controls(store=store)
     if options.mode=="Local FinBERT" and not options.ready:
         options.ready=prepare_finbert()
     from .dashboard_ui import shared_filters
@@ -280,6 +284,8 @@ def analyze(store):
     if queue == "Pending for selected model":
         items = [n for n in items if n.article_id not in results]
     eligible = [n for n in items if n.rights.analyze and n.rights.retain]
+    if not eligible:
+        st.info('No permitted pending news for this model.' if queue.startswith('Pending') else 'No permitted news matches these filters.')
     if len(eligible) != len(items):
         st.caption(f"{len(items)-len(eligible)} records have unverified local NLP/storage permission. Review permissions in News Explorer.")
     ids = [n.article_id for n in eligible]
@@ -313,9 +319,11 @@ def analyze(store):
             st.success(f"Saved {successful} analyses locally.")
             st.session_state["analysis_completed_model"] = current_model
         if failed:
-            st.error(f"{failed} analyses failed. No fake prediction was substituted; previous results and originals remain intact.")
+            st.error(f"{failed} analyses failed; previous results remain saved.")
             for reason in reasons:
                 st.caption(reason)
+            if not reasons:
+                st.caption('The local model could not run; check model files/runtime in Settings / Help and use Prepare local models if needed.')
     if st.session_state.get("analysis_completed_model"):
         def view_results():
             st.session_state["workspace_page"] = "Dashboard"
@@ -329,7 +337,7 @@ def dashboard(store):
 
 
 def about():
-    st.title("About / Methodology")
+    st.title("Settings / Help")
     with st.expander("Models and limitations"):
         st.write("Pinned local ProsusAI FinBERT supplies Positive / Neutral / Negative probabilities. "
                  "MiniLM cosine ≥0.80 within 72 hours produces unverified candidate groups. "
@@ -344,6 +352,9 @@ def about():
     with st.expander("Development and evidence"):
         st.write("AI-assisted engineering; team members write the final academic report. See docs/REPORT_SYNOPSIS.md and the preserved evaluation evidence. "
                  "Automated/browser checks do not substitute for three-human usability evidence.")
+    with st.expander('Local model setup'):
+        st.code('.venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt',language='powershell')
+        prepare_finbert()
 
 
 def main():
@@ -363,7 +374,7 @@ def main():
     with st.sidebar:
         st.title("FinScope")
         st.caption("LOCAL NEWS INTELLIGENCE")
-        page = st.radio("Workspace", ["Dashboard", "Add news", "Analyze", "About / Methodology"], key="workspace_page")
+        page = st.radio("Workspace", ["Dashboard", "Add news", "Analyze", "Settings / Help"], key="workspace_page")
         st.divider()
         st.caption("Local SQLite · Your original records persist")
         if st.button("User Guide"):

@@ -76,6 +76,8 @@ the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commi
 `94dc5a0` also passed both exact-commit jobs and all 233 tests in [Actions
 40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281). [Full dated evidence and limits](LOCAL_REDESIGN.md).
 
+30 October local usability check: **259 offline tests** plus dry run; actual browser RBA local import, pinned FinBERT reanalysis (Neutral), SQLite history, sector results, original URL, and heatmap/graph node clicks verified. Two originals remain two after reanalysis; no new news API or external LLM requests. Ollama service discovery unavailable; live inference remains pending. This is engineering acceptance, not accuracy or human usability evidence.
+
 Pending: Marketaux downstream rights and stable availability; NewsData resumption
 if explicitly authorized; live Ollama inference (discovery reported unavailable);
 live external API account/model verification (zero real article transmissions);
