@@ -4,7 +4,7 @@ Evidence current: **29 October 2026 Sydney**. The three team members will write 
 
 **Latest architecture correction, 29 October:** the product is now a local-first
 single-user Streamlit application on localhost with persistent local SQLite.
-Cloud hosting is historical deployment evidence, not a product requirement.
+The existing public URL is now designated an independent synthetic-only product showcase; the functional AI application stays local. See [surface separation](PUBLIC_SHOWCASE.md).
 Milestone 1 delivered first-run guidance, masked/.env provider connectors and
 separate fetch/preview/storage/NLP permissions. One actual local Marketaux request
 returned HTTP 200 / three preview records; their downstream rights remain gated.
@@ -18,16 +18,16 @@ measurements below retain their original scope; the frozen challenge is unchange
 ## Objective and scope
 
 - Demonstrate inspection of approved financial text: sentiment, explainable sectors and possible report overlap. No price forecasting or market-impact inference.
-- Delivered: [public noncommercial Streamlit MVP](https://finscope-dvdwk812.streamlit.app/) accepting synthetic, self-authored or explicitly licensed inputs with processing/storage-rights attestation. No live news-provider feed is connected.
+- Delivered local product: provider preview, permitted FinBERT/MiniLM, persistent SQLite and raw-original analytics. The [public site](https://finscope-dvdwk812.streamlit.app/) is an illustrative showcase, with fictional previews and local setup guidance; it has no provider/model/database runtime.
 - Expansion cue: explain the finance use case and why preserving original reports matters; distinguish an approved-input demonstration from production news ingestion.
 
 ## Architecture and methods
 
-Approved text → provenance/length/time checks → pinned local FinBERT probabilities + MiniLM embeddings → keyword sectors/cosine candidates → session SQLite → Overview, Trends, News Explorer and JSON export. [Implementation](../finscope/demo_pipeline.py); [model evidence/pins](AI_PROTOTYPE.md).
+Approved text → provenance/length/time checks → pinned local FinBERT probabilities + MiniLM embeddings → keyword sectors/cosine candidates → persistent local SQLite → Overview, Trends, heatmap, evidence graph, News Explorer and JSON export. The public showcase is a separate presentation path. [Implementation](../finscope/demo_pipeline.py); [model evidence/pins](AI_PROTOTYPE.md).
 
 - FinBERT: Positive/Negative/Neutral text tone. MiniLM: attention-mask mean pooling, normalized 384-dimensional vectors. Pretrained models; no team training or fine-tuning.
 - Cosine ≥0.80 within 72 hours compares representatives and creates **unverified candidates**. Order/representative selection matters. Raw articles are the default; candidate summaries are optional. Explorer/export retain originals. Opposing model tone is a review flag, not factual contradiction detection.
-- Explicit asset preparation; hash-verified local-only inference, no remote code/download fallback. Source and published/first-seen/submitted meanings remain distinct; submitted URLs are not fetched. Session storage is temporary, with purge-on-access after 24 hours.
+- Explicit asset preparation; hash-verified local-only inference, no remote code/download fallback. Source and published/first-seen/submitted meanings remain distinct; submitted URLs are not fetched. The current local library persists across restarts. Temporary session storage/purge-on-access describe the historical hosted demo, not the new showcase.
 - Evaluation: one unchanged-pipeline run on 18 fictional texts, using a reference locked before predictions. User supplied two reviewer submissions and adjudication decisions. **Reviewer independence and completion attestations remain unverified.** All evaluation submission times were equal; publication/period extraction was not tested. [Frozen method](CHALLENGE_EVALUATION.md).
 
 ## Actual results

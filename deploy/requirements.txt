@@ -1,2 +1,3 @@
--r ../requirements.txt
--r ../requirements-finbert.txt
+# Public illustrative showcase only. No providers, database or model runtime.
+streamlit>=1.50,<2
+pandas>=2.2,<3

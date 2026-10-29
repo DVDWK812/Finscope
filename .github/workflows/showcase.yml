@@ -1,0 +1,19 @@
+name: showcase isolation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lightweight-preview:
+    name: Showcase without model dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only the public showcase requirements
+        run: pip install -r deploy/requirements.txt
+      - name: Preview acceptance with provider, database and runtime guards
+        run: python -m unittest discover -s tests -p test_showcase.py -v

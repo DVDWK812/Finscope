@@ -2,12 +2,14 @@
 
 Local-first financial news intelligence. Run Streamlit on your own computer, fetch and preview news, analyze permitted text with pinned CPU FinBERT and MiniLM, and keep originals/results in local SQLite.
 
+**[Public product showcase](https://finscope-dvdwk812.streamlit.app/)** — an illustrative tour with fictional data, not the functional AI application. The root `streamlit_app.py` remains the full local product; `deploy/streamlit_app.py` runs the independent showcase. [Architecture and verification](docs/PUBLIC_SHOWCASE.md).
+
 ## Launch locally
 
 ```powershell
 # Python 3.11+; the model runtime uses the pinned requirements below.
 python -m venv .venv-ai
-.venv-ai/Scripts/python.exe -m pip install -r deploy/requirements.txt
+.venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt
 # Explicit preparation only; inference never downloads models automatically.
 .venv-ai/Scripts/python.exe -m finscope.model_assets --prepare --acknowledge-model-licenses
 .venv-ai/Scripts/python.exe -m streamlit run streamlit_app.py --server.address localhost
@@ -41,6 +43,6 @@ Raw originals remain the default. Cosine ≥0.80 within 72 hours creates unverif
 .venv/Scripts/python.exe -m finscope.benchmark --dry-run
 ```
 
-Offline tests use mocks/authored text; actual provider/model/browser checks are recorded separately in [local redesign evidence](docs/LOCAL_REDESIGN.md). The [provider evaluation](docs/API_EVALUATION.md), [decisions](docs/DECISIONS.md), [RSS](docs/RSS_PROTOTYPE.md), [HTML](docs/HTML_PROTOTYPE.md), and [historical overview](docs/PRE_REDESIGN_OVERVIEW.md) preserve prior evidence. Existing deployment files are retained for compatibility; cloud deployment is not a product requirement or acceptance target.
+Offline tests use mocks/authored text; actual provider/model/browser checks are recorded separately in [local redesign evidence](docs/LOCAL_REDESIGN.md). The [provider evaluation](docs/API_EVALUATION.md), [decisions](docs/DECISIONS.md), [RSS](docs/RSS_PROTOTYPE.md), [HTML](docs/HTML_PROTOTYPE.md), and [historical overview](docs/PRE_REDESIGN_OVERVIEW.md) preserve prior evidence. The public showcase installs only Streamlit/pandas from `deploy/requirements.txt`; run its preview with `python -m streamlit run deploy/streamlit_app.py`. It never imports the local runtime, asks for keys, fetches news, prepares models or opens a news database. Full local installation uses `requirements-local.txt`; the retained Docker recipe also uses that full local runtime.
 
 Main-only tested commits, no feature branches or PRs. No GDELT retry/task recreation, challenge tuning/rescoring, Moodle access or coursework submission. Internal target: 31 October; the official deadline remains user-confirmed, with the historical conflicting values preserved in [assessment notes](docs/ASSESSMENT_VERIFICATION.md).
