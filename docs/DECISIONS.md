@@ -113,3 +113,5 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
 - 30 October 2026 Sydney — local interface milestone: compact original details with collapsed technical history, retained filter preferences, explicit current OpenAI/Ollama states, aligned selected-sector chart rows, fixed-source collector configuration. No general crawler or extra news source added.
 
 - 30 October 2026 Sydney — console repair: explicit chart axes and finite donut angles replace implicit categorical scale bindings/empty stack extents; counts, filters and local data are unchanged.
+
+- 30 October 2026 Sydney: request protection repair separates local_rows and study_rows; both guards apply independently, using UTC completion days for failure pauses. No ledger reset, hold reduction or live API dispatch.

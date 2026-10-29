@@ -220,8 +220,9 @@ class LocalIngestionService:
         self.store, self.cooldown_path, self.study_path = store, Path(cooldown_path), Path(study_path)
         self.transport, self.clock = transport, clock
 
-    def _check_holds(self, provider, now, rows):
+    def _check_holds(self, provider, now, local_rows):
         """Shared read-only guard for status and transactional reservation."""
+        now = now.astimezone(timezone.utc)
         try:
             holds = load_cooldowns(self.cooldown_path)
         except (OSError, ValueError):
@@ -232,11 +233,11 @@ class LocalIngestionService:
         if provider == "marketaux" and self.study_path.exists():
             try:
                 with closing(sqlite3.connect(self.study_path.resolve().as_uri()+"?mode=ro", uri=True)) as study:
-                    rows = study.execute("SELECT reserved_at,completed_at,status,cooldown_until FROM attempts").fetchall()
-                for reserved, completed, status, hold in rows:
+                    study_rows = study.execute("SELECT reserved_at,completed_at,status,cooldown_until FROM attempts").fetchall()
+                for reserved, completed, status, hold in study_rows:
                     if status == "attempted_outcome_unknown":
                         raise FetchBlocked("Existing study has an unresolved request; review before fetching")
-                    end = datetime.fromisoformat(completed or reserved)
+                    end = datetime.fromisoformat(completed or reserved).astimezone(timezone.utc)
                     if (now-end < timedelta(seconds=60)
                             or hold and datetime.fromisoformat(hold) > now):
                         raise FetchBlocked("Existing study spacing or cooldown is active")
@@ -247,7 +248,7 @@ class LocalIngestionService:
                     raise
                 raise FetchBlocked("Existing study ledger needs review") from None
         today = 0
-        for reserved, completed, status, hold in rows:
+        for reserved, completed, status, hold in local_rows:
             start = datetime.fromisoformat(reserved).astimezone(timezone.utc)
             end = datetime.fromisoformat(completed or reserved).astimezone(timezone.utc)
             if status == "pending":
@@ -256,10 +257,10 @@ class LocalIngestionService:
                 raise FetchBlocked("Provider Retry-After hold is active")
             if now-end < timedelta(seconds=60):
                 raise FetchBlocked("Wait at least 60 seconds between provider requests")
+            if status == "failed" and end.date() == now.date():
+                raise FetchBlocked("A provider failure stopped further requests for this UTC day")
             if start.date() == now.astimezone(timezone.utc).date():
                 today += 1
-                if status == "failed":
-                    raise FetchBlocked("A provider failure stopped further requests for this UTC day")
         if today >= 3:
             raise FetchBlocked("Local safety cap reached: 3 requests/provider/UTC day")
 
@@ -268,11 +269,11 @@ class LocalIngestionService:
         if provider == "newsdata":
             return SourceStatus("Paused", "Existing manual pause; no requests allowed", True)
         with closing(self.store.connect()) as db:
-            rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=? ORDER BY reserved_at", (provider,)).fetchall()
-        last = rows[-1] if rows else None
+            local_rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=? ORDER BY reserved_at", (provider,)).fetchall()
+        last = local_rows[-1] if local_rows else None
         stamp, outcome = (last[1] or last[0], last[2]) if last else ("", "")
         try:
-            self._check_holds(provider, self.clock(), rows)
+            self._check_holds(provider, self.clock(), local_rows)
         except (FetchBlocked, ValueError, OSError):
             import sys
             error = sys.exception()
@@ -291,8 +292,8 @@ class LocalIngestionService:
         request_id = uuid4().hex
         with closing(self.store.connect()) as db:
             db.execute("BEGIN IMMEDIATE")
-            rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
-            self._check_holds(provider, now, rows)
+            local_rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
+            self._check_holds(provider, now, local_rows)
             db.execute("INSERT INTO local_requests(id,provider,reserved_at,status) VALUES (?,?,?,?)",
                        (request_id, provider, now.isoformat(), "pending"))
             db.commit()  # Durable intent before dispatch, including transport failures.
