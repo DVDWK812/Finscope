@@ -4,9 +4,9 @@ gatherUsageStats = false
 [server]
 headless = true
 maxUploadSize = 1
-# Production source watching probes Transformers' optional vision modules.
-# Restart/redeploy after source changes; inference and cache stay unchanged.
-fileWatcherType = "none"
+# Main serves only the lightweight public showcase, so source watching is safe.
+# The local product/runtime is maintained separately on the local branch.
+fileWatcherType = "auto"
 
 [theme]
 primaryColor = "#16856b"

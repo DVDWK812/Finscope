@@ -127,7 +127,8 @@ CLOUD_STOPWORDS = frozenset((
     "a", "an", "and", "as", "at", "by", "for", "from", "in", "into", "its",
     "new", "next", "of", "on", "the", "to", "with", "this", "that", "their",
     "fictional", "reports", "publishes", "announces", "describes", "presents",
-    "schedules", "outlines", "introduces", "said", "will",
+    "schedules", "outlines", "introduces", "said", "will", "company", "example",
+    "headline", "headlines", "news", "report", "update", "updates",
 ))
 
 
@@ -185,13 +186,14 @@ def graph_overview(records):
             subset = [r for r in company_rows if r.sector == sector]
             edges.append(dict(from_id="sector:" + sector, to_id="company:" + company,
                 relationship="Illustrative industry classification", count=len(subset),
-                article_id=subset[0].article_id))
+                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset)))
         for source in sorted({r.source for r in company_rows}):
             subset = [r for r in company_rows if r.source == source]
             edges.append(dict(from_id="company:" + company, to_id="source:" + source,
                 relationship="Fictional source reports on company", count=len(subset),
-                article_id=subset[0].article_id))
+                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset)))
     for edge in edges:
+        edge.update({"from": edge["from_id"], "to": edge["to_id"]})
         left, right = nodes[edge["from_id"]], nodes[edge["to_id"]]
         edge.update(x=left["x"], y=left["y"], x2=right["x"], y2=right["y"])
     return {"nodes": list(nodes.values()), "edges": edges}
@@ -223,6 +225,9 @@ def graph(records, company):
     for row in rows:
         article_id = add(row.article_id, row.article_id, "Article",
                          f"{row.day.isoformat()} · {row.title} · {row.sentiment}")
+        nodes[article_id].update(article_id=row.article_id, title=row.title, summary=row.summary,
+            company=row.company, industry=row.sector, sentiment=row.sentiment,
+            source=row.source, candidate=row.candidate)
         source_id = add("source:" + row.source, row.source, "Source",
                         "Fictional publication/source")
         candidate_id = add(row.candidate, row.candidate, "Unverified candidate",

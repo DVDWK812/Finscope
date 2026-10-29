@@ -1,5 +1,7 @@
 # FinScope
 
+**Branch policy:** `main` serves the synthetic-only public showcase; `local` maintains the full local product. [Open the showcase](https://finscope-dvdwk812.streamlit.app/). The guide below describes the separate local product; obtain it with `git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git`. Showcase development never modifies or merges the `local` branch.
+
 Local-first financial news intelligence. Run Streamlit on your own computer, fetch and preview news, analyze permitted text with pinned CPU FinBERT and MiniLM, and keep originals/results in local SQLite.
 
 **[Public product showcase](https://finscope-dvdwk812.streamlit.app/)** — an illustrative tour with fictional data, not the functional AI application. The root `streamlit_app.py` remains the full local product; `deploy/streamlit_app.py` runs the independent showcase. [Architecture and verification](docs/PUBLIC_SHOWCASE.md).

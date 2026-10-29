@@ -2,8 +2,10 @@
 from datetime import timedelta
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from .showcase_data import END, START, SECTORS, SENTIMENTS, examples, graph, graph_overview, select, word_cloud_terms
+from .showcase_visuals import relationship_markup, visible_graph, word_cloud_markup
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
 PAGES = ("Home", "User Guide", "Dashboard Preview", "Knowledge Graph", "News Explorer", "Get FinScope")
@@ -210,37 +212,13 @@ def story(row, details=False):
         st.caption("Fictional sample only. No publisher URL exists; no original-article link is fabricated.")
 
 
-def render_relationship_graph(data, height=440):
-    """Small deterministic graph: edges and labels have inspectable tooltips."""
-    plot({"layer": [
-        {"data": {"values": data["edges"]},
-         "mark": {"type": "rule", "color": "#536c85", "opacity": .62, "strokeWidth": 1.6},
-         "encoding": {
-             "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-             "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-             "x2": {"field": "x2"}, "y2": {"field": "y2"},
-             "tooltip": [{"field": "relationship", "title": "Relationship"},
-                         {"field": "count", "title": "Example reports"},
-                         {"field": "article_id", "title": "Example evidence"}]}},
-        {"data": {"values": data["nodes"]},
-         "mark": {"type": "circle", "size": 900, "stroke": "#101d30", "strokeWidth": 2},
-         "encoding": {
-             "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-             "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-             "color": {"field": "kind", "type": "nominal", "title": "Node type",
-                       "scale": {"domain": ["Industry", "Company", "Article", "Unverified candidate", "Source"],
-                                 "range": ["#e9c776", "#60e5bc", "#9dbfff", "#d4adff", "#f69e9e"]},
-                       "legend": {"orient": "bottom", "columns": 3}},
-             "tooltip": [{"field": "name", "title": "Node"},
-                         {"field": "kind", "title": "Type"},
-                         {"field": "detail", "title": "Context"}]}},
-        {"data": {"values": data["nodes"]},
-         "mark": {"type": "text", "dy": -23, "color": "#e0ebf9", "fontSize": 11,
-                  "limit": 150, "fontWeight": "bold"},
-         "encoding": {"x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-                      "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-                      "text": {"field": "label"}}}],
-          "height": height, "resolve": {"scale": {"color": "independent"}}})
+def render_relationship_graph(data, height=440, include_sources=True):
+    markup = relationship_markup(visible_graph(data, include_sources), height)
+    components.html('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+                    '<style>body{margin:0;background:#0c1423;color:#dbe7f6;}</style></head><body>'
+                    + markup + '</body></html>', height=height + 185, scrolling=False)
+    st.caption("On a phone, swipe the map horizontally to keep labels readable. "
+               "Arrow styles identify relationships; hover for evidence and use the article selector for full details.")
 
 
 def headline_cloud(records):
@@ -248,32 +226,22 @@ def headline_cloud(records):
     if not terms:
         st.info("No headline terms are available for this illustrative selection.")
         return
-    columns = (14, 38, 63, 87)
-    rows = (13, 37, 61, 85)
-    words = []
-    for index, item in enumerate(terms):
-        words.append({"word": item["term"], "count": item["count"],
-                      "x": columns[index % 4], "y": rows[index // 4],
-                      "font": min(34, 18 + 6 * (item["count"] - 1))})
-    plot({"data": {"values": words},
-          "mark": {"type": "text", "fontWeight": "bold"},
-          "encoding": {
-              "x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-              "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
-              "text": {"field": "word"},
-              "size": {"field": "font", "type": "quantitative", "scale": None, "legend": None},
-              "color": {"field": "count", "type": "quantitative",
-                        "scale": {"range": ["#9fb9d7", "#60e5bc"]}, "legend": None},
-              "tooltip": [{"field": "word", "title": "Headline term"},
-                          {"field": "count", "title": "Example headlines"}]},
-          "height": 300})
-    with st.expander("Which headlines contain these words?"):
-        term = st.selectbox("Select a word", [item["term"] for item in terms], key="graph_cloud_word")
-        selected = next(item for item in terms if item["term"] == term)
-        matches = [record for record in records if record.article_id in selected["article_ids"]]
-        st.dataframe([{"Date": r.day.isoformat(), "Title": r.title,
-                       "Company": r.company, "Illustrative tone": r.sentiment} for r in matches],
-                     hide_index=True, width="stretch")
+    st.html(word_cloud_markup(terms))
+    options = [item["term"] for item in terms]
+    if st.session_state.get("graph_cloud_word") not in options:
+        st.session_state.pop("graph_cloud_word", None)
+    term = st.selectbox("Select a word", options, key="graph_cloud_word")
+    selected = next(item for item in terms if item["term"] == term)
+    matches = [row for row in records if row.article_id in selected["article_ids"]]
+    st.caption(f'{len(matches)} fictional headline(s) contain “{term}”. Counts are once per headline.')
+    st.dataframe([{"Article ID": r.article_id, "Title": r.title, "Company": r.company,
+                   "Industry": r.sector, "Sentiment": r.sentiment, "Fictional source": r.source}
+                  for r in matches], hide_index=True, width="stretch")
+    ids = [r.article_id for r in matches]
+    if st.session_state.get("graph_cloud_article") not in ids:
+        st.session_state.pop("graph_cloud_article", None)
+    chosen = st.selectbox("Open a matching fictional article", ids, key="graph_cloud_article")
+    story(next(r for r in matches if r.article_id == chosen), details=True)
 
 
 def knowledge_graph():
@@ -291,7 +259,8 @@ def knowledge_graph():
         b.metric("Illustrated sectors", len({r.sector for r in all_rows}))
         c.metric("Illustrative source reports", len(all_rows))
         st.subheader("Industry → Company → Source")
-        render_relationship_graph(graph_overview(all_rows), height=480)
+        include_sources = st.checkbox("Show fictional sources", value=False, key="graph_network_sources")
+        render_relationship_graph(graph_overview(all_rows), height=480, include_sources=include_sources)
         st.caption("Lines reflect authored example classifications and fictional source coverage. "
                    "Their tooltips show how many example reports support each link.")
         st.dataframe([
@@ -309,7 +278,8 @@ def knowledge_graph():
         d.metric("Positive / Negative", f'{sum(r.sentiment == "Positive" for r in rows)} / '
                                       f'{sum(r.sentiment == "Negative" for r in rows)}')
         st.subheader("Company → Articles → Candidates / Sources")
-        render_relationship_graph(graph(all_rows, company))
+        include_sources = st.checkbox("Show fictional sources", value=True, key="graph_company_sources")
+        render_relationship_graph(graph(all_rows, company), include_sources=include_sources)
         st.caption("Report nodes are identified by SYN codes. Hover over a node or link to inspect "
                    "its fictional evidence. Candidate links are NOT confirmed event identity.")
         st.subheader("Potentially related reports")
@@ -361,9 +331,9 @@ def get_finscope():
     st.caption("Python 3.11+ · allow disk space for explicitly prepared model assets · noncommercial model use")
     windows, unix = st.tabs(["Windows · PowerShell", "macOS / Linux"])
     with windows:
-        st.code("git clone https://github.com/DVDWK812/Finscope.git\ncd Finscope\npython -m venv .venv-ai\n.venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt\n.venv-ai/Scripts/python.exe -m finscope.model_assets --prepare --acknowledge-model-licenses\n.venv-ai/Scripts/python.exe -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="powershell")
+        st.code("git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git\ncd Finscope\npython -m venv .venv-ai\n.venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt\n.venv-ai/Scripts/python.exe -m finscope.model_assets --prepare --acknowledge-model-licenses\n.venv-ai/Scripts/python.exe -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="powershell")
     with unix:
-        st.code("git clone https://github.com/DVDWK812/Finscope.git\ncd Finscope\npython3 -m venv .venv-ai\n.venv-ai/bin/python -m pip install -r requirements-local.txt\n.venv-ai/bin/python -m finscope.model_assets --prepare --acknowledge-model-licenses\n.venv-ai/bin/python -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash")
+        st.code("git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git\ncd Finscope\npython3 -m venv .venv-ai\n.venv-ai/bin/python -m pip install -r requirements-local.txt\n.venv-ai/bin/python -m finscope.model_assets --prepare --acknowledge-model-licenses\n.venv-ai/bin/python -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash")
     a, b = st.columns(2)
     with a:
         st.subheader("Available in the local product")

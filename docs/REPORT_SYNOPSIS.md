@@ -1,6 +1,8 @@
 # FinScope — team report synopsis
 
-Evidence current: **29 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+Evidence current: **30 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+
+**30 October public update:** main maintains the synthetic-only showcase; local maintains the full product. Company/industry relationship views and a headline-derived frequency cloud retain fictional article-level evidence and scope/word drill-down. The public candidate passes 227 tests, including unchanged isolation guards; phone-width cloud words no longer overlap. Exact CI and actual deployment are verified separately ([evidence](PUBLIC_SHOWCASE.md)). No local-branch change, model inference, provider call or frozen-result change follows from this preview work.
 
 **Latest architecture correction, 29 October:** the product is now a local-first
 single-user Streamlit application on localhost with persistent local SQLite.

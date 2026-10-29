@@ -1,5 +1,21 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+## Graph / word-cloud verification — 30 October 2026 Sydney
+
+Latest branch policy: **main = public showcase; local = full product**. This work fetched/fast-forwarded only main, preserved five unrelated modified files byte-for-byte, and never switched to, reset, merged or pushed local. Setup instructions now explicitly clone the local branch; those displayed commands were not executed.
+
+Corrective commit `52696ebb1add36a546e26cba454f6e6442380178` passed exact PUSH [regression CI](https://github.com/DVDWK812/Finscope/actions/runs/40890750246) (both supported Streamlit jobs) and [showcase isolation CI](https://github.com/DVDWK812/Finscope/actions/runs/40890750229). Its committed-source baseline also passed 223 local tests and seven offline CLI previews. The public URL initially still served the older “Follow the connections” graph without the new perspective/cloud controls; green CI was not reported as deployment success.
+
+Verified source improvements:
+
+- Company focus retains original fictional IDs, titles, 24 distinct summaries, company/industry/source/tone and unverified candidate relationships. Every article node also carries these fields in its tooltip context. Both `from`/`to` and `from_id`/`to_id` edge schemas are preserved; aggregate links retain all supporting article IDs.
+- Curved, directional links have understandable colour/dash legends; labels wrap at readable size. Industry network omits source nodes by default to reduce crossings, with an explicit source toggle. The bounded graph canvas can scroll horizontally on phones without widening the page; the article selector provides full details without requiring hover.
+- Headline document frequencies still count each authored headline once per word, with exact matching IDs. Generic filler and fictional company names are excluded. Responsive wrapping replaces fixed cloud columns; at 390 px all 16 terms had **zero overlapping text boxes**. Both all-headline and selected-company scopes retain word-to-article drill-down, with stale selections cleared on scope/company changes.
+- The browser caught that `st.html` stripped an initial SVG attempt; the final map uses a self-contained inline preview frame with no scripts/assets/network. Actual rendering was checked after that repair, rather than inferred from AppTest alone.
+- Public source watching is enabled in main's lightweight configuration. The old inference-specific disabled watcher setting remains historical; local-branch configuration was not edited. Actual hosted acceptance is checked after push, including recovery from the initially stale runtime.
+
+All existing tests remain. Four additional regressions cover node evidence/edge aliases, source visibility, exact frequency evidence and state transitions. The final isolated committed-main candidate passes **227 tests**; all seven offline previews pass. Unchanged isolation guards block provider HTTP, database connections and model/runtime imports while public pages are exercised. No news-provider requests, inference, model downloads, private annotation publication or Moodle action occurred. All 23 frozen challenge/annotation files retain their byte hashes. Exact final SHA/CI and deployed screenshots are recorded at handover and in ignored `reports/showcase_graph_20261030/`.
+
 The user's latest architecture instruction separates two entrypoints. The localhost product remains primary and retains its actual provider/model/storage/analytics path. The public URL remains https://finscope-dvdwk812.streamlit.app/ and presents only a synthetic product tour. Earlier hosted inference evidence remains historical; it is not the new website's function.
 
 | Surface | Entry / requirements | Behavior |

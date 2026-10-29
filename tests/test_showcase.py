@@ -98,7 +98,63 @@ class ShowcaseTests(unittest.TestCase):
         self.assertIn("requirements-finbert.txt", (ROOT / "requirements-local.txt").read_text())
 
 
+    def test_cloud_drilldown_survives_scope_company_and_network_changes(self):
+        app = self.app()
+        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        app.selectbox(key="graph_cloud_word").set_value("research").run()
+        self.assertFalse(app.exception)
+        table = next(frame.value for frame in app.dataframe if "Article ID" in frame.value.columns)
+        expected = next(t["article_ids"] for t in word_cloud_terms(examples()) if t["term"] == "research")
+        self.assertEqual(set(table["Article ID"]), set(expected))
+        app.radio(key="graph_cloud_scope").set_value("Selected company").run()
+        app.selectbox(key="graph_company").set_value("Maple Commerce").run()
+        self.assertFalse(app.exception)
+        valid = {r.article_id for r in examples() if r.company == "Maple Commerce"}
+        self.assertIn(app.selectbox(key="graph_cloud_article").value, valid)
+        app.radio(key="graph_perspective").set_value("Industry network").run()
+        app.checkbox(key="graph_network_sources").set_value(True).run()
+        self.assertFalse(app.exception)
+        app.radio(key="graph_perspective").set_value("Company focus").run()
+        self.assertFalse(app.exception)
+
+
 class FictionalDataTests(unittest.TestCase):
+    def test_article_node_context_and_both_edge_schemas_are_preserved(self):
+        records = examples()
+        self.assertEqual(len({row.summary for row in records}), len(records))
+        by_id = {row.article_id: row for row in records}
+        for node in graph(records, "Aster Circuits")["nodes"]:
+            if node["kind"] == "Article":
+                row = by_id[node["article_id"]]
+                self.assertEqual((node["title"], node["summary"], node["sentiment"], node["source"],
+                                  node["company"], node["industry"], node["candidate"]),
+                                 (row.title, row.summary, row.sentiment, row.source,
+                                  row.company, row.sector, row.candidate))
+        for data in (graph(records, "Aster Circuits"), graph_overview(records)):
+            for edge in data["edges"]:
+                self.assertEqual((edge["from"], edge["to"]), (edge["from_id"], edge["to_id"]))
+
+    def test_source_visibility_keeps_article_and_candidate_relationships(self):
+        from finscope.showcase_visuals import visible_graph
+        original = graph(examples(), "Aster Circuits")
+        reduced = visible_graph(original, False)
+        self.assertFalse(any(n["kind"] == "Source" for n in reduced["nodes"]))
+        self.assertEqual({n["id"] for n in reduced["nodes"] if n["kind"] == "Article"},
+                         {n["id"] for n in original["nodes"] if n["kind"] == "Article"})
+        ids = {n["id"] for n in reduced["nodes"]}
+        self.assertTrue(all(e["from_id"] in ids and e["to_id"] in ids for e in reduced["edges"]))
+        self.assertTrue(any("candidate" in e["relationship"].lower() for e in reduced["edges"]))
+        self.assertEqual(visible_graph(original), original)
+
+    def test_headline_frequency_is_document_frequency_with_exact_evidence(self):
+        from dataclasses import replace
+        rows = [replace(examples()[0], title="Research research: company news update"),
+                replace(examples()[1], title="Research expands")]
+        terms = {t["term"]: t for t in word_cloud_terms(rows)}
+        self.assertEqual(terms["research"]["count"], 2)
+        self.assertEqual(set(terms["research"]["article_ids"]), {r.article_id for r in rows})
+        self.assertFalse({"company", "news", "update"} & set(terms))
+
     def test_fixture_identity_no_urls_and_filter_denominators(self):
         rows = examples()
         self.assertEqual(len({r.article_id for r in rows}), 24)
