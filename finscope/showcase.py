@@ -240,7 +240,7 @@ def render_relationship_graph(data, height=440):
          "encoding": {"x": {"field": "x", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
                       "y": {"field": "y", "type": "quantitative", "axis": None, "scale": {"domain": [0, 100]}},
                       "text": {"field": "label"}}}],
-          "height": height, "resolve": {"scale": {"color": "independent"}})
+          "height": height, "resolve": {"scale": {"color": "independent"}}})
 
 
 def headline_cloud(records):

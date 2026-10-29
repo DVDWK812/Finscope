@@ -211,8 +211,9 @@ def graph(records, company):
         return node_id
 
     def edge(left, right, relationship, article_id):
-        edges.append(dict(from_id=left, to_id=right, relationship=relationship,
-                          count=1, article_id=article_id))
+        # Keep the previously tested from/to schema while supporting explicit IDs.
+        edges.append({"from_id": left, "to_id": right, "from": left, "to": right,
+                      "relationship": relationship, "count": 1, "article_id": article_id})
 
     company_id = add("company", company, "Company",
                      f"{len(rows)} fictional source reports")
