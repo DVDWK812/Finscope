@@ -1,5 +1,11 @@
 # Development log
 
+## Hosted showcase acceptance and supported-version test repair — 29 October 2026 Sydney
+
+- Feature commit fc065c3 matched origin/main. Actual https://finscope-dvdwk812.streamlit.app/ opened the independent Product Showcase without model preparation. Browser checks covered all six views, 24 fictional defaults, Technology filter to 4 originals / 50% preset Positive labels, fictional graph/cards, no invented publisher URLs and correct full-local setup commands. There were no public key/upload/fetch/inference controls or provider/model operations. Local runtime preservation remains the separate real authored-text smoke; agent visits are not three-human usability.
+- Showcase-only CI 40854256012 passed. Matrix 40854256048 failed on Streamlit 1.50 solely because the new test accessed AppTest.file_uploader, an unavailable convenience property; the newer matrix job was cancelled although its test/preview steps passed. Replaced that access with public app.get("file_uploader"), retaining the same no-upload assertion. No test, supported version or safety constraint was removed. Repaired committed-main candidate: **220 tests pass**, 8.868 s. Final repair-commit PUSH CI is checked after push and retained under ignored reports/showcase_split.
+- The public runtime itself required no repair. Frozen packet/reference/report and original human annotations remain unchanged. Other-chat uncommitted local-product files/tests/environment work remain excluded from these commits. No coursework submission, Moodle access, private data publication or final academic manuscript/PDF.
+
 ## Separate public showcase from local product — 29 October 2026 Sydney
 
 - User explicitly retained the full local product and designated the existing public URL as an independent showcase. The user confirmed concurrent local-product edits belong elsewhere and must be preserved/excluded. Root streamlit_app.py, local runtime/provider/collector/model files, their tests, environment template and launcher are not edited/staged by this milestone. Existing local limitations/holds/rights remain in force.

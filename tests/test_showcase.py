@@ -45,7 +45,7 @@ class ShowcaseTests(unittest.TestCase):
         for page in pages:
             app.radio(key="showcase_page").set_value(page).run()
             self.assertFalse(app.exception, page)
-            self.assertFalse(app.file_uploader)
+            self.assertFalse(app.get("file_uploader"))
             self.assertFalse(any("API key" in item.label for item in app.text_input))
             self.assertFalse(any("Prepare" in item.label or "Fetch news" in item.label
                                  or "Run real AI" in item.label for item in app.button))

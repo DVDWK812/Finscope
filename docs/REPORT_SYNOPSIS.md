@@ -5,6 +5,13 @@ Evidence current: **29 October 2026 Sydney**. The three team members will write 
 **Latest architecture correction, 29 October:** the product is now a local-first
 single-user Streamlit application on localhost with persistent local SQLite.
 The existing public URL is now designated an independent synthetic-only product showcase; the functional AI application stays local. See [surface separation](PUBLIC_SHOWCASE.md).
+
+The showcase is deployed and browser-checked: six views, 24 fictional records,
+synthetic dashboard/graph/explorer and full-local setup guidance. It has no
+provider/model/database runtime or credential input. The isolated committed-main
+candidate passes 220 tests; the earlier 1.50 test-API incompatibility and repair
+are retained in the separation evidence. Existing local inference remains verified
+by a separate approved authored-text smoke; frozen challenge results below are unchanged.
 Milestone 1 delivered first-run guidance, masked/.env provider connectors and
 separate fetch/preview/storage/NLP permissions. One actual local Marketaux request
 returned HTTP 200 / three preview records; their downstream rights remain gated.
