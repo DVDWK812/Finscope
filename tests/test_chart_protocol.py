@@ -13,13 +13,18 @@ class ChartProtocolTests(unittest.TestCase):
         script = r"""
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync(process.argv[1],'utf8'),source=html.split('<script>')[1].split('</script>')[0];
-let renders=0,observer,receive;const queue=[],messages=[];
+let renders=0,observer,receive,rootHeight=500;const queue=[],messages=[];
 const element=()=>({style:{},setAttribute(){},append(){},replaceChildren(){renders++},
   querySelectorAll(){return []},classList:{remove(){},add(){}}});
-const root=element(),document={getElementById:()=>root,createElement:element,createElementNS:element,
+const root=element();root.getBoundingClientRect=()=>({height:rootHeight});
+const document={getElementById:()=>root,createElement:element,createElementNS:element,
   documentElement:{scrollHeight:500}};
 const render=()=>receive({source:parent,data:{type:'streamlit:render',args:{kind:'graph',scope:'authored',data:{nodes:[],edges:[]}}}});
-const parent={postMessage(message){messages.push(message);if(message.type==='streamlit:setFrameHeight')queue.push(render,()=>observer());}};
+const parent={postMessage(message){messages.push(message);if(message.type==='streamlit:setFrameHeight'){
+  // The viewport/document may include host padding or injected diagnostics;
+  // it is not a measurement of the component's own content.
+  document.documentElement.scrollHeight=message.height+30;
+  queue.push(render,()=>observer());}}};
 vm.runInNewContext(source,{document,parent,addEventListener:(_,fn)=>receive=fn,
   ResizeObserver:class{constructor(fn){observer=fn}observe(){}},Date});
 render();let steps=0;while(queue.length&&steps++<20)queue.shift()();
@@ -27,7 +32,7 @@ assert.equal(queue.length,0,'same-height frame/render feedback must settle');
 assert.equal(messages.filter(m=>m.type==='streamlit:setFrameHeight').length,1);
 for(let i=0;i<100;i++)observer();
 assert.equal(messages.filter(m=>m.type==='streamlit:setFrameHeight').length,1);
-document.documentElement.scrollHeight=650;observer();
+rootHeight=650;observer();
 while(queue.length&&steps++<40)queue.shift()();
 assert.equal(queue.length,0);assert.deepEqual(messages.filter(m=>m.type==='streamlit:setFrameHeight').map(m=>m.height),[500,650]);
 console.log('component protocol settled; real height changes retained');
