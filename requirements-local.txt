@@ -1,0 +1,3 @@
+# Full localhost product: UI/providers plus explicitly prepared CPU model runtime.
+-r requirements.txt
+-r requirements-finbert.txt

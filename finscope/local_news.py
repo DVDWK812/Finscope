@@ -10,6 +10,7 @@ from contextlib import closing
 from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 import json
+import hashlib
 from pathlib import Path
 import sqlite3
 from uuid import uuid4
@@ -77,7 +78,9 @@ class NewsItem:
 
     @classmethod
     def from_article(cls, article, rights, *, now=None, company="", publication_date=""):
-        return cls(uuid4().hex, article.provider, article.title, article.source, article.url,
+        identity = (hashlib.sha256(json.dumps(asdict(article),sort_keys=True).encode()).hexdigest()[:32]
+                    if article.url else uuid4().hex)
+        return cls(identity, article.provider, article.title, article.source, article.url,
                    article.description, article.timestamp, article.timestamp_kind,
                    (now or utcnow()).isoformat(), tuple(classify_sectors(article.title+" "+article.description)),
                    rights, publication_date, company)
@@ -99,6 +102,7 @@ class Analysis:
     similarity: float | None = None
     elapsed_ms: float = 0
     demo_record: dict | None = field(default=None, repr=False)
+    provenance: dict = field(default_factory=dict)
 
 
 class LocalNewsStore:
@@ -115,6 +119,10 @@ class LocalNewsStore:
                 CREATE TABLE IF NOT EXISTS local_requests (id TEXT PRIMARY KEY, provider TEXT NOT NULL,
                     reserved_at TEXT NOT NULL, completed_at TEXT, status TEXT NOT NULL,
                     http_status INTEGER, hold_until TEXT, outcome TEXT);
+                CREATE TABLE IF NOT EXISTS local_model_requests (id TEXT PRIMARY KEY, backend TEXT NOT NULL,
+                    reserved_at TEXT NOT NULL, completed_at TEXT, status TEXT NOT NULL, hold_until TEXT);
+                CREATE TABLE IF NOT EXISTS local_permission_history (article_id TEXT NOT NULL,
+                    changed_at TEXT NOT NULL, previous_rights TEXT NOT NULL, new_rights TEXT NOT NULL);
             """)
             db.commit()
 
@@ -151,6 +159,21 @@ class LocalNewsStore:
             data["sectors"] = tuple(data["sectors"])
             result.append(NewsItem(**data))
         return result
+
+    def update_rights(self, article_id, rights):
+        rights.require("preview")
+        rights.require("retain")
+        with closing(self.connect()) as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT payload FROM local_news WHERE id=?",(article_id,)).fetchone()
+            if row is None:
+                raise ValueError("Original article not found")
+            data = json.loads(row[0])
+            db.execute("INSERT INTO local_permission_history VALUES (?,?,?,?)",(article_id,utcnow().isoformat(),
+                       json.dumps(data["rights"]),json.dumps(asdict(rights))))
+            data["rights"] = asdict(rights)
+            db.execute("UPDATE local_news SET payload=? WHERE id=?",(json.dumps(data),article_id))
+            db.commit()
 
     def save_analysis(self, analysis):
         with closing(self.connect()) as db:
@@ -290,15 +313,17 @@ def analyze_finbert(item, store, pipeline):
     """Reuse the unchanged approved-input pipeline and frozen grouping rules."""
     item.rights.require("analyze")
     item.rights.require("retain")
-    # Unknown exact publication time is not replaced by collection/submission time.
-    if not item.timestamp:
-        raise ValueError("Exact publication time is unavailable; use an approved text submission with its actual timestamp meaning")
-    submission = ApprovedSubmission(item.analysis_text, item.title, item.source,
-                    datetime.fromisoformat(item.timestamp), item.timestamp_kind,
+    # The model can analyze a permitted headline with unknown publication time.
+    # For pipeline validation only, use the actual ingestion time as submitted;
+    # disable temporal grouping and never write that time back to the original.
+    has_exact_time = bool(item.timestamp)
+    submission = ApprovedSubmission(item.analysis_text, item.title if len(item.title)<=160 else "Financial news headline",
+                    item.source if len(item.source)<=100 else "Provider source; see original metadata",
+                    datetime.fromisoformat(item.timestamp or item.fetched_at), item.timestamp_kind if has_exact_time else "submitted",
                     "synthetic" if item.provider == "authored_synthetic" else "licensed",
                     item.rights.reference, True, item.url or None)
     submission.validate()
-    previous = [a for a in store.latest_analyses().values() if a.demo_record and a.article_id != item.article_id]
+    previous = [a for a in store.latest_analyses().values() if a.demo_record and a.article_id != item.article_id] if has_exact_time else []
 
     class PipelineRepository:
         def check_session(self, _session):
@@ -309,10 +334,13 @@ def analyze_finbert(item, store, pipeline):
             pass  # The final record is stored atomically with its stable original ID below.
 
     record = pipeline.submit(submission, PipelineRepository(), "0"*32)
-    record = replace(record, article=replace(record.article, article_id=item.article_id))
+    record = replace(record, article=replace(record.article, article_id=item.article_id,title=item.title,source=item.source))
     analysis = Analysis(uuid4().hex, item.article_id, record.article.sentiment, "FinBERT", "ProsusAI/finbert",
                         record.model_revision, utcnow().isoformat(), record.scores,
-                        candidate_id=record.article.event_id, embedding_revision=record.embedding_revision,
-                        similarity=record.similarity, elapsed_ms=record.inference_ms, demo_record=_demo_payload(record))
+                        candidate_id=record.article.event_id if has_exact_time else "", embedding_revision=record.embedding_revision,
+                        similarity=record.similarity, elapsed_ms=record.inference_ms,
+                        demo_record=_demo_payload(record) if has_exact_time else None,
+                        provenance={"output_kind":"actual_model_inference","text_basis":"headline_and_supplied_summary",
+                                    "temporal_grouping":"unverified_candidate" if has_exact_time else "disabled_unknown_publication_time"})
     store.save_analysis(analysis)
     return analysis

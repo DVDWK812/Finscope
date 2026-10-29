@@ -11,6 +11,14 @@ from test_local_news import item, pipeline
 APP = Path(__file__).resolve().parents[1]/"streamlit_app.py"
 
 
+def render_import_outcome():
+    import streamlit as st
+    from finscope.product_ui import preview_news
+    st.session_state["fetch_outcome"]={"provider":"Local RBA import","status":"ok","outcome":"records",
+                                     "http_status":None,"records":1,"network_attempted":False}
+    preview_news(None)
+
+
 class ProductUITests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
@@ -88,6 +96,31 @@ class ProductUITests(unittest.TestCase):
         app.selectbox(key="local_graph_article").set_value(first.article_id).run()
         self.assertFalse(app.exception)
         self.assertGreaterEqual(sum(first.title==h.value for h in app.subheader),2)
+
+    def test_optional_model_modes_do_not_connect_on_page_load(self):
+        store=LocalNewsStore(self.db);store.save_news(item())
+        app=self.app("Analyze")
+        app.selectbox(key="analysis_model").set_value("Local Ollama").run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any(b.label=="List installed Ollama models" for b in app.button))
+        self.assertTrue(next(b for b in app.button if b.label=="Run real AI analysis").disabled)
+        app.selectbox(key="analysis_model").set_value("External LLM API").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.text_input(key="analysis_openai_key").proto.type,TextInput.PASSWORD)
+        self.assertFalse(app.checkbox(key="analysis_send_consent").value)
+        self.assertTrue(next(b for b in app.button if b.label=="Run real AI analysis").disabled)
+
+    def test_local_collector_selection_is_explicit_and_does_not_fetch(self):
+        app=self.app("Add news")
+        app.selectbox(key="api_provider").set_value("Local Collector").run()
+        self.assertFalse(app.exception)
+        self.assertTrue(next(b for b in app.button if b.label=="Collect RBA news").disabled)
+        self.assertTrue(any("fixed" in c.value for c in app.caption))
+
+    def test_local_import_does_not_imply_an_unobserved_http_attempt(self):
+        app=AppTest.from_function(render_import_outcome).run()
+        self.assertFalse(app.exception)
+        self.assertIn("HTTP not requested",app.success[0].value)
 
 
 if __name__ == "__main__": unittest.main()

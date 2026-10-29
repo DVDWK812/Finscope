@@ -103,9 +103,13 @@ def api_source(store):
 def preview_news(store):
     outcome = st.session_state.get("fetch_outcome")
     if outcome:
+        http = (str(outcome["http_status"]) if outcome["http_status"] is not None else
+                "unobserved" if outcome.get("network_attempted",True) else "not requested")
         message = (f"{outcome['provider']} · {outcome['status']} / {outcome['outcome']} · "
-                   f"HTTP {outcome['http_status'] or 'unobserved'} · {outcome['records']} records")
+                   f"HTTP {http} · {outcome['records']} records")
         (st.success if outcome["status"] == "ok" else st.warning)(message)
+        if outcome["status"] == "failed":
+            st.caption("This attempt consumed a local request reservation. Further requests to this provider are paused for this UTC day; no automatic retry or replacement result.")
     items = st.session_state.get("news_preview", [])
     if not items:
         return
@@ -117,6 +121,11 @@ def preview_news(store):
             st.text(n.title)
             st.caption(f"{n.source} · {n.timestamp or n.publication_date or 'Unknown time'} ({n.timestamp_kind})")
             st.text(n.summary or "Summary unavailable")
+            if n.provider in {"rba_rss","rba_html"}:
+                try:
+                    st.caption(json.loads(n.provenance).get("attribution","Reserve Bank of Australia"))
+                except (ValueError,TypeError):
+                    pass
             st.link_button("Open original article", n.url)
     rights = permission_editor("preview")
     if st.button("Save permitted preview to local library"):
@@ -160,7 +169,31 @@ def authored_text(store):
 
 
 def collector_ui(store):
-    st.info("Fixed RBA RSS/HTML collection and permitted local import will be connected in milestone 3.")
+    from .local_collectors import collect_rba, import_output
+    kind=st.radio("RBA collector",["RSS feed","HTML media-release index"],horizontal=True)
+    st.caption("Central-bank releases only; not broad financial-news coverage. Collection checks robots and reads one fixed feed/index. Article pages are never requested.")
+    preview=st.checkbox("I may preview these official RBA records locally",key="rba_preview_rights")
+    rights=ContentRights(preview=preview,reference="Personal local RBA preview attestation; downstream rights unverified")
+    if st.button("Collect RBA news",type="primary",disabled=not preview):
+        try:
+            items=collect_rba(LocalIngestionService(store),"rss" if kind=="RSS feed" else "html",rights,explicit=True)
+            st.session_state["news_preview"]=items
+            st.session_state["fetch_outcome"]={"provider":"RBA "+kind,"status":"ok","outcome":"records" if items else "empty",
+                        "http_status":200,"records":len(items),"query_utc":utcnow().isoformat()}
+        except (ValueError,OSError):
+            st.error("Collection blocked or failed. Check preview permission and local request holds; no retry was made.")
+    with st.expander("Import existing RBA collector output",expanded=False):
+        st.caption("Select an existing articles.json from the fixed local collector. Import is local and makes no requests; unknown dates stay unknown.")
+        uploaded=st.file_uploader("RBA collector JSON",type=["json"],key="rba_import_json")
+        if st.button("Preview imported records",disabled=uploaded is None or not preview):
+            try:
+                items=import_output(uploaded.getvalue(),rights)
+                st.session_state["news_preview"]=items
+                st.session_state["fetch_outcome"]={"provider":"Local RBA import","status":"ok","outcome":"records",
+                              "http_status":None,"records":len(items),"query_utc":utcnow().isoformat(),"network_attempted":False}
+            except ValueError as error:
+                st.error(str(error))
+    preview_news(store)
 
 
 def add_news(store):
@@ -191,34 +224,48 @@ def prepare_finbert():
 
 def analyze(store):
     st.title("Analyze news")
-    st.write("Run local FinBERT on permitted headlines and available summaries. Originals are preserved.")
+    st.write("Choose a model and run it on permitted headlines and available summaries. Originals are preserved.")
     items = store.list_news()
     if not items:
         st.info("Add news or approved text to your local library first.")
         return
-    st.selectbox("Analysis model", ["Local FinBERT"], key="analysis_model")
-    ready = prepare_finbert()
-    eligible = [n for n in items if n.rights.analyze and n.rights.retain and n.timestamp]
+    from .model_ui import controls,execute
+    from .model_providers import ModelError
+    options=controls()
+    if options.mode=="Local FinBERT" and not options.ready:
+        options.ready=prepare_finbert()
+    from .dashboard_ui import shared_filters
+    items,_,_,_=shared_filters(items,store.list_analyses())
+    eligible = [n for n in items if n.rights.analyze and n.rights.retain]
     if len(eligible) != len(items):
-        st.caption(f"{len(items)-len(eligible)} records are restricted or lack an exact timestamp. Their original metadata remains available.")
+        st.caption(f"{len(items)-len(eligible)} records have unverified local NLP/storage permission. Review permissions in News Explorer.")
     selected = st.multiselect("Articles to analyze", [n.article_id for n in eligible],
                  format_func=lambda key: next(n.title for n in eligible if n.article_id == key), key="analysis_articles")
-    if st.button("Run real AI analysis", type="primary", disabled=not selected or not ready):
-        from streamlit_app import cached_pipeline
+    if st.button("Run real AI analysis", type="primary", disabled=not selected or not options.ready):
+        if options.mode=="External LLM API" and len(selected)>10:
+            st.error("Choose at most 10 originals for one external run.")
+            return
         successful, failed = 0, 0
-        with st.spinner("Running pinned local FinBERT and MiniLM…"):
+        reasons=set()
+        with st.spinner("Running the selected model…"):
             for item in eligible:
                 if item.article_id not in selected:
                     continue
                 try:
-                    analyze_finbert(item, store, cached_pipeline())
+                    execute(item,store,options)
                     successful += 1
+                except (ModelError,ValueError) as error:
+                    failed += 1
+                    if isinstance(error,ModelError):
+                        reasons.add(str(error))
                 except Exception:
                     failed += 1
         if successful:
             st.success(f"Saved {successful} actual analyses to local SQLite. Open Dashboard to explore.")
         if failed:
             st.error(f"{failed} analyses failed. No fake prediction was substituted; previous results and originals remain intact.")
+            for reason in reasons:
+                st.caption(reason)
 
 
 def dashboard(store):
@@ -248,6 +295,7 @@ def main():
     st.set_page_config(page_title="FinScope | Local News Intelligence", page_icon="📈", layout="wide")
     st.markdown("""<style>
     .block-container {max-width:1400px; padding-top:2rem;}
+    [data-testid="stAppDeployButton"] {display:none;}
     [data-testid="stMetric"] {background:#f4f8f7; border:1px solid #dce7e3; border-radius:12px; padding:1rem;}
     [data-testid="stSidebar"] {border-right:1px solid #e2e8e6;}
     h1 {letter-spacing:-.035em;}

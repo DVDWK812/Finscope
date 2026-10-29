@@ -370,3 +370,34 @@ tests and replaced that callback with client graph zoom/pan and an accessible
 article-reference selector already verified in the localhost browser. The repaired
 213-test suite and benchmark preview pass. M3 work remains uncommitted separately;
 this commit contains only the graph compatibility fix and this evidence.
+
+## Local product milestone 3 / branch separation — 29 October 2026 Sydney
+
+The user requested exact branch `local` because another task owns the web version.
+Created an isolated managed worktree from 422e86f and transferred only 12 owned
+uncommitted local-product files; retained the other task's original main checkout
+and excluded all its showcase/deployment edits. Runtime links reuse ignored model,
+credential and request state; no hold/budget was reset. AGENTS records this explicit
+branch exception. No new PR or merge is requested.
+
+Completed FinBERT/Ollama/OpenAI provider interfaces, explicit external permissions
+and send consent, strict structured sentiment without fake probabilities, loopback
+model discovery, fixed RBA collection/import, stable exact originals, audited usage
+permission updates, per-article reanalysis, shared analysis filters and local setup.
+233 offline tests and benchmark preview pass. M2 compatibility commit passed both
+3.11/Streamlit CI jobs (40851879632); final local-branch CI follows publication.
+
+Actual final Marketaux check failed transport at 10:00:32.985771–10:00:48.838748
+UTC, no HTTP response observed; no retry, further daily product calls paused. The
+earlier HTTP 200 / three-record preview is retained separately, with downstream
+rights unverified. Separately reviewed RBA-authored metadata under its current CC
+BY 4.0 notice, imported the existing RSS JSON through the real UI, retained RBA/year
+attribution and exact original time, opened the genuine original URL, and saved an
+actual Neutral local FinBERT/MiniLM result (10:09:01.596219 UTC, .240000/.010127/
+.749873, 148.81 ms). No new RBA collection or external LLM transmission occurred.
+Authored per-article reanalysis saved a separate version (58.67 ms); two originals /
+three actual versions persist. Ollama discovery actually reported unavailable;
+its inference and the external paid API are not claimed live verified. No private
+or raw article text is committed. All 171 original evidence hashes remain unchanged;
+no challenge rerun/tuning/rescoring, Moodle access or coursework submission.
+Details/official interface and licence sources: LOCAL_REDESIGN.md.

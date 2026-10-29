@@ -92,3 +92,16 @@ storage/NLP/transmission remain unverified and gated. NewsData remains manually
 paused. See [actual local evidence](LOCAL_REDESIGN.md); no public-use approval,
 provider winner or model-accuracy claim follows.
 
+## Local product branch and model/source boundaries — 29 October 2026 Sydney
+
+Latest user direction separates this work onto `local`; the original main checkout
+is reserved for the concurrent web task. The full localhost product persists raw
+originals/results locally and supports FinBERT by default, optional installed
+Ollama models and explicitly consented OpenAI structured sentiment. No external
+LLM probability calibration or live service/account availability is claimed.
+Local RBA import of reviewed, attributed RBA-authored metadata passed actual
+FinBERT/storage/original-link smoke. Marketaux's first preview succeeded but its
+second bounded check had transport failure and stopped further daily requests;
+NLP/retention rights remain gated. NewsData stays manually paused; Finnhub company
+scope is distinct. No provider winner/public rights approval or frozen-evaluation
+change. See LOCAL_REDESIGN.md for actual evidence and interface/licence references.

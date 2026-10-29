@@ -69,7 +69,7 @@ def heatmap(news, results, start, end):
         "encoding": {"x": {"field": "Date", "type": "ordinal", "axis": {"labelAngle": -40}},
             "y": {"field": "Sector", "type": "nominal", "sort": list(SECTORS)},
             "color": {"condition": {"test": "datum.Articles == 0 || datum.Analyzed == 0" if field == "Balance" else "datum.Articles == 0", "value": "#edf0f3"},
-                      "field": field, "type": "quantitative", "scale": {"scheme": "redblue", "domain": [-1, 1]} if field == "Balance" else {"scheme": "tealblues"}},
+                      "field": field, "type": "quantitative", "scale": {"domain": [-1, 0, 1], "range": ["#dc6b72", "#f7f9fc", "#16856b"]} if field == "Balance" else {"scheme": "tealblues"}},
             "tooltip": [{"field": key, "type": "quantitative" if key in {"Articles", "Analyzed", "Balance", *SENTIMENTS} else "nominal"}
                         for key in ("Date", "Sector", "Articles", "Analyzed", *SENTIMENTS, "Balance", "Sample")]},
         "height": 280}, width="stretch")
@@ -77,9 +77,14 @@ def heatmap(news, results, start, end):
                "Balance = (positive − negative) / analyzed articles; n<3 is a low-sample flag, not a reliable estimate.")
 
 
-def article_details(item, result, store):
+def article_details(item, result, store, *, context="explorer"):
     st.subheader(item.title)
     st.caption(f"{item.source} · {item.provider} · {item.timestamp or item.publication_date or 'Unknown date'} ({item.timestamp_kind})")
+    if item.provider in {"rba_rss","rba_html"}:
+        try:
+            st.caption(json.loads(item.provenance).get("attribution","Reserve Bank of Australia")+" · AI analysis is derived; no RBA endorsement.")
+        except (ValueError,TypeError):
+            pass
     st.text(item.summary or "No summary supplied. Analysis can use a permitted headline only.")
     st.caption("Text available: headline + supplied summary; this is not full publisher text.")
     if item.url:
@@ -97,12 +102,42 @@ def article_details(item, result, store):
         st.write({"article_id": item.article_id, "fetched_at": item.fetched_at,
                   "timestamp_meaning": item.timestamp_kind, "publication_date_only": item.publication_date,
                   "provenance": item.provenance, "permissions": asdict(item.rights)})
+        if result:
+            st.write({"output_provenance":result.provenance})
         history = [a for a in store.list_analyses() if a.article_id == item.article_id]
         if history:
             st.dataframe(pd.DataFrame([{"Model": model_key(a), "Label": a.label, "Analyzed": a.analyzed_at,
                                         "Result ID": a.analysis_id} for a in history]), hide_index=True, width="stretch")
+    prefix=context+"_"+item.article_id
+    with st.expander("Update usage permissions",expanded=False):
+        from dataclasses import replace
+        reference=st.text_input("Permission reference",value=item.rights.reference,max_chars=300,key=prefix+"_rights_ref")
+        nlp=st.checkbox("Permission includes local NLP",value=item.rights.analyze,key=prefix+"_rights_nlp")
+        external=st.checkbox("Permission includes external LLM transmission",value=item.rights.external,key=prefix+"_rights_external")
+        st.caption("Record your actual permission. This does not grant publisher rights. Previous permission attestations remain in local history.")
+        if st.button("Save updated permissions",key=prefix+"_rights_save"):
+            try:
+                store.update_rights(item.article_id,replace(item.rights,reference=reference,analyze=nlp,external=external))
+                st.rerun()
+            except ValueError as error:
+                st.error(str(error))
+    with st.expander("Reanalyze this original",expanded=False):
+        from .model_ui import controls,execute
+        from .model_providers import ModelError
+        settings=controls(prefix)
+        if st.button("Reanalyze this article",key=prefix+"_reanalyze",disabled=not settings.ready or not item.rights.analyze):
+            try:
+                with st.spinner("Running the selected model on this original…"):
+                    execute(item,store,settings)
+                st.rerun()
+            except ModelError as error:
+                st.error(str(error))
+            except Exception:
+                st.error("Reanalysis failed. No fake output was substituted; previous versions remain saved.")
     if result and result.candidate_id:
-        latest = store.latest_analyses()
+        latest = {a.article_id:a for a in store.list_analyses() if a.family==result.family
+                  and a.model_id==result.model_id and a.revision==result.revision
+                  and a.embedding_revision==result.embedding_revision}
         members = [n for n in store.list_news() if n.article_id in latest and latest[n.article_id].candidate_id == result.candidate_id]
         if len(members) > 1:
             with st.expander(f"Unverified candidate: {len(members)} preserved originals (including outside filters)"):
@@ -136,7 +171,7 @@ def graph(news, results, store):
                      key="local_graph_article", placeholder="Choose an original article")
     selected_id = accessible_id
     if selected_id in by_id:
-        article_details(by_id[selected_id], results.get(selected_id), store)
+        article_details(by_id[selected_id], results.get(selected_id), store,context="graph")
     with st.expander("Inspect graph evidence"):
         st.dataframe(pd.DataFrame([{k: e[k] for k in ("article_id", "relationship", "evidence")} for e in data["edges"]]),
                      hide_index=True, width="stretch")

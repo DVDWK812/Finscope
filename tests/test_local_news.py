@@ -163,8 +163,10 @@ class LocalNewsTests(unittest.TestCase):
     def test_unknown_publication_time_is_not_fabricated(self):
         original = item(timestamp="", publication_date="2026-10-28", timestamp_kind="published")
         self.store.save_news(original)
-        with self.assertRaisesRegex(ValueError, "Exact publication time"):
-            analyze_finbert(original, self.store, pipeline())
+        result=analyze_finbert(original, self.store, pipeline())
+        self.assertEqual(result.label,"Positive")
+        self.assertEqual(result.candidate_id,"")
+        self.assertEqual(result.provenance["temporal_grouping"],"disabled_unknown_publication_time")
         self.assertEqual(self.store.list_news()[0].timestamp, "")
 
     def test_model_failure_does_not_save_a_prediction(self):
