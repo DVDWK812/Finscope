@@ -16,6 +16,8 @@ All-member confirmation of all three paragraphs: A **PENDING**, B **PENDING**, C
 
 ## Proposed AI assistance disclosure
 
+The three members independently write the final academic report. Codex maintains only the concise evidence synopsis and technical documentation; it does not produce a submission-ready academic report or final-report PDF. Earlier report-draft assistance below is historical and does not assign authorship or contribution credit to any member.
+
 For the 29 October final freeze, Codex preserved the consumed challenge and original annotations, updated the report/demo/usability templates, and ran offline regression plus hosted engineering smoke checks on old authored development examples only. No challenge inference was repeated or tuned. Three-human usability records, reviewer attestations, rehearsal and member signoff remain unverified/pending; private annotation records are not published.
 
 OpenAI Codex assisted with FinScope's repository review, Python/Streamlit implementation, model-interface/inference wiring, SQLite repository, grouping safeguards, synthetic evaluation text and provisional labels, regression tests, deployment operations, documentation and presentation drafts. Codex also helped inspect saved API evidence and official source/model documentation; no restricted provider content is connected to this public approved-input demo. The Git history and DEVELOPMENT_LOG distinguish executed work, actual model outputs, mocked software tests and remaining tasks.

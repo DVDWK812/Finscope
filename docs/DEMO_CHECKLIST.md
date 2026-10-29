@@ -1,11 +1,11 @@
 # Final demonstration operator checklist
 
-Use with [the 6:15 A/B/C script](DEMO_SCRIPT.md), [final report](FINAL_REPORT.md) and [freeze verification](DELIVERY_FREEZE.md). Speaking roles remain placeholders; rehearsal, member signoff and three-human testing are pending until observed.
+Use with [the 6:15 A/B/C script](DEMO_SCRIPT.md), [team-reference synopsis](REPORT_SYNOPSIS.md) and [freeze verification](DELIVERY_FREEZE.md). Speaking roles remain placeholders; rehearsal, member signoff and three-human testing are pending until observed.
 
 ## Before presenting
 
 - Record UTC, public URL, verified main SHA and its push-triggered CI result. Note the last hosted smoke date separately; a repository SHA alone does not prove which code the host is running.
-- Open only the public approved-input app and public report/checklist. Hide account panels, terminals, `.env`, private annotations and local reports. No Moodle access, upload or submission.
+- Open only the public approved-input app and public synopsis/checklist. Hide account panels, terminals, `.env`, private annotations and local reports. No Moodle access, upload or submission.
 - Prepare a fresh session and the existing CC0 authored p1/p2/n3 texts below. Do not open or run the consumed B01–B18 challenge in the app or CLI.
 - Confirm the rights gate and explicit preparation status. If assets are missing, explain the setup step and record its outcome; do not silently substitute fixtures for real inference. Do not manage/reboot the hosting account during the demonstration.
 - Verify raw articles are the initial default. Check all four pages and an approved synthetic-only export. Retain a clearly dated authored-text screenshot/export locally for fallback; never use private reviewer records as presentation material.

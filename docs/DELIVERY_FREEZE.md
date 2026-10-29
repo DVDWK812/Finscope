@@ -16,7 +16,7 @@ A local pre-change hash manifest covers **155 existing evidence files**, includi
 
 ## Release statements and materials
 
-The [final report](FINAL_REPORT.md), [script](DEMO_SCRIPT.md) and [operator checklist/cue cards](DEMO_CHECKLIST.md) use **12/16 scorable sentiment agreement (75%), macro-F1 0.730159, two mixed/uncertain references excluded, pairwise cosine precision 0.666667**. P02 exposes reporting-period false matching; P07 exposes uncertain identity/opposed-outcome grouping. Reviewer independence and completion attestations remain **unverified**. Raw articles remain the default. Neither event deduplication nor contradiction detection is validated.
+The [team-reference synopsis](REPORT_SYNOPSIS.md), [script](DEMO_SCRIPT.md) and [operator checklist/cue cards](DEMO_CHECKLIST.md) use **12/16 scorable sentiment agreement (75%), macro-F1 0.730159, two mixed/uncertain references excluded, pairwise cosine precision 0.666667**. P02 exposes reporting-period false matching; P07 exposes uncertain identity/opposed-outcome grouping. Reviewer independence and completion attestations remain **unverified**. Raw articles remain the default. Neither event deduplication nor contradiction detection is validated.
 
 [The eight-task protocol](USER_TESTING.md) and [blank three-human evidence template](USABILITY_EVIDENCE_TEMPLATE.md) are prepared. A/B/C actual human records, participant confirmations, approved anonymized findings, rehearsal and team contribution signoff remain pending. Agent-operated smoke checks are engineering evidence only. Do not publish completed private records.
 

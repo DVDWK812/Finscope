@@ -1,5 +1,7 @@
 # Assessment notes — unverified deadline conflict, 27 October 2026 Sydney
 
+**Reporting clarification, 29 October:** The final academic report is written independently by the three members. Codex maintains the [team-reference synopsis](REPORT_SYNOPSIS.md) only. The user explicitly confirmed on 29 October that there are **no required report section headings**. This is user-supplied clarification, not a new Moodle/PDF inspection; the synopsis outline is chosen for readability. Other previously unverified PDF-specific requirements and the deadline conflict remain unchanged. No further Moodle access, report PDF generation or coursework submission is authorized.
+
 **Latest user restriction:** No further agent Moodle access or interaction is permitted. Earlier sign-in permission is revoked. No upload, submission, settings change or other Moodle action is authorized. The user will confirm the official deadline personally. Both deadline values below remain **unverified conflicting information**, not an official deadline determination. Historical notes collected before this prohibition are preserved only; no submission, message, profile change or enrolment action was performed. Do not commit account information, Moodle screenshots or course PDF files.
 
 | Item | Observed evidence |

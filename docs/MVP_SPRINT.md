@@ -1,6 +1,6 @@
 # MVP delivery sprint
 
-**Final delivery freeze, 29 October:** No further inference or tuning on the consumed challenge packet. Preserve all original evidence and incomplete reviewer provenance. Current deliverables are the [final report](FINAL_REPORT.md), [three-human evidence template](USABILITY_EVIDENCE_TEMPLATE.md), [demo checklist](DEMO_CHECKLIST.md) and [verification record](DELIVERY_FREEZE.md). Dated day-plan entries below are historical plans; none authorizes a challenge rerun or claims human participation.
+**Final delivery freeze, 29 October:** No further inference or tuning on the consumed challenge packet. Preserve all original evidence and incomplete reviewer provenance. Current deliverables are the [team-reference synopsis](REPORT_SYNOPSIS.md), [three-human evidence template](USABILITY_EVIDENCE_TEMPLATE.md), [demo checklist](DEMO_CHECKLIST.md) and [verification record](DELIVERY_FREEZE.md). Dated day-plan entries below are historical plans; none authorizes a challenge rerun or claims human participation.
 
 **29 October update:** [Provisional user-adjudicated challenge](CHALLENGE_EVALUATION.md) executed once with the real frozen models: 18 outputs, 12/16 scorable sentiment matches, semantic-pair precision .667 on 10 scorable pairs. Reviewer independence/completion attestations remain unverified; no human usability feedback is implied. The original day-plan entries below are plans/historical status, not current proof that the packet is still unpredicted. The packet is now consumed; no tuning on it.
 

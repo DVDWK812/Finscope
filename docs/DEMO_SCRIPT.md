@@ -24,7 +24,7 @@ Use the public approved-input app, prepared cache, authored-demo-v1 examples and
 
 ## Member C — evaluation, hosting and readiness (4:10–6:15)
 
-**4:10–4:55:** “Our frozen challenge gives 12/16 scorable sentiment agreement, 75%, macro-F1 0.730159. Two mixed/uncertain references are excluded, with all outputs retained. Pairwise cosine precision is 0.666667 on ten scorable pairs. P02 matches different reporting quarters; uncertain opposed-outcome P07 still groups. Neither deduplication nor contradiction detection is validated. Reviewer independence and completion attestations remain unverified. The packet is consumed; we have not rerun or tuned on it.” Show the public report table, never private worksheets.
+**4:10–4:55:** “Our frozen challenge gives 12/16 scorable sentiment agreement, 75%, macro-F1 0.730159. Two mixed/uncertain references are excluded, with all outputs retained. Pairwise cosine precision is 0.666667 on ten scorable pairs. P02 matches different reporting quarters; uncertain opposed-outcome P07 still groups. Neither deduplication nor contradiction detection is validated. Reviewer independence and completion attestations remain unverified. The packet is consumed; we have not rerun or tuned on it.” Show the public synopsis table, never private worksheets.
 
 **4:55–5:40, operate Status/export:** Read current measured cold-load/RSS fields. Distinguish prepared-file cold load from install/download/wakeup, and current RSS from peak. Explain the actual restart/isolation/export observations in HOSTING_VERIFICATION.md, without calling restart a verified sleep wakeup. Export all approved originals and describe temporary storage, session reset, purge-on-access after 24 hours and no private input. Do not claim an SLA.
 
