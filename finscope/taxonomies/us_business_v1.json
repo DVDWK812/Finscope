@@ -1,0 +1,1623 @@
+{
+  "id": "US-BUSINESS-1",
+  "version": "US-BUSINESS-1",
+  "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+  "nodes": [
+    {
+      "id": "technology",
+      "parent_id": null,
+      "name_en": "Technology",
+      "name_zh": "科技",
+      "definition": "News concerning technology business activities; not an issuer classification.",
+      "includes": [
+        "Chip design",
+        "Wafer fabrication",
+        "Semiconductor equipment and materials",
+        "Memory chips",
+        "Storage devices",
+        "Computing hardware and servers",
+        "Foundation model services",
+        "AI application software",
+        "Cloud computing services",
+        "Enterprise software",
+        "Cybersecurity",
+        "Consumer electronics"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Technology",
+        "科技"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.chip-design",
+      "parent_id": "technology",
+      "name_en": "Chip design",
+      "name_zh": "芯片设计",
+      "definition": "Chip design: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "chip design",
+        "chipmaker",
+        "GPU design",
+        "芯片设计"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "chip design",
+        "chipmaker",
+        "GPU design",
+        "芯片设计"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.foundry",
+      "parent_id": "technology",
+      "name_en": "Wafer fabrication",
+      "name_zh": "晶圆制造",
+      "definition": "Wafer fabrication: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "wafer fabrication",
+        "semiconductor foundry",
+        "chip manufacturing",
+        "晶圆",
+        "芯片制造"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "wafer fabrication",
+        "semiconductor foundry",
+        "chip manufacturing",
+        "晶圆",
+        "芯片制造"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.semi-equipment",
+      "parent_id": "technology",
+      "name_en": "Semiconductor equipment and materials",
+      "name_zh": "半导体设备与材料",
+      "definition": "Semiconductor equipment and materials: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "lithography",
+        "semiconductor equipment",
+        "semiconductor materials",
+        "光刻",
+        "半导体设备"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "lithography",
+        "semiconductor equipment",
+        "semiconductor materials",
+        "光刻",
+        "半导体设备"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.memory-chips",
+      "parent_id": "technology",
+      "name_en": "Memory chips",
+      "name_zh": "存储芯片",
+      "definition": "Memory chips: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic; Oil/gas storage is Energy; digital devices and semiconductor memory are separate",
+      "includes": [
+        "DRAM",
+        "NAND",
+        "memory chip",
+        "存储芯片"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic",
+        "Oil/gas storage is Energy; digital devices and semiconductor memory are separate"
+      ],
+      "synonyms": [
+        "DRAM",
+        "NAND",
+        "memory chip",
+        "存储芯片"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.storage-devices",
+      "parent_id": "technology",
+      "name_en": "Storage devices",
+      "name_zh": "存储设备",
+      "definition": "Storage devices: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic; Oil/gas storage is Energy; digital devices and semiconductor memory are separate",
+      "includes": [
+        "hard drive",
+        "solid state drive",
+        "data storage device",
+        "硬盘",
+        "存储设备"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic",
+        "Oil/gas storage is Energy; digital devices and semiconductor memory are separate"
+      ],
+      "synonyms": [
+        "hard drive",
+        "solid state drive",
+        "data storage device",
+        "硬盘",
+        "存储设备"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.hardware",
+      "parent_id": "technology",
+      "name_en": "Computing hardware and servers",
+      "name_zh": "计算硬件与服务器",
+      "definition": "Computing hardware and servers: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "computer hardware",
+        "computing hardware",
+        "server hardware",
+        "data center server",
+        "服务器",
+        "计算硬件"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "computer hardware",
+        "computing hardware",
+        "server hardware",
+        "data center server",
+        "服务器",
+        "计算硬件"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.foundation-models",
+      "parent_id": "technology",
+      "name_en": "Foundation model services",
+      "name_zh": "基础大模型服务",
+      "definition": "Foundation model services: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic; Using AI in another business does not make the company an AI provider",
+      "includes": [
+        "foundation model service",
+        "large language model provider",
+        "基础大模型服务"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic",
+        "Using AI in another business does not make the company an AI provider"
+      ],
+      "synonyms": [
+        "foundation model service",
+        "large language model provider",
+        "基础大模型服务"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.ai-apps",
+      "parent_id": "technology",
+      "name_en": "AI application software",
+      "name_zh": "AI应用软件",
+      "definition": "AI application software: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic; Using AI in another business does not make the company an AI provider",
+      "includes": [
+        "AI application software",
+        "AI software product",
+        "AI应用软件"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic",
+        "Using AI in another business does not make the company an AI provider"
+      ],
+      "synonyms": [
+        "AI application software",
+        "AI software product",
+        "AI应用软件"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.cloud",
+      "parent_id": "technology",
+      "name_en": "Cloud computing services",
+      "name_zh": "云计算服务",
+      "definition": "Cloud computing services: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "cloud computing",
+        "cloud service",
+        "云计算"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "cloud computing",
+        "cloud service",
+        "云计算"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.enterprise-software",
+      "parent_id": "technology",
+      "name_en": "Enterprise software",
+      "name_zh": "企业软件",
+      "definition": "Enterprise software: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "enterprise software",
+        "business software",
+        "企业软件"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "enterprise software",
+        "business software",
+        "企业软件"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.cybersecurity",
+      "parent_id": "technology",
+      "name_en": "Cybersecurity",
+      "name_zh": "网络安全",
+      "definition": "Cybersecurity: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "cybersecurity",
+        "cyber security",
+        "网络安全"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "cybersecurity",
+        "cyber security",
+        "网络安全"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "technology.consumer-electronics",
+      "parent_id": "technology",
+      "name_en": "Consumer electronics",
+      "name_zh": "消费电子",
+      "definition": "Consumer electronics: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "smartphone",
+        "consumer electronics",
+        "智能手机",
+        "消费电子"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "smartphone",
+        "consumer electronics",
+        "智能手机",
+        "消费电子"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "communication",
+      "parent_id": null,
+      "name_en": "Communication Services",
+      "name_zh": "通信服务",
+      "definition": "News concerning communication services business activities; not an issuer classification.",
+      "includes": [
+        "Telecommunications",
+        "Media and broadcasting",
+        "Entertainment and streaming",
+        "Interactive media and advertising"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Communication Services",
+        "通信服务"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "communication.telecom",
+      "parent_id": "communication",
+      "name_en": "Telecommunications",
+      "name_zh": "电信服务",
+      "definition": "Telecommunications: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "telecommunications",
+        "telecom operator",
+        "电信运营"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "telecommunications",
+        "telecom operator",
+        "电信运营"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "communication.media",
+      "parent_id": "communication",
+      "name_en": "Media and broadcasting",
+      "name_zh": "媒体与广播",
+      "definition": "Media and broadcasting: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "broadcasting",
+        "news publisher",
+        "广播",
+        "新闻出版"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "broadcasting",
+        "news publisher",
+        "广播",
+        "新闻出版"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "communication.entertainment",
+      "parent_id": "communication",
+      "name_en": "Entertainment and streaming",
+      "name_zh": "娱乐与流媒体",
+      "definition": "Entertainment and streaming: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "streaming service",
+        "film production",
+        "流媒体",
+        "电影制作"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "streaming service",
+        "film production",
+        "流媒体",
+        "电影制作"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "communication.interactive",
+      "parent_id": "communication",
+      "name_en": "Interactive media and advertising",
+      "name_zh": "互动媒体与广告",
+      "definition": "Interactive media and advertising: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "social media platform",
+        "advertising platform",
+        "社交平台",
+        "广告平台"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "social media platform",
+        "advertising platform",
+        "社交平台",
+        "广告平台"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary",
+      "parent_id": null,
+      "name_en": "Consumer Discretionary",
+      "name_zh": "可选消费",
+      "definition": "News concerning consumer discretionary business activities; not an issuer classification.",
+      "includes": [
+        "Automobiles",
+        "Retail and e-commerce",
+        "Travel and leisure",
+        "Apparel and luxury goods",
+        "Home furnishings"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Consumer Discretionary",
+        "可选消费"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary.autos",
+      "parent_id": "discretionary",
+      "name_en": "Automobiles",
+      "name_zh": "汽车",
+      "definition": "Automobiles: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "automaker",
+        "electric vehicle",
+        "automobile",
+        "汽车",
+        "电动汽车"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "automaker",
+        "electric vehicle",
+        "automobile",
+        "汽车",
+        "电动汽车"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary.retail",
+      "parent_id": "discretionary",
+      "name_en": "Retail and e-commerce",
+      "name_zh": "零售与电商",
+      "definition": "Retail and e-commerce: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "e-commerce",
+        "online retailer",
+        "电商",
+        "百货"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "e-commerce",
+        "online retailer",
+        "电商",
+        "百货"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary.travel",
+      "parent_id": "discretionary",
+      "name_en": "Travel and leisure",
+      "name_zh": "旅游休闲",
+      "definition": "Travel and leisure: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "hotel",
+        "tourism",
+        "cruise line",
+        "酒店",
+        "旅游"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "hotel",
+        "tourism",
+        "cruise line",
+        "酒店",
+        "旅游"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary.apparel",
+      "parent_id": "discretionary",
+      "name_en": "Apparel and luxury goods",
+      "name_zh": "服装与奢侈品",
+      "definition": "Apparel and luxury goods: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "apparel",
+        "luxury goods",
+        "服装",
+        "奢侈品"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "apparel",
+        "luxury goods",
+        "服装",
+        "奢侈品"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "discretionary.home",
+      "parent_id": "discretionary",
+      "name_en": "Home furnishings",
+      "name_zh": "家居用品",
+      "definition": "Home furnishings: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "furniture",
+        "home appliance",
+        "家具",
+        "家电"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "furniture",
+        "home appliance",
+        "家具",
+        "家电"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "staples",
+      "parent_id": null,
+      "name_en": "Consumer Staples",
+      "name_zh": "必需消费",
+      "definition": "News concerning consumer staples business activities; not an issuer classification.",
+      "includes": [
+        "Food and beverages",
+        "Grocery retail",
+        "Household and personal products",
+        "Agriculture"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Consumer Staples",
+        "必需消费"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "staples.food",
+      "parent_id": "staples",
+      "name_en": "Food and beverages",
+      "name_zh": "食品饮料",
+      "definition": "Food and beverages: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "food processing",
+        "food producer",
+        "beverage",
+        "食品",
+        "饮料"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "food processing",
+        "food producer",
+        "beverage",
+        "食品",
+        "饮料"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "staples.grocery",
+      "parent_id": "staples",
+      "name_en": "Grocery retail",
+      "name_zh": "食品零售",
+      "definition": "Grocery retail: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "grocery",
+        "supermarket",
+        "超市"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "grocery",
+        "supermarket",
+        "超市"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "staples.household",
+      "parent_id": "staples",
+      "name_en": "Household and personal products",
+      "name_zh": "日用与个人护理",
+      "definition": "Household and personal products: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "household products",
+        "personal care",
+        "日用品",
+        "个人护理"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "household products",
+        "personal care",
+        "日用品",
+        "个人护理"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "staples.agriculture",
+      "parent_id": "staples",
+      "name_en": "Agriculture",
+      "name_zh": "农业",
+      "definition": "Agriculture: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "agriculture",
+        "crop",
+        "farming",
+        "农业",
+        "农作物"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "agriculture",
+        "crop",
+        "farming",
+        "农业",
+        "农作物"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare",
+      "parent_id": null,
+      "name_en": "Healthcare",
+      "name_zh": "医疗保健",
+      "definition": "News concerning healthcare business activities; not an issuer classification.",
+      "includes": [
+        "Pharmaceuticals",
+        "Biotechnology",
+        "Medical devices",
+        "Healthcare services",
+        "Diagnostics"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Healthcare",
+        "医疗保健"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare.pharma",
+      "parent_id": "healthcare",
+      "name_en": "Pharmaceuticals",
+      "name_zh": "制药",
+      "definition": "Pharmaceuticals: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "pharmaceutical",
+        "drug manufacturer",
+        "制药",
+        "药品"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "pharmaceutical",
+        "drug manufacturer",
+        "制药",
+        "药品"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare.biotech",
+      "parent_id": "healthcare",
+      "name_en": "Biotechnology",
+      "name_zh": "生物技术",
+      "definition": "Biotechnology: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "biotechnology",
+        "gene therapy",
+        "生物技术",
+        "基因治疗"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "biotechnology",
+        "gene therapy",
+        "生物技术",
+        "基因治疗"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare.devices",
+      "parent_id": "healthcare",
+      "name_en": "Medical devices",
+      "name_zh": "医疗器械",
+      "definition": "Medical devices: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "medical device",
+        "medical equipment",
+        "医疗器械"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "medical device",
+        "medical equipment",
+        "医疗器械"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare.services",
+      "parent_id": "healthcare",
+      "name_en": "Healthcare services",
+      "name_zh": "医疗服务",
+      "definition": "Healthcare services: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "hospital",
+        "healthcare service",
+        "医院",
+        "医疗服务"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "hospital",
+        "healthcare service",
+        "医院",
+        "医疗服务"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "healthcare.diagnostics",
+      "parent_id": "healthcare",
+      "name_en": "Diagnostics",
+      "name_zh": "诊断检测",
+      "definition": "Diagnostics: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "diagnostic",
+        "medical imaging",
+        "医学影像",
+        "诊断"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "diagnostic",
+        "medical imaging",
+        "医学影像",
+        "诊断"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials",
+      "parent_id": null,
+      "name_en": "Financials",
+      "name_zh": "金融",
+      "definition": "News concerning financials business activities; not an issuer classification.",
+      "includes": [
+        "Banking",
+        "Insurance",
+        "Asset management",
+        "Capital markets",
+        "Payments"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Financials",
+        "金融"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials.banks",
+      "parent_id": "financials",
+      "name_en": "Banking",
+      "name_zh": "银行",
+      "definition": "Banking: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "commercial bank",
+        "bank lending",
+        "银行贷款",
+        "商业银行"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "commercial bank",
+        "bank lending",
+        "银行贷款",
+        "商业银行"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials.insurance",
+      "parent_id": "financials",
+      "name_en": "Insurance",
+      "name_zh": "保险",
+      "definition": "Insurance: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "insurance",
+        "insurer",
+        "保险"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "insurance",
+        "insurer",
+        "保险"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials.asset-management",
+      "parent_id": "financials",
+      "name_en": "Asset management",
+      "name_zh": "资产管理",
+      "definition": "Asset management: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "asset management",
+        "fund manager",
+        "资产管理",
+        "基金管理"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "asset management",
+        "fund manager",
+        "资产管理",
+        "基金管理"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials.capital-markets",
+      "parent_id": "financials",
+      "name_en": "Capital markets",
+      "name_zh": "资本市场",
+      "definition": "Capital markets: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "stock exchange",
+        "investment banking",
+        "证券交易",
+        "投资银行"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "stock exchange",
+        "investment banking",
+        "证券交易",
+        "投资银行"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "financials.payments",
+      "parent_id": "financials",
+      "name_en": "Payments",
+      "name_zh": "支付",
+      "definition": "Payments: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "payment processing",
+        "payment network",
+        "支付网络",
+        "支付处理"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "payment processing",
+        "payment network",
+        "支付网络",
+        "支付处理"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials",
+      "parent_id": null,
+      "name_en": "Industrials",
+      "name_zh": "工业",
+      "definition": "News concerning industrials business activities; not an issuer classification.",
+      "includes": [
+        "Industrial manufacturing",
+        "Industrial machinery",
+        "Aerospace and defence",
+        "Transport and logistics",
+        "Engineering and construction"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Industrials",
+        "工业"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials.manufacturing",
+      "parent_id": "industrials",
+      "name_en": "Industrial manufacturing",
+      "name_zh": "工业制造",
+      "definition": "Industrial manufacturing: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "manufacturing",
+        "industrial production",
+        "制造业",
+        "工业生产"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "manufacturing",
+        "industrial production",
+        "制造业",
+        "工业生产"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials.machinery",
+      "parent_id": "industrials",
+      "name_en": "Industrial machinery",
+      "name_zh": "工业机械",
+      "definition": "Industrial machinery: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "industrial machinery",
+        "factory equipment",
+        "工业机械",
+        "工厂设备"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "industrial machinery",
+        "factory equipment",
+        "工业机械",
+        "工厂设备"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials.aerospace",
+      "parent_id": "industrials",
+      "name_en": "Aerospace and defence",
+      "name_zh": "航空航天与国防",
+      "definition": "Aerospace and defence: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "aerospace",
+        "defense contractor",
+        "aircraft manufacture",
+        "航空航天",
+        "国防承包"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "aerospace",
+        "defense contractor",
+        "aircraft manufacture",
+        "航空航天",
+        "国防承包"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials.logistics",
+      "parent_id": "industrials",
+      "name_en": "Transport and logistics",
+      "name_zh": "交通物流",
+      "definition": "Transport and logistics: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "logistics",
+        "freight",
+        "railway",
+        "airline",
+        "物流",
+        "货运"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "logistics",
+        "freight",
+        "railway",
+        "airline",
+        "物流",
+        "货运"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "industrials.construction",
+      "parent_id": "industrials",
+      "name_en": "Engineering and construction",
+      "name_zh": "工程建筑",
+      "definition": "Engineering and construction: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "construction",
+        "civil engineering",
+        "建筑",
+        "土木工程"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "construction",
+        "civil engineering",
+        "建筑",
+        "土木工程"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials",
+      "parent_id": null,
+      "name_en": "Materials",
+      "name_zh": "材料",
+      "definition": "News concerning materials business activities; not an issuer classification.",
+      "includes": [
+        "Chemicals",
+        "Mining",
+        "Metals",
+        "Paper and packaging",
+        "Building materials"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Materials",
+        "材料"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials.chemicals",
+      "parent_id": "materials",
+      "name_en": "Chemicals",
+      "name_zh": "化工",
+      "definition": "Chemicals: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "chemical producer",
+        "chemical manufacturing",
+        "化工"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "chemical producer",
+        "chemical manufacturing",
+        "化工"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials.mining",
+      "parent_id": "materials",
+      "name_en": "Mining",
+      "name_zh": "采矿",
+      "definition": "Mining: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "mining",
+        "矿业",
+        "采矿"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "mining",
+        "矿业",
+        "采矿"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials.metals",
+      "parent_id": "materials",
+      "name_en": "Metals",
+      "name_zh": "金属",
+      "definition": "Metals: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "steel",
+        "aluminum",
+        "copper production",
+        "钢铁",
+        "铝",
+        "铜生产"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "steel",
+        "aluminum",
+        "copper production",
+        "钢铁",
+        "铝",
+        "铜生产"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials.packaging",
+      "parent_id": "materials",
+      "name_en": "Paper and packaging",
+      "name_zh": "纸业与包装",
+      "definition": "Paper and packaging: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "paper production",
+        "packaging",
+        "造纸",
+        "包装"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "paper production",
+        "packaging",
+        "造纸",
+        "包装"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "materials.building-materials",
+      "parent_id": "materials",
+      "name_en": "Building materials",
+      "name_zh": "建筑材料",
+      "definition": "Building materials: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "cement",
+        "building materials",
+        "水泥",
+        "建筑材料"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "cement",
+        "building materials",
+        "水泥",
+        "建筑材料"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "energy",
+      "parent_id": null,
+      "name_en": "Energy",
+      "name_zh": "能源",
+      "definition": "News concerning energy business activities; not an issuer classification.",
+      "includes": [
+        "Oil and gas extraction",
+        "Refining and fuels",
+        "Oil and gas transport and storage",
+        "Energy equipment and services"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Energy",
+        "能源"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "energy.upstream",
+      "parent_id": "energy",
+      "name_en": "Oil and gas extraction",
+      "name_zh": "油气开采",
+      "definition": "Oil and gas extraction: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "oil extraction",
+        "oil drilling",
+        "natural gas production",
+        "石油开采",
+        "天然气开采"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "oil extraction",
+        "oil drilling",
+        "natural gas production",
+        "石油开采",
+        "天然气开采"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "energy.refining",
+      "parent_id": "energy",
+      "name_en": "Refining and fuels",
+      "name_zh": "炼化与燃料",
+      "definition": "Refining and fuels: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "refinery",
+        "refining",
+        "fuel production",
+        "炼油",
+        "燃料生产"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "refinery",
+        "refining",
+        "fuel production",
+        "炼油",
+        "燃料生产"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "energy.midstream",
+      "parent_id": "energy",
+      "name_en": "Oil and gas transport and storage",
+      "name_zh": "油气运输与储存",
+      "definition": "Oil and gas transport and storage: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "oil storage",
+        "gas storage",
+        "oil pipeline",
+        "油气储存",
+        "石油储存",
+        "天然气储存"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "oil storage",
+        "gas storage",
+        "oil pipeline",
+        "油气储存",
+        "石油储存",
+        "天然气储存"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "energy.services",
+      "parent_id": "energy",
+      "name_en": "Energy equipment and services",
+      "name_zh": "能源设备与服务",
+      "definition": "Energy equipment and services: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "oilfield service",
+        "drilling equipment",
+        "油田服务",
+        "钻井设备"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "oilfield service",
+        "drilling equipment",
+        "油田服务",
+        "钻井设备"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "utilities",
+      "parent_id": null,
+      "name_en": "Utilities",
+      "name_zh": "公用事业",
+      "definition": "News concerning utilities business activities; not an issuer classification.",
+      "includes": [
+        "Electricity",
+        "Gas utilities",
+        "Water utilities",
+        "Renewable electricity"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Utilities",
+        "公用事业"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "utilities.electric",
+      "parent_id": "utilities",
+      "name_en": "Electricity",
+      "name_zh": "电力",
+      "definition": "Electricity: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "electric utility",
+        "electricity generation",
+        "power grid",
+        "电力",
+        "电网"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "electric utility",
+        "electricity generation",
+        "power grid",
+        "电力",
+        "电网"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "utilities.gas",
+      "parent_id": "utilities",
+      "name_en": "Gas utilities",
+      "name_zh": "燃气",
+      "definition": "Gas utilities: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "gas utility",
+        "gas distribution",
+        "燃气供应"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "gas utility",
+        "gas distribution",
+        "燃气供应"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "utilities.water",
+      "parent_id": "utilities",
+      "name_en": "Water utilities",
+      "name_zh": "水务",
+      "definition": "Water utilities: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "water utility",
+        "water supply",
+        "水务",
+        "供水"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "water utility",
+        "water supply",
+        "水务",
+        "供水"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "utilities.renewables",
+      "parent_id": "utilities",
+      "name_en": "Renewable electricity",
+      "name_zh": "可再生发电",
+      "definition": "Renewable electricity: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "solar power",
+        "wind power",
+        "renewable electricity",
+        "光伏发电",
+        "风电"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "solar power",
+        "wind power",
+        "renewable electricity",
+        "光伏发电",
+        "风电"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "real-estate",
+      "parent_id": null,
+      "name_en": "Real Estate",
+      "name_zh": "房地产",
+      "definition": "News concerning real estate business activities; not an issuer classification.",
+      "includes": [
+        "Residential property",
+        "Commercial property",
+        "Property trusts"
+      ],
+      "excludes": [
+        "Macroeconomic themes without explicit business-sector evidence"
+      ],
+      "synonyms": [
+        "Real Estate",
+        "房地产"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "real-estate.residential",
+      "parent_id": "real-estate",
+      "name_en": "Residential property",
+      "name_zh": "住宅地产",
+      "definition": "Residential property: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "residential property",
+        "housing developer",
+        "住宅地产",
+        "住宅开发"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "residential property",
+        "housing developer",
+        "住宅地产",
+        "住宅开发"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "real-estate.commercial",
+      "parent_id": "real-estate",
+      "name_en": "Commercial property",
+      "name_zh": "商业地产",
+      "definition": "Commercial property: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "commercial property",
+        "office property",
+        "商业地产",
+        "写字楼"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "commercial property",
+        "office property",
+        "商业地产",
+        "写字楼"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    },
+    {
+      "id": "real-estate.reits",
+      "parent_id": "real-estate",
+      "name_en": "Property trusts",
+      "name_zh": "房地产信托",
+      "definition": "Property trusts: explicit news evidence of the named business activity. Other sibling business activities; a company mention alone does not establish this topic",
+      "includes": [
+        "real estate investment trust",
+        "REIT",
+        "房地产信托"
+      ],
+      "excludes": [
+        "Other sibling business activities; a company mention alone does not establish this topic"
+      ],
+      "synonyms": [
+        "real estate investment trust",
+        "REIT",
+        "房地产信托"
+      ],
+      "source": "FinScope authored business-topic taxonomy, 2026-10-31; not official GICS",
+      "version": "US-BUSINESS-1"
+    }
+  ]
+}

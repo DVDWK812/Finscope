@@ -53,9 +53,9 @@ class Worker:
         rights.require('preview');rights.require('retain');rights.require('analyze')
         budget=c.get('budgets',{}).get(source,{})
         if budget.get('utc_day')!=utcnow().date().isoformat():raise FetchBlocked('Current UTC-day quota attestation is missing or expired')
-        from .api_sources import local_credentials,ENV_KEYS
-        key=local_credentials().get(ENV_KEYS[source],'')
-        if not key:raise FetchBlocked('Project .env credential missing for '+source)
+        from .local_credentials import credential
+        key=credential(source)
+        if not key:raise FetchBlocked('Project .env / Windows credential missing for '+source)
         # Remaining is an account attestation, not permission to repeat it forever.
         with closing(self.store.connect()) as db:
             used=db.execute('SELECT count(*) FROM local_requests WHERE provider=? AND substr(reserved_at,1,10)=?',(source,budget['utc_day'])).fetchone()[0]
@@ -66,6 +66,8 @@ class Worker:
         if result.status!='ok':raise FetchBlocked('Source request failed; protected provider ledger retained')
         return items[:c['limit']]
     def model_key(self,c):
+        from .model_providers import INSTRUCTIONS
+        prompt_version=hashlib.sha256(INSTRUCTIONS.encode()).hexdigest()[:16]
         if c['model']=='Local FinBERT':
             from .model_assets import manifest
             m=manifest('finbert');return '|'.join((c['model'],m['model_id'],m['revision'],VERSION,'sentiment-v1'))
@@ -73,11 +75,11 @@ class Worker:
             from .model_providers import LMStudioProvider,lmstudio_revision,ModelError
             models=LMStudioProvider().inventory();model=models.get(c.get('model_id'))
             if not model or not model['callable']:raise ResourceBlocked('Selected LM Studio model is not loaded/API exposed; explicitly load it in Settings')
-            return '|'.join((c['model'],model['model_id'],lmstudio_revision(model),VERSION,'sentiment-v1'))
+            return '|'.join((c['model'],model['model_id'],lmstudio_revision(model),VERSION,'sentiment-v1',prompt_version))
         from .model_providers import OllamaProvider
         inventory=OllamaProvider().inventory()['models']
         if c.get('model_id') not in inventory:raise ResourceBlocked('Selected Ollama local model is unavailable; inspect Settings')
-        return '|'.join((c['model'],c['model_id'],inventory[c['model_id']],VERSION,'sentiment-v1'))
+        return '|'.join((c['model'],c['model_id'],inventory[c['model_id']],VERSION,'sentiment-v1',prompt_version))
     def infer(self,item,c):
         if self.infer_override:return self.infer_override(item,c)
         if c['model']=='Local FinBERT':
@@ -109,7 +111,7 @@ class Worker:
             from .industry_classifier import IndustryClassifier
             classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
             any_source=False
-            for source in c['sources']:
+            for source in (['saved_originals'] if c.get('article_ids') else c['sources']):
                 stage('fetch: '+source)
                 key='fetch:'+source;step=self.queue.step(identity,key)
                 if step:
@@ -121,7 +123,13 @@ class Worker:
                     # Mark before dispatch, so a killed worker cannot replay HTTP.
                     self.queue.save_step(identity,key,'pending',{'reason':'Source dispatch outcome unknown; no automatic resend'})
                     try:
-                        items=self.fetch(source,c,check)
+                        fetched=([n for n in self.data.news() if n.article_id in c['article_ids']]
+                                 if source=='saved_originals' else self.fetch(source,c,check));items=[]
+                        for item in fetched:
+                            if item.rights.preview and item.rights.retain and item.rights.analyze and item.rights.reference:
+                                items.append(item)
+                            else:
+                                counts['skipped']+=1;errors.append(source+': text lacks source-level storage/NLP permission; skipped')
                         self.queue.save_step(identity,key,'ok',[__import__('dataclasses').asdict(i) for i in items])
                     except Cancelled:raise
                     except (FetchBlocked,ValueError):
@@ -135,9 +143,12 @@ class Worker:
                 any_source=True
                 for raw in items:
                     stage('text / save: '+source)
-                    raw.rights.require('retain');raw.rights.require('analyze')
-                    item,coverage=prepare(raw)
-                    item,fresh,changed=self.data.save(item)
+                    try:
+                        raw.rights.require('retain');raw.rights.require('analyze')
+                        item,coverage=prepare(raw)
+                        item,fresh,changed=self.data.save(item)
+                    except ValueError:
+                        counts['failed']+=1;errors.append('One text/URL record failed validation');continue
                     content_step='content:'+item.article_id+':'+item.content_version
                     if not self.queue.step(identity,content_step):
                         counts['new' if fresh else 'duplicates']+=1;self.queue.save_step(identity,content_step,'ok',{})
@@ -145,12 +156,15 @@ class Worker:
                     if not self.data.classification(item,classifier.cache_key):
                         check()
                         if classifier.llm_model:self.resources(c['model'])
-                        classification=classifier.classify(item)
-                        self.data.save_classification(item,classifier.cache_key,classification);counts['classified']+=1
+                        try:
+                            classification=classifier.classify(item)
+                            self.data.save_classification(item,classifier.cache_key,classification);counts['classified']+=1
+                        except Exception:
+                            counts['failed']+=1;errors.append('One classification failed ID/evidence validation; unknown retained')
                     stage('sentiment: '+source)
-                    if self.data.cached(item,model_key):continue
-                    if item.language!='en' and c['model']=='Local FinBERT':
-                        errors.append('Non-English/unknown text unsupported by selected English FinBERT');counts['skipped']+=1;continue
+                    if self.data.cached(item,model_key) and not c.get('force_reanalysis'):continue
+                    if item.language!='en':
+                        errors.append('Non-English/unknown text has no verified language-adapted model in this configuration');counts['skipped']+=1;continue
                     infer_step='infer:'+item.article_id+':'+item.content_version+':'+hashlib.sha256(model_key.encode()).hexdigest()
                     if self.queue.step(identity,infer_step):
                         errors.append('Earlier inference outcome unknown/failed; explicit article reanalysis required');continue

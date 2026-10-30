@@ -1,0 +1,2539 @@
+{
+  "id": "CSRC-JRT0020-2024",
+  "version": "CSRC-JRT0020-2024",
+  "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+  "source_pdf_sha256": "407e8f6f7cee18a68783da6ff1b06bf723149f889a25f7a86232ac0ab27ea507",
+  "source_table": "Table 2, sections and divisions only; auxiliary groups retained as metadata; middle classes excluded from UI",
+  "nodes": [
+    {
+      "id": "A",
+      "parent_id": null,
+      "name_zh": "农、林、牧、渔业",
+      "name_en": "Agriculture, forestry, animal husbandry and fishing",
+      "definition": "本门类包括 01～05大类",
+      "includes": [
+        "农、林、牧、渔业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "农、林、牧、渔业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 8,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "B",
+      "parent_id": null,
+      "name_zh": "采矿业",
+      "name_en": "Mining",
+      "definition": "本门类包括  06～12大类，采矿业指对固体（如煤",
+      "includes": [
+        "采矿业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "采矿业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 10,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "C",
+      "parent_id": null,
+      "name_zh": "制造业",
+      "name_en": "Manufacturing",
+      "definition": "本门类包括 13～43大类，指经物理变化或化学变",
+      "includes": [
+        "制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 11,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "D",
+      "parent_id": null,
+      "name_zh": "电力、热力、燃气及水生产和供应业",
+      "name_en": "Electricity, heat, gas and water production and supply",
+      "definition": "本门类包括  44～46大类",
+      "includes": [
+        "电力、热力、燃气及水生产和供应业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "电力、热力、燃气及水生产和供应业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "E",
+      "parent_id": null,
+      "name_zh": "建筑业",
+      "name_en": "Construction",
+      "definition": "本门类包括  47～50大类",
+      "includes": [
+        "建筑业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "建筑业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "F",
+      "parent_id": null,
+      "name_zh": "批发和零售业",
+      "name_en": "Wholesale and retail",
+      "definition": "本门类包括  51和52大类，指商品在流通环节中的",
+      "includes": [
+        "批发和零售业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "批发和零售业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 27,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "G",
+      "parent_id": null,
+      "name_zh": "交通运输、仓储和邮政业",
+      "name_en": "Transport, storage and postal services",
+      "definition": "本门类包括  53～60大类",
+      "includes": [
+        "交通运输、仓储和邮政业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "交通运输、仓储和邮政业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "H",
+      "parent_id": null,
+      "name_zh": "住宿和餐饮业",
+      "name_en": "Accommodation and catering",
+      "definition": "本门类包括 61和 62大类",
+      "includes": [
+        "住宿和餐饮业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "住宿和餐饮业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 30,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "I",
+      "parent_id": null,
+      "name_zh": "信息传输、软件和信息技术服务业",
+      "name_en": "Information transmission, software and IT services",
+      "definition": "本门类包括  63～65大类",
+      "includes": [
+        "信息传输、软件和信息技术服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "信息传输、软件和信息技术服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 31,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "J",
+      "parent_id": null,
+      "name_zh": "金融业",
+      "name_en": "Finance",
+      "definition": "本门类包括 66～69大类",
+      "includes": [
+        "金融业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "金融业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 32,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "K",
+      "parent_id": null,
+      "name_zh": "房地产业",
+      "name_en": "Real estate",
+      "definition": "本门类包括  70大类",
+      "includes": [
+        "房地产业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "房地产业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 34,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "L",
+      "parent_id": null,
+      "name_zh": "租赁和商务服务业",
+      "name_en": "Leasing and business services",
+      "definition": "本门类包括  71和72大类",
+      "includes": [
+        "租赁和商务服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "租赁和商务服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 35,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "M",
+      "parent_id": null,
+      "name_zh": "科学研究和技术服务业",
+      "name_en": "Scientific research and technical services",
+      "definition": "本门类包括  73～75大类",
+      "includes": [
+        "科学研究和技术服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "科学研究和技术服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 35,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "N",
+      "parent_id": null,
+      "name_zh": "水利、环境和公共设施管理业",
+      "name_en": "Water, environment and public facilities management",
+      "definition": "本门类包括 76～79大类",
+      "includes": [
+        "水利、环境和公共设施管理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "水利、环境和公共设施管理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 37,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "O",
+      "parent_id": null,
+      "name_zh": "居民服务、修理和其他服务业",
+      "name_en": "Resident services, repairs and other services",
+      "definition": "本门类包括 80～82大类",
+      "includes": [
+        "居民服务、修理和其他服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "居民服务、修理和其他服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 38,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "P",
+      "parent_id": null,
+      "name_zh": "教育",
+      "name_en": "Education",
+      "definition": "本门类包括  83大类",
+      "includes": [
+        "教育"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "教育"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 39,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "Q",
+      "parent_id": null,
+      "name_zh": "卫生和社会工作",
+      "name_en": "Health and social work",
+      "definition": "本门类包括  84和85大类",
+      "includes": [
+        "卫生和社会工作"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "卫生和社会工作"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "R",
+      "parent_id": null,
+      "name_zh": "文化、体育和娱乐业",
+      "name_en": "Culture, sports and entertainment",
+      "definition": "本门类包括  86～90大类",
+      "includes": [
+        "文化、体育和娱乐业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "文化、体育和娱乐业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "S",
+      "parent_id": null,
+      "name_zh": "综合",
+      "name_en": "Conglomerates",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "综合"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "综合"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 42,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "01",
+      "parent_id": "A",
+      "name_zh": "农业",
+      "name_en": "Agriculture",
+      "definition": "指对各种农作物的种植",
+      "includes": [
+        "农业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "农业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 8,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "02",
+      "parent_id": "A",
+      "name_zh": "林业",
+      "name_en": "Forestry",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "林业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "林业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 8,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "03",
+      "parent_id": "A",
+      "name_zh": "畜牧业",
+      "name_en": "Animal husbandry",
+      "definition": "指为了获得各种畜禽产品而从事的动物饲养、捕捉",
+      "includes": [
+        "畜牧业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "畜牧业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 9,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "04",
+      "parent_id": "A",
+      "name_zh": "渔业",
+      "name_en": "Fishing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "渔业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "渔业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 9,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "05",
+      "parent_id": "A",
+      "name_zh": "农、林、牧、渔专业及辅助性活动",
+      "name_en": "Agriculture, forestry, husbandry and fishing support activities",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "农、林、牧、渔专业及辅助性活动"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "农、林、牧、渔专业及辅助性活动"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 9,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "06",
+      "parent_id": "B",
+      "name_zh": "煤炭开采和洗选业",
+      "name_en": "Coal mining and washing",
+      "definition": "指对各种煤炭的开采、洗选、分级等生产活动；不",
+      "includes": [
+        "煤炭开采和洗选业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "煤炭开采和洗选业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 10,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "07",
+      "parent_id": "B",
+      "name_zh": "石油和天然气开采业",
+      "name_en": "Oil and natural gas extraction",
+      "definition": "指在陆地或海洋，对天然原油、液态或气态天然气",
+      "includes": [
+        "石油和天然气开采业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "石油和天然气开采业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 10,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "08",
+      "parent_id": "B",
+      "name_zh": "黑色金属矿采选业",
+      "name_en": "Ferrous metal ore mining",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "黑色金属矿采选业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "黑色金属矿采选业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 10,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "09",
+      "parent_id": "B",
+      "name_zh": "有色金属矿采选业",
+      "name_en": "Non-ferrous metal ore mining",
+      "definition": "指对常用有色金属矿、贵金属矿，以及稀有稀土金",
+      "includes": [
+        "有色金属矿采选业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "有色金属矿采选业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 10,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "10",
+      "parent_id": "B",
+      "name_zh": "非金属矿采选业",
+      "name_en": "Non-metallic mineral mining",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "非金属矿采选业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "非金属矿采选业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 11,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "11",
+      "parent_id": "B",
+      "name_zh": "开采专业及辅助性活动",
+      "name_en": "Mining support activities",
+      "definition": "指为煤炭、石油和天然气等矿物开采提供的活动",
+      "includes": [
+        "开采专业及辅助性活动"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "开采专业及辅助性活动"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 11,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "12",
+      "parent_id": "B",
+      "name_zh": "其他采矿业",
+      "name_en": "Other mining",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "其他采矿业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "其他采矿业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 11,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "13",
+      "parent_id": "C",
+      "name_zh": "农副食品加工业",
+      "name_en": "Agricultural food processing",
+      "definition": "指直接以农、林、牧、渔业产品为原料进行的谷物",
+      "includes": [
+        "农副食品加工业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "农副食品加工业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 12,
+        "auxiliary_manufacturing_group": "CA",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "14",
+      "parent_id": "C",
+      "name_zh": "食品制造业",
+      "name_en": "Food manufacturing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "食品制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "食品制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 12,
+        "auxiliary_manufacturing_group": "CA",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "15",
+      "parent_id": "C",
+      "name_zh": "酒、饮料和精制茶制造业",
+      "name_en": "Beverage and refined tea manufacturing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "酒、饮料和精制茶制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "酒、饮料和精制茶制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 13,
+        "auxiliary_manufacturing_group": "CA",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "16",
+      "parent_id": "C",
+      "name_zh": "烟草制品业",
+      "name_en": "Tobacco products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "烟草制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "烟草制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 13,
+        "auxiliary_manufacturing_group": "CA",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "17",
+      "parent_id": "C",
+      "name_zh": "纺织业",
+      "name_en": "Textiles",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "纺织业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "纺织业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 13,
+        "auxiliary_manufacturing_group": "CB",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "18",
+      "parent_id": "C",
+      "name_zh": "纺织服装、服饰业",
+      "name_en": "Textile apparel and accessories",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "纺织服装、服饰业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "纺织服装、服饰业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 13,
+        "auxiliary_manufacturing_group": "CB",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "19",
+      "parent_id": "C",
+      "name_zh": "皮革、毛皮、羽毛及其制品和制鞋业",
+      "name_en": "Leather, fur, feathers and footwear",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "皮革、毛皮、羽毛及其制品和制鞋业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "皮革、毛皮、羽毛及其制品和制鞋业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 14,
+        "auxiliary_manufacturing_group": "CB",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "20",
+      "parent_id": "C",
+      "name_zh": "木材加工和木、竹、藤、棕、草制品业",
+      "name_en": "Wood, bamboo, rattan, palm and straw products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "木材加工和木、竹、藤、棕、草制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "木材加工和木、竹、藤、棕、草制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 14,
+        "auxiliary_manufacturing_group": "CC",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "21",
+      "parent_id": "C",
+      "name_zh": "家具制造业",
+      "name_en": "Furniture",
+      "definition": "指用木材、金属、塑料、竹、藤等材料制作的，具",
+      "includes": [
+        "家具制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "家具制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 14,
+        "auxiliary_manufacturing_group": "CC",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "22",
+      "parent_id": "C",
+      "name_zh": "造纸和纸制品业",
+      "name_en": "Paper and paper products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "造纸和纸制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "造纸和纸制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 15,
+        "auxiliary_manufacturing_group": "CD",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "23",
+      "parent_id": "C",
+      "name_zh": "印刷和记录媒介复制业",
+      "name_en": "Printing and recorded media reproduction",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "印刷和记录媒介复制业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "印刷和记录媒介复制业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 15,
+        "auxiliary_manufacturing_group": "CD",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "24",
+      "parent_id": "C",
+      "name_zh": "文教、工美、体育和娱乐用品制造业",
+      "name_en": "Educational, arts, sports and entertainment goods",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "文教、工美、体育和娱乐用品制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "文教、工美、体育和娱乐用品制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 15,
+        "auxiliary_manufacturing_group": "CD",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "25",
+      "parent_id": "C",
+      "name_zh": "石油、煤炭及其他燃料加工业",
+      "name_en": "Petroleum, coal and other fuel processing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "石油、煤炭及其他燃料加工业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "石油、煤炭及其他燃料加工业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 16,
+        "auxiliary_manufacturing_group": "CE",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "26",
+      "parent_id": "C",
+      "name_zh": "化学原料和化学制品制造业",
+      "name_en": "Chemical raw materials and chemical products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "化学原料和化学制品制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "化学原料和化学制品制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 16,
+        "auxiliary_manufacturing_group": "CE",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "27",
+      "parent_id": "C",
+      "name_zh": "医药制造业",
+      "name_en": "Pharmaceutical manufacturing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "医药制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "医药制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 17,
+        "auxiliary_manufacturing_group": "CE",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "28",
+      "parent_id": "C",
+      "name_zh": "化学纤维制造业",
+      "name_en": "Chemical fibres",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "化学纤维制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "化学纤维制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 17,
+        "auxiliary_manufacturing_group": "CE",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "29",
+      "parent_id": "C",
+      "name_zh": "橡胶和塑料制品业",
+      "name_en": "Rubber and plastics products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "橡胶和塑料制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "橡胶和塑料制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 17,
+        "auxiliary_manufacturing_group": "CE",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "30",
+      "parent_id": "C",
+      "name_zh": "非金属矿物制品业",
+      "name_en": "Non-metallic mineral products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "非金属矿物制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "非金属矿物制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 18,
+        "auxiliary_manufacturing_group": "CF",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "31",
+      "parent_id": "C",
+      "name_zh": "黑色金属冶炼和压延加工业",
+      "name_en": "Ferrous metal smelting and rolling",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "黑色金属冶炼和压延加工业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "黑色金属冶炼和压延加工业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 18,
+        "auxiliary_manufacturing_group": "CF",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "32",
+      "parent_id": "C",
+      "name_zh": "有色金属冶炼和压延加工业",
+      "name_en": "Non-ferrous metal smelting and rolling",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "有色金属冶炼和压延加工业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "有色金属冶炼和压延加工业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 18,
+        "auxiliary_manufacturing_group": "CF",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "33",
+      "parent_id": "C",
+      "name_zh": "金属制品业",
+      "name_en": "Fabricated metal products",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "金属制品业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "金属制品业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 19,
+        "auxiliary_manufacturing_group": "CF",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "34",
+      "parent_id": "C",
+      "name_zh": "通用设备制造业",
+      "name_en": "General-purpose equipment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "通用设备制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "通用设备制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 19,
+        "auxiliary_manufacturing_group": "CG",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "35",
+      "parent_id": "C",
+      "name_zh": "专用设备制造业",
+      "name_en": "Special-purpose equipment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "专用设备制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "专用设备制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 20,
+        "auxiliary_manufacturing_group": "CG",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "36",
+      "parent_id": "C",
+      "name_zh": "汽车制造业",
+      "name_en": "Motor vehicle manufacturing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "汽车制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "汽车制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 21,
+        "auxiliary_manufacturing_group": "CG",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "37",
+      "parent_id": "C",
+      "name_zh": "铁路、船舶、航空航天和其他运输设备制造业",
+      "name_en": "Railway, ship, aerospace and other transport equipment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "铁路、船舶、航空航天和其他运输设备制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "铁路、船舶、航空航天和其他运输设备制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 21,
+        "auxiliary_manufacturing_group": "CG",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "38",
+      "parent_id": "C",
+      "name_zh": "电气机械和器材制造业",
+      "name_en": "Electrical machinery and equipment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "电气机械和器材制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "电气机械和器材制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 22,
+        "auxiliary_manufacturing_group": "CH",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "39",
+      "parent_id": "C",
+      "name_zh": "计算机、通信和其他电子设备制造业",
+      "name_en": "Computers, communications and other electronic equipment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "计算机、通信和其他电子设备制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "计算机、通信和其他电子设备制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 23,
+        "auxiliary_manufacturing_group": "CH",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "40",
+      "parent_id": "C",
+      "name_zh": "仪器仪表制造业",
+      "name_en": "Instruments and meters",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "仪器仪表制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "仪器仪表制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 23,
+        "auxiliary_manufacturing_group": "CI",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "41",
+      "parent_id": "C",
+      "name_zh": "其他制造业",
+      "name_en": "Other manufacturing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "其他制造业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "其他制造业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 24,
+        "auxiliary_manufacturing_group": "CJ",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "42",
+      "parent_id": "C",
+      "name_zh": "废弃资源综合利用业",
+      "name_en": "Waste resource utilisation",
+      "definition": "指废弃资源和废旧材料回收加工",
+      "includes": [
+        "废弃资源综合利用业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "废弃资源综合利用业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 24,
+        "auxiliary_manufacturing_group": "CJ",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "43",
+      "parent_id": "C",
+      "name_zh": "金属制品、机械和设备修理业",
+      "name_en": "Metal products, machinery and equipment repair",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "金属制品、机械和设备修理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "金属制品、机械和设备修理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 24,
+        "auxiliary_manufacturing_group": "CJ",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "44",
+      "parent_id": "D",
+      "name_zh": "电力、热力生产和供应业",
+      "name_en": "Electricity and heat production and supply",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "电力、热力生产和供应业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "电力、热力生产和供应业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "45",
+      "parent_id": "D",
+      "name_zh": "燃气生产和供应业",
+      "name_en": "Gas production and supply",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "燃气生产和供应业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "燃气生产和供应业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "46",
+      "parent_id": "D",
+      "name_zh": "水的生产和供应业",
+      "name_en": "Water production and supply",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "水的生产和供应业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "水的生产和供应业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "47",
+      "parent_id": "E",
+      "name_zh": "房屋建筑业",
+      "name_en": "Building construction",
+      "definition": "指房屋主体工程的施工活动；不包括主体工程施工",
+      "includes": [
+        "房屋建筑业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "房屋建筑业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 25,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "48",
+      "parent_id": "E",
+      "name_zh": "土木工程建筑业",
+      "name_en": "Civil engineering",
+      "definition": "指土木工程主体的施工活动；不包括施工前的工程",
+      "includes": [
+        "土木工程建筑业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "土木工程建筑业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 26,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "49",
+      "parent_id": "E",
+      "name_zh": "建筑安装业",
+      "name_en": "Construction installation",
+      "definition": "指建筑物主体工程竣工后，建筑物内各种设备的安",
+      "includes": [
+        "建筑安装业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "建筑安装业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 26,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "50",
+      "parent_id": "E",
+      "name_zh": "建筑装饰、装修和其他建筑业",
+      "name_en": "Decoration, renovation and other construction",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "建筑装饰、装修和其他建筑业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "建筑装饰、装修和其他建筑业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 26,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "51",
+      "parent_id": "F",
+      "name_zh": "批发业",
+      "name_en": "Wholesale",
+      "definition": "指向其他批发或零售单位（含个体经营者）及其他",
+      "includes": [
+        "批发业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "批发业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 27,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "52",
+      "parent_id": "F",
+      "name_zh": "零售业",
+      "name_en": "Retail",
+      "definition": "指百货商店、超级市场、专门零售商店、品牌专卖",
+      "includes": [
+        "零售业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "零售业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 28,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "53",
+      "parent_id": "G",
+      "name_zh": "铁路运输业",
+      "name_en": "Rail transport",
+      "definition": "指铁路的安全管理、调度指挥、行车组织、客运组",
+      "includes": [
+        "铁路运输业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "铁路运输业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "54",
+      "parent_id": "G",
+      "name_zh": "道路运输业",
+      "name_en": "Road transport",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "道路运输业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "道路运输业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "55",
+      "parent_id": "G",
+      "name_zh": "水上运输业",
+      "name_en": "Water transport",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "水上运输业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "水上运输业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "56",
+      "parent_id": "G",
+      "name_zh": "航空运输业",
+      "name_en": "Air transport",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "航空运输业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "航空运输业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "57",
+      "parent_id": "G",
+      "name_zh": "管道运输业",
+      "name_en": "Pipeline transport",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "管道运输业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "管道运输业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "58",
+      "parent_id": "G",
+      "name_zh": "多式联运和运输代理业",
+      "name_en": "Multimodal transport and transport agency services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "多式联运和运输代理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "多式联运和运输代理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 29,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "59",
+      "parent_id": "G",
+      "name_zh": "装卸搬运和仓储业",
+      "name_en": "Cargo handling and warehousing",
+      "definition": "指装卸搬运活动和专门从事货物仓储、货物运输中",
+      "includes": [
+        "装卸搬运和仓储业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "装卸搬运和仓储业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 30,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "60",
+      "parent_id": "G",
+      "name_zh": "邮政业",
+      "name_en": "Postal services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "邮政业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "邮政业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 30,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "61",
+      "parent_id": "H",
+      "name_zh": "住宿业",
+      "name_en": "Accommodation",
+      "definition": "指为旅行者提供短期留宿场所的活动，有些单位只",
+      "includes": [
+        "住宿业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "住宿业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 30,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "62",
+      "parent_id": "H",
+      "name_zh": "餐饮业",
+      "name_en": "Catering",
+      "definition": "指通过即时制作加工、商业销售和服务性劳动等，",
+      "includes": [
+        "餐饮业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "餐饮业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 31,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "63",
+      "parent_id": "I",
+      "name_zh": "电信、广播电视和卫星传输服务",
+      "name_en": "Telecommunications, broadcasting and satellite transmission",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "电信、广播电视和卫星传输服务"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "电信、广播电视和卫星传输服务"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 31,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "64",
+      "parent_id": "I",
+      "name_zh": "互联网和相关服务",
+      "name_en": "Internet and related services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "互联网和相关服务"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "互联网和相关服务"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 31,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "65",
+      "parent_id": "I",
+      "name_zh": "软件和信息技术服务业",
+      "name_en": "Software and IT services",
+      "definition": "指对信息传输、信息制作、信息提供和信息接收过",
+      "includes": [
+        "软件和信息技术服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "软件和信息技术服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 32,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "66",
+      "parent_id": "J",
+      "name_zh": "货币金融服务",
+      "name_en": "Monetary financial services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "货币金融服务"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "货币金融服务"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 32,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "67",
+      "parent_id": "J",
+      "name_zh": "资本市场服务",
+      "name_en": "Capital market services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "资本市场服务"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "资本市场服务"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 33,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "68",
+      "parent_id": "J",
+      "name_zh": "保险业",
+      "name_en": "Insurance",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "保险业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "保险业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 33,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "69",
+      "parent_id": "J",
+      "name_zh": "其他金融业",
+      "name_en": "Other financial activities",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "其他金融业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "其他金融业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 34,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "70",
+      "parent_id": "K",
+      "name_zh": "房地产业",
+      "name_en": "Real estate",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "房地产业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "房地产业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 34,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "71",
+      "parent_id": "L",
+      "name_zh": "租赁业",
+      "name_en": "Leasing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "租赁业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "租赁业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 35,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "72",
+      "parent_id": "L",
+      "name_zh": "商务服务业",
+      "name_en": "Business services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "商务服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "商务服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 35,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "73",
+      "parent_id": "M",
+      "name_zh": "研究和试验发展",
+      "name_en": "Research and experimental development",
+      "definition": "指为了增加知识（包括有关自然、工程、人类、文",
+      "includes": [
+        "研究和试验发展"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "研究和试验发展"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 36,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "74",
+      "parent_id": "M",
+      "name_zh": "专业技术服务业",
+      "name_en": "Professional technical services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "专业技术服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "专业技术服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 36,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "75",
+      "parent_id": "M",
+      "name_zh": "科技推广和应用服务业",
+      "name_en": "Technology promotion and application services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "科技推广和应用服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "科技推广和应用服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 36,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "76",
+      "parent_id": "N",
+      "name_zh": "水利管理业",
+      "name_en": "Water management",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "水利管理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "水利管理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 37,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "77",
+      "parent_id": "N",
+      "name_zh": "生态保护和环境治理业",
+      "name_en": "Ecological protection and environmental treatment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "生态保护和环境治理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "生态保护和环境治理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 37,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "78",
+      "parent_id": "N",
+      "name_zh": "公共设施管理业",
+      "name_en": "Public facilities management",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "公共设施管理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "公共设施管理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 37,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "79",
+      "parent_id": "N",
+      "name_zh": "土地管理业",
+      "name_en": "Land management",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "土地管理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "土地管理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 38,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "80",
+      "parent_id": "O",
+      "name_zh": "居民服务业",
+      "name_en": "Resident services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "居民服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "居民服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 38,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "81",
+      "parent_id": "O",
+      "name_zh": "机动车、电子产品和日用产品修理业",
+      "name_en": "Motor vehicle, electronic and household product repair",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "机动车、电子产品和日用产品修理业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "机动车、电子产品和日用产品修理业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 39,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "82",
+      "parent_id": "O",
+      "name_zh": "其他服务业",
+      "name_en": "Other services",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "其他服务业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "其他服务业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 39,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "83",
+      "parent_id": "P",
+      "name_zh": "教育",
+      "name_en": "Education",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "教育"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "教育"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 39,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "84",
+      "parent_id": "Q",
+      "name_zh": "卫生",
+      "name_en": "Health",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "卫生"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "卫生"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "85",
+      "parent_id": "Q",
+      "name_zh": "社会工作",
+      "name_en": "Social work",
+      "definition": "指提供慈善、救助、福利、护理、帮助等社会工作",
+      "includes": [
+        "社会工作"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "社会工作"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "86",
+      "parent_id": "R",
+      "name_zh": "新闻和出版业",
+      "name_en": "News and publishing",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "新闻和出版业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "新闻和出版业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "87",
+      "parent_id": "R",
+      "name_zh": "广播、电视、电影和录音制作业",
+      "name_en": "Radio, television, film and sound recording",
+      "definition": "指对广播、电视、电影、影视录音内容的制作、编",
+      "includes": [
+        "广播、电视、电影和录音制作业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "广播、电视、电影和录音制作业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 40,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "88",
+      "parent_id": "R",
+      "name_zh": "文化艺术业",
+      "name_en": "Culture and arts",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "文化艺术业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "文化艺术业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 41,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "89",
+      "parent_id": "R",
+      "name_zh": "体育",
+      "name_en": "Sports",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "体育"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "体育"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 41,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "90",
+      "parent_id": "R",
+      "name_zh": "娱乐业",
+      "name_en": "Entertainment",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "娱乐业"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "娱乐业"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 42,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    },
+    {
+      "id": "91",
+      "parent_id": "S",
+      "name_zh": "综合",
+      "name_en": "Conglomerates",
+      "definition": "See official Table 2 scope and subordinate definitions; no automatic issuer assignment.",
+      "includes": [
+        "综合"
+      ],
+      "excludes": [
+        "No inference of issuer main business from article mentions; unknown is not S/91"
+      ],
+      "synonyms": [
+        "综合"
+      ],
+      "source": "https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml",
+      "version": "CSRC-JRT0020-2024",
+      "source_metadata": {
+        "pdf_page": 42,
+        "auxiliary_manufacturing_group": "",
+        "english_translation": "FinScope working translation, Chinese official name authoritative"
+      }
+    }
+  ]
+}

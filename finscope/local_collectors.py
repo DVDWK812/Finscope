@@ -10,6 +10,16 @@ from . import rss_collector, html_collector
 # Fixed, reviewed collector registry. Adding a source requires its own validation
 # and permission review; no user URL or generic crawling adapter is accepted.
 SOURCES = {
+    "nist_rss": {"label":"NIST official news + permitted body text", "kind":"nist_rss", "publisher":"National Institute of Standards and Technology",
+        "enabled":True,"access_status":"Official RSS and copyright policy reviewed 2026-10-31; runtime access checked per task",
+        "bucket":"nist", "url":"https://www.nist.gov/news-events/news/rss.xml", "robots":"https://www.nist.gov/robots.txt",
+        "scope":"Official news RSS and up to three linked staff-authored news text bodies; no media, attachments, pagination or copyrighted material",
+        "terms_url":"https://www.nist.gov/copyrights-disclaimers", "attribution":"Source: NIST, U.S. Department of Commerce; original byline retained where supplied",
+        "derivative_attribution":"Based on NIST information; FinScope analysis, no NIST endorsement",
+        "exclusions":"Copyright-marked or special-rights text, third-party material, images, logos, software and research datasets excluded",
+        "license":"NIST public-information reuse policy; unmarked official text", "license_url":"https://www.nist.gov/copyrights-disclaimers",
+        "verified_on":"2026-10-31 Australia/Sydney", "body_limit":3,"http_budget":5,
+        "minimum_interval_seconds":1,"timeout_seconds":15,"date_parser":"RSS RFC2822, preserve raw date", "content_level":"summary with optional body"},
     "rba_rss": {"label": "RBA RSS feed", "kind": "rss", "scope": "Official central-bank media releases", "url": rss_collector.FEED_URL},
     "rba_html": {"label": "RBA HTML media-release index", "kind": "html", "scope": "Official central-bank release index; dates only, no article body", "url": html_collector.INDEX_URL},
     "abs_html": {"label":"ABS media releases", "kind":"abs_html", "publisher":"Australian Bureau of Statistics",

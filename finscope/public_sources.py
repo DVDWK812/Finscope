@@ -86,7 +86,7 @@ def original_url(source_id,value):
     url=urljoin(config['url'],value)
     try:
         parsed=urlsplit(url)
-        prefix='/media-centre/media-releases/' if source_id=='abs_html' else '/media-release/'
+        prefix=('/news-events/news/' if source_id=='nist_rss' else '/media-centre/media-releases/' if source_id=='abs_html' else '/media-release/')
         if (parsed.scheme!='https' or parsed.netloc!=urlsplit(config['url']).netloc or parsed.username or parsed.password
                 or parsed.query or parsed.fragment or not parsed.path.startswith(prefix) or len(parsed.path)<=len(prefix)):
             return ''
@@ -180,12 +180,13 @@ def parse_source(source_id,payload,limit):
         raise SourceError('Choose 1–50 records within a 1 MB response')
     if source_id=='abs_html':return parse_abs(payload,limit)
     if source_id=='accc_rss':return parse_accc(payload,limit)
+    if source_id=='nist_rss':return parse_nist(payload,limit)
     raise SourceError('Choose a registered licensed source')
 
 
 def http_get(url):
     allowed={c[k] for c in SOURCES.values() for k in ('url','robots') if k in c and 'license' in c}
-    if url not in allowed:raise SourceError('Endpoint is not allowlisted')
+    if url not in allowed and original_url('nist_rss',url)!=url:raise SourceError('Endpoint is not allowlisted')
     start=time.monotonic()
     try:
         with requests.get(url,headers={'User-Agent':USER_AGENT},timeout=(5,15),allow_redirects=False,stream=True) as response:
@@ -202,19 +203,27 @@ def http_get(url):
         raise SourceError('Source transport failed; no retry',status=None) from None
 
 
-def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None):
-    if explicit is not True or source_id not in {'abs_html','accc_rss'} or type(limit) is not int or not 1<=limit<=MAX_RECORDS:
+def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None,check_cancel=lambda:None):
+    if explicit is not True or source_id not in {'abs_html','accc_rss','nist_rss'} or type(limit) is not int or not 1<=limit<=MAX_RECORDS:
         raise FetchBlocked('Explicit collection from a registered source with 1–50 parsed records is required')
     config=SOURCES[source_id]
     if not config.get('enabled'):
         raise FetchBlocked('Source access is not verified: '+config['access_status'])
+    check_cancel()
     request_id,started=service._reserve(config['bucket'],1)
     directory=Path(evidence_root or service.store.path.parent/'public_sources')/request_id
     directory.mkdir(parents=True,exist_ok=False)
     log=[];transport=get or http_get
+    allowed_urls={config['robots'],config['url']}
+    request_budget=config.get('http_budget',HTTP_BUDGET)
     def request(url,filename):
-        if len(log)>=HTTP_BUDGET or url not in {config['robots'],config['url']} or any(r['url']==url for r in log):
+        check_cancel()
+        if len(log)>=request_budget or url not in allowed_urls or any(r['url']==url for r in log):
             raise SourceError('HTTP budget/endpoint bound exceeded')
+        if source_id=='nist_rss' and log:
+            # Cancellation remains responsive during source spacing.
+            for _ in range(10):
+                check_cancel();time.sleep(.1)
         record={'id':uuid4().hex,'url':url,'started_at':utcnow().isoformat(),'status':'pending','http_status':None,'response_bytes':None}
         log.append(record)
         with closing(service.store.connect()) as db:
@@ -238,22 +247,45 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
                     db.execute('UPDATE local_collector_http SET completed_at=?,status=?,http_status=?,response_bytes=? WHERE id=?',
                         (record['completed_at'],record['status'],record['http_status'],record['response_bytes'],record['id']));db.commit()
     report={'action_id':request_id,'source_id':source_id,'query_utc':started.isoformat(),'entry_url':config['url'],
-            'http_request_budget':HTTP_BUDGET,'parse_record_limit':limit,'license':config['license'],'terms_url':config['terms_url'],'requests':log}
+            'http_request_budget':request_budget,'parse_record_limit':limit,'license':config['license'],'terms_url':config['terms_url'],'requests':log}
     try:
         robots=request(config['robots'],'robots.txt')
         policy=RobotFileParser();policy.parse(robots.decode('utf-8-sig').splitlines())
         if not policy.can_fetch(USER_AGENT,config['url']):raise SourceError('Robots disallows this fixed entry')
         payload=request(config['url'],'response.html' if source_id=='abs_html' else 'response.xml')
         items=parse_source(source_id,payload,limit)
+        body_errors=[];body_hold=None
+        if source_id=='nist_rss':
+            for index,item in enumerate(items[:config['body_limit']]):
+                if not item.rights.analyze or not policy.can_fetch(USER_AGENT,item.url):continue
+                allowed_urls.add(item.url)
+                try:
+                    page=request(item.url,'body.html')
+                    body,byline=extract_nist_body(page)
+                    evidence=json.loads(item.provenance);evidence.update(body_status='extracted',body_byline=byline,body_sha256=hashlib.sha256(body.encode()).hexdigest())
+                    items[index]=replace(item,body=body,provenance=json.dumps(evidence,ensure_ascii=False))
+                except SourceError as error:
+                    evidence=json.loads(item.provenance);evidence.update(body_status='fallback_to_permitted_feed_text',body_reason=str(error))
+                    items[index]=replace(item,provenance=json.dumps(evidence,ensure_ascii=False))
+                    body_errors.append(str(error))
+                    if error.status in {401,403,429} or error.status is None or error.retry_after:
+                        body_hold=retry_deadline(error.retry_after,utcnow()) if error.retry_after or error.status==429 else None
+                        break
+        report['body_errors']=body_errors
         report.update(status='ok',records=len(items),restricted_records=sum(not n.rights.retain for n in items))
         for i,item in enumerate(items):
-            provenance=json.loads(item.provenance);provenance.update(action_id=request_id,fetched_at_utc=started.isoformat(),response_sha256=log[-1]['sha256'])
+            provenance=json.loads(item.provenance);provenance.update(action_id=request_id,fetched_at_utc=started.isoformat(),response_sha256=log[1].get('sha256',''))
             items[i]=replace(item,provenance=json.dumps(provenance,ensure_ascii=False),fetched_at=started.isoformat())
-        status='ok';hold=None
+        status='failed' if body_errors else 'ok';hold=body_hold
     except (SourceError,UnicodeError) as error:
         report.update(status='failed',reason=str(error) if isinstance(error,SourceError) else 'Invalid source encoding',records=0)
         status='failed';items=[]
         hold=retry_deadline(getattr(error,'retry_after',None),utcnow()) if getattr(error,'retry_after',None) or getattr(error,'status',None)==429 else None
+    except __import__('finscope.task_queue',fromlist=['Cancelled']).Cancelled:
+        report.update(status='cancelled',reason='Explicit cancellation; completed HTTP stages preserved',records=0)
+        with closing(service.store.connect()) as db:
+            db.execute("UPDATE local_requests SET completed_at=?,status='cancelled',outcome='cancelled' WHERE id=?",(utcnow().isoformat(),request_id));db.commit()
+        raise
     except Exception:
         report.update(status='pending',reason='Outcome needs review; durable reservation preserved',records=0)
         raise FetchBlocked(report['reason']) from None
@@ -263,5 +295,40 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
     with closing(service.store.connect()) as db:
         db.execute('UPDATE local_requests SET completed_at=?,status=?,http_status=?,hold_until=?,outcome=? WHERE id=?',
             (report['completed_utc'],status,log[-1]['http_status'] if log else None,hold.isoformat() if hold else None,'records' if status=='ok' else 'collector_error',request_id));db.commit()
-    if status!='ok':raise FetchBlocked(report['reason'])
+    if status!='ok' and not items:raise FetchBlocked(report['reason'])
     return items,report
+
+
+def parse_nist(payload,limit):
+    if re.search(br'<!\s*(DOCTYPE|ENTITY)',payload,re.I) or b'\x00' in payload:raise SourceError('Unsafe RSS XML')
+    try:root=ET.fromstring(payload)
+    except ET.ParseError:raise SourceError('Invalid NIST RSS') from None
+    items=[];seen=set()
+    for row in root.findall('./channel/item'):
+        url=original_url('nist_rss',row.findtext('link','').strip())
+        if not url or url in seen:continue
+        seen.add(url)
+        item=licensed_item('nist_rss',plain_text(row.findtext('title','')),url,plain_text(row.findtext('description','')),
+                           row.findtext('pubDate','').strip())
+        if item:items.append(item)
+        if len(items)>=limit:break
+    if not items:raise SourceError('NIST RSS contained no supported official news')
+    return items
+
+
+def extract_nist_body(payload):
+    tree=Tree();tree.feed(payload.decode('utf-8-sig'))
+    # Drupal's article-body field, never the whole page/main/navigation.
+    candidates=[n for n in tree.root.walk() if 'field--name-body' in n.attrs.get('class','').split()]
+    if len(candidates)!=1:raise SourceError('Body selector unavailable; using feed text')
+    node=candidates[0]
+    for child in list(node.walk()):
+        if child.tag in {'script','style','nav','footer','figure','aside','iframe','noscript'}:
+            child.children=[]
+    body=clean_body=node.text()
+    body=' '.join(body.split())
+    if not 120<=len(body)<=100000:raise SourceError('Body length invalid; using feed text')
+    if re.search(r'copyright|all rights reserved|©|reprinted (?:with|by)|third.party content|courtesy of',clean_body,re.I):
+        raise SourceError('Body has a special-rights marker; using permitted feed text')
+    bylines=[n.text() for n in tree.root.walk() if 'field--name-field-author' in n.attrs.get('class','')]
+    return body,' '.join(' '.join(bylines).split())[:500]
