@@ -11,9 +11,17 @@ stale planned-feature wording, without exercising those integrations.
 
 All 236 tests, Python syntax and seven dry-run previews pass in an isolated export
 of committed main plus the release paths. Six offline pages render at desktop and
-390px; the premium design and fixtures are unchanged. Exact push CI and hosted
-acceptance follow release and will be recorded separately. The five unrelated
-edits and 23 protected evidence files retain their byte hashes; local is untouched.
+390px; the premium design and fixtures are unchanged. Application release `4b1e409941a7861a34658e7fde15d15d3e41a0b8` passed exact
+regression 41082670618 (both jobs) and isolation 41082670152. The hosted app
+initially retained old imported code after Cloud reported an update; an existing-app
+reboot/reconnect loaded the correction. All 24 page/size checks and dashboard
+industry/tone/date Reset, graph perspectives/source toggle, article inspection,
+research word matching and both installation panes then passed. See the concise
+[freeze record](SHOWCASE_FREEZE.md). A documentation-only follow-up gets its own
+exact CI and final browser check. The five unrelated
+edits and 23 protected evidence files retain their byte hashes; local is untouched
+by showcase commands. Its independent product worktree concurrently committed
+`22ac30148b73214a0ea3163a37367a8f11249066`; no ref was reset to the earlier snapshot.
 
 Inspected GitHub default/tracking branches and both workflows (push/PR without a
 branch filter). Public administration reports main/deploy/streamlit_app.py;

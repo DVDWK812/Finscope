@@ -1,5 +1,16 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**31 October final closeout:** the local-product download now targets
+[/tree/local](https://github.com/DVDWK812/Finscope/tree/local); the separate
+showcase-source link targets `/tree/main`. Both installation tabs explicitly clone
+`--branch local --single-branch`. Optional LM Studio/Ollama/external API integration
+is implemented on the separate local branch, subject to configuration and rights;
+it is not exercised here. The earlier planned-feature wording below is historical.
+Final acceptance and maintenance status are recorded in [the freeze record](SHOWCASE_FREEZE.md).
+The proposed `main` → `web` rename is **deferred**, preserving the existing app URL
+and administration. Streamlit's [coordinate-change procedure](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/rename-your-app)
+requires deletion/redeployment; no such action is authorized by this closeout.
+
 **31 October visual redesign, milestone B:** a factual landing-dashboard preview,
 consistent chart/KPI surfaces, concise visual guide, compact list/detail Explorer
 and three-step setup continue the shared design. 236 tests, syntax and offline
@@ -81,7 +92,7 @@ The user's latest architecture instruction separates two entrypoints. The localh
 - 24 authored fictional reports, fictional entities/sources and preset labels. No challenge text, private annotation, publisher story or fabricated publisher URL. Dashboard/graph/explorer carry **Demo Data / Illustrative Preview** labels. Filters change only the fixed sample.
 - Sector distribution, sentiment mix, date trends, volume/share indicators and industry heatmap use raw example counts. Missing cells remain missing, not observed neutral market data.
 - Graph edges link fictional company/industry/article/source/unverified-candidate nodes. They do not assert financial causation, verified event identity or contradiction detection. Article references resolve only to the sample cards.
-- Setup commands target the full local requirements and root entrypoint on localhost:8501. Available local capabilities are separated from optional Ollama/external-model/in-app-collector work still being developed elsewhere. No key input, uploads, fetch/inference controls or user-news database exist on the public site.
+- Setup commands target the full local requirements and root entrypoint on localhost:8501. The latest optional-integration status is given in the closeout note above; the preview does not test local service availability. No key input, uploads, fetch/inference controls or user-news database exist on the public site.
 - A concise About expander preserves model attribution/weight terms and candidate/sentiment limitations. Evaluation tables, logs, raw benchmark/debug output and extended licence discussions stay in repository evidence, outside the main public interface.
 
 ## Verification

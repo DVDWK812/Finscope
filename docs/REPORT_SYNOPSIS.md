@@ -2,21 +2,18 @@
 
 Evidence current: **31 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
-**Visual-design milestone B:** factual landing preview, unified analytics, visual
-guide, list/detail Explorer and simpler setup; 236 tests pass before release.
-All six local preview pages pass four-size review. A's exact CI and actual public
-checks passed; B's hosted release is verified separately after push. No fixture,
-frequency, model method, frozen metric or human-attestation change
-([design evidence](SHOWCASE_REDESIGN.md)).
-
-**Visual-design milestone A:** shared dark tokens, compact accessible menu and
-responsive fictional graph/inspector; 233 tests pass before release. Local browser
-checks cover two desktop widths, tablet and mobile. This changes presentation,
-not model methods, sample data or frozen results ([evidence](SHOWCASE_REDESIGN.md)).
-
-**31 October public update:** 24 readable headline labels now connect graph, word lookup and Explorer. Only three reviewed multi-report fictional topic groups appear, explicitly unverified; two misleading company-only pairings were removed and singleton nodes suppressed. Original article IDs/titles and every word-frequency result are unchanged. The isolated main candidate passes 231 tests, syntax checks and seven offline previews; exact CI and hosted checks follow push ([scope/evidence](PUBLIC_SHOWCASE.md)). Frozen metrics and human-provenance qualifications below remain unchanged.
-
-**30 October public update:** main maintains the synthetic-only showcase; local maintains the full product. Company/industry relationship views and a headline-derived frequency cloud retain fictional article-level evidence and scope/word drill-down. The public candidate passes 227 tests, including unchanged isolation guards; phone-width cloud words no longer overlap. Exact CI and actual deployment are verified separately ([evidence](PUBLIC_SHOWCASE.md)). No local-branch change, model inference, provider call or frozen-result change follows from this preview work.
+**31 October public closeout:** final link/setup corrections pass 236 offline tests,
+syntax checks and seven previews; exact-commit CI for
+`4b1e409941a7861a34658e7fde15d15d3e41a0b8` passes both regression jobs and
+showcase isolation. All six hosted pages passed four-size acceptance; maintenance-only status and
+limitations are recorded in the
+[freeze record](SHOWCASE_FREEZE.md). The site retains 24 authored fictional
+records, readable article labels, three unverified multi-report topic groups,
+exact headline-frequency lookup and the premium presentation. These are agent
+engineering checks, not human usability or accuracy evidence. No frozen metric or
+fixture changed; this task leaves the separate local product untouched.
+`main` stays the deployed/default branch; the
+proposed `web` rename is deferred to protect the existing app and administration.
 
 **Latest architecture correction, 29 October:** the product is now a local-first
 single-user Streamlit application on localhost with persistent local SQLite.
@@ -70,7 +67,7 @@ Failures to explain: **P02** crosses Celadon reporting quarters at cosine **0.81
 
 - Small, dependent fictional examples and provisional user-adjudicated references do not estimate general financial-news accuracy or calibration. No challenge sector ground truth. Neither event deduplication nor contradiction detection is validated; sentiment is not investment advice.
 - Completed: actual model integration, public approved-input demo, preserved frozen evaluation, regression/host checks and [three-human test template](USABILITY_EVIDENCE_TEMPLATE.md).
-- Pending: reviewer provenance/attestations, three actual human usability records, rehearsal and team-authored contribution confirmations. Programmatic sessions are not people. Hosting endurance/hibernation/peak memory and exact deployed SHA remain unverified.
+- Pending: reviewer provenance/attestations, three actual human usability records, rehearsal and team-authored contribution confirmations. Programmatic sessions are not people. Long-term hosting endurance/hibernation/peak memory remain unverified. Cloud displays no build SHA; the release record distinguishes exact-commit CI from actual served behavior.
 - Production provider rights/quality remain unresolved; provider query scopes differ ([source evaluation](API_EVALUATION.md), [decisions](DECISIONS.md)). Model licences do not authorize publisher-content reuse. Internal target: 31 October; both historical deadline values remain unverified in the assessment notes.
 
 ## Reference suggestions and factual sources
