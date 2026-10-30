@@ -153,8 +153,14 @@ class ShowcaseTests(unittest.TestCase):
                                                   if r.article_id in ("SYN-002", "SYN-005", "SYN-006")})
         navigate(app, "News Explorer")
         app.text_input[0].set_value("Cedar Therapeutics").run()
-        content = "\n".join(m.value for m in app.markdown)
-        self.assertTrue(all(article_label(r) in content and r.title in content for r in rows))
+        listing = app.dataframe[0].value
+        self.assertEqual(set(listing["Headline"]), {article_label(r) for r in rows})
+        # The compact list retains every headline; inspect each record in its panel.
+        for row in rows:
+            article_widget(app, "explorer_article").set_value(row.article_id).run()
+            content = "\n".join(m.value for m in app.markdown)
+            self.assertIn(row.title, content)
+            self.assertIn(row.summary, content)
         app.text_input[0].set_value(article_label(chosen)).run()
         self.assertTrue(any(chosen.summary in m.value for m in app.markdown))
         self.assertFalse(any(r.summary in m.value for r in rows if r != chosen for m in app.markdown))
@@ -169,8 +175,46 @@ class ShowcaseTests(unittest.TestCase):
             self.assertTrue(any("remain separate" in item.value for item in app.info))
             self.assertFalse(app.exception)
 
+    def test_explorer_filters_discard_stale_article_and_keep_all_originals(self):
+        app = self.app()
+        navigate(app, "News Explorer")
+        self.assertEqual(len(app.dataframe[0].value), 24)
+        article_widget(app, "explorer_article").set_value("SYN-005").run()
+        next(w for w in app.selectbox if w.label == "Example industry").set_value("Technology").run()
+        technology = {r.article_id for r in examples() if r.sector == "Technology"}
+        self.assertEqual(len(app.dataframe[0].value), 4)
+        self.assertIn(article_widget(app, "explorer_article").value, technology)
+        app.text_input[0].set_value("no matching authored headline").run()
+        self.assertTrue(any("No fictional examples" in item.value for item in app.info))
+        app.text_input[0].set_value("").run()
+        self.assertIn(article_widget(app, "explorer_article").value, technology)
+        self.assertFalse(app.exception)
+
+    def test_clearable_article_picker_has_an_empty_state_and_recovers(self):
+        app = self.app()
+        for page, key in (("News Explorer", "explorer_article"), ("Knowledge Graph", "graph_article")):
+            navigate(app, page)
+            article_widget(app, key).set_value(None).run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any("Select a headline" in item.value for item in app.info))
+            article_widget(app, key).set_value("SYN-001").run()
+            self.assertFalse(app.exception)
+            self.assertTrue(any(examples()[0].summary in item.value for item in app.markdown))
+
 
 class FictionalDataTests(unittest.TestCase):
+    def test_landing_preview_uses_real_fixture_counts_and_filtered_input(self):
+        from finscope.showcase_theme import dashboard_preview
+        full = dashboard_preview(examples())
+        self.assertIn('data-report-count="24"', full)
+        self.assertIn('data-positive-count="11"', full)
+        self.assertIn('Technology: 2 Positive, 1 Neutral, 1 Negative', full)
+        one = dashboard_preview([examples()[0]])
+        self.assertIn('data-report-count="1"', one)
+        self.assertIn('data-positive-count="1"', one)
+        self.assertIn('100%', one)
+        self.assertNotIn('data-report-count="24"', one)
+
     def test_public_text_tokens_meet_normal_text_contrast(self):
         from finscope.showcase_theme import TOKENS
 

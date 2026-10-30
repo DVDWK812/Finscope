@@ -33,6 +33,44 @@ def eyebrow(text):
     return '<div class="fs-eyebrow">' + escape(text) + '</div>'
 
 
+def line_icon(name):
+    paths = {
+        "sources": '<path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/>',
+        "model": '<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
+        "analyze": '<path d="M4 18V6m0 12h16M8 14l4-5 4 3 4-6"/>',
+        "inspect": '<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/>',
+    }
+    return ('<span class="fs-line-icon" aria-hidden="true"><svg viewBox="0 0 24 24" '
+            'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" '
+            'stroke-linejoin="round">' + paths[name] + '</svg></span>')
+
+
+def dashboard_preview(records):
+    """Landing illustration computed from the same authored sample as the demo."""
+    records = list(records)
+    total = len(records)
+    industries = list(dict.fromkeys(r.sector for r in records))
+    positive = sum(r.sentiment == "Positive" for r in records)
+    metrics = (("Original reports", total), ("Industries", len(industries)),
+               ("Positive labels", f"{positive / total:.0%}" if total else "—"))
+    kpis = ''.join(f'<div><small>{escape(label)}</small><strong>{value}</strong></div>' for label, value in metrics)
+    bars = []
+    for sector in industries:
+        sample = [r for r in records if r.sector == sector]
+        counts = {tone: sum(r.sentiment == tone for r in sample) for tone in SENTIMENT_COLORS}
+        accessible = escape(sector + ': ' + ', '.join(f'{n} {tone}' for tone, n in counts.items()), quote=True)
+        segments = ''.join(f'<i style="width:{n / len(sample) * 100:.2f}%;background:{SENTIMENT_COLORS[tone]}"></i>'
+                           for tone, n in counts.items() if n)
+        bars.append(f'<div class="fs-mini-row"><span>{escape(sector)}</span><div class="fs-mini-bar" role="img" aria-label="{accessible}">{segments}</div><small>{len(sample)}</small></div>')
+    legend = ''.join(f'<span><i style="background:{color}"></i>{tone}</span>' for tone, color in SENTIMENT_COLORS.items())
+    return ('<section class="fs-demo-window" aria-label="Illustrative dashboard from authored sample">'
+            '<div class="fs-demo-toolbar"><span>WORKSPACE OVERVIEW</span><span class="fs-demo-dot">ILLUSTRATIVE</span></div>'
+            f'<div class="fs-mini-kpis" data-report-count="{total}" data-positive-count="{positive}">{kpis}</div>'
+            '<h3>Sector sentiment</h3><p>Preset labels across the authored sample</p>'
+            + ''.join(bars) + f'<div class="fs-mini-legend">{legend}</div>'
+            '<div class="fs-demo-foot">Authored fictional records · Counts reflect originals</div></section>')
+
+
 def theme_css():
     variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in TOKENS.items())
     return '<style>:root{' + variables + r''' }
@@ -89,13 +127,55 @@ def theme_css():
     .positive{color:var(--fs-positive);}.neutral{color:var(--fs-neutral);}.negative{color:var(--fs-negative);}
     .fs-footer{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 0;
       border-top:1px solid var(--fs-border);color:var(--fs-muted);font-size:.72rem;margin-top:2rem;}
+    .st-key-fs_home_hero{padding:1.5rem 0 1rem;}
+    .fs-hero h1{font-size:clamp(2.6rem,4.1vw,4rem)!important;line-height:1.06!important;letter-spacing:-.055em;margin:.65rem 0 1.3rem;}
+    .fs-hero h1 .fs-hero-accent{color:var(--fs-accent);}
+    .fs-hero p{font-size:1.05rem;line-height:1.65;max-width:440px;margin-bottom:1.2rem;}
+    .fs-demo-window{border:1px solid #3b5066;border-radius:16px;background:var(--fs-surface);padding:1.25rem;}
+    .fs-demo-toolbar{display:flex;justify-content:space-between;gap:10px;font-size:.58rem;letter-spacing:.12em;color:var(--fs-muted);padding-bottom:1.1rem;border-bottom:1px solid var(--fs-border);}
+    .fs-demo-dot{color:var(--fs-accent);}
+    .fs-mini-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:1rem 0;}
+    .fs-mini-kpis small{display:block;color:var(--fs-muted);font-size:.65rem;}
+    .fs-mini-kpis strong{display:block;color:var(--fs-text);font-size:1.7rem;font-weight:600;letter-spacing:-.03em;}
+    .fs-demo-window h3{font-size:.9rem!important;margin:.5rem 0 .1rem;}
+    .fs-demo-window p{font-size:.68rem!important;margin:0 0 1.1rem;}
+    .fs-mini-row{display:grid;grid-template-columns:88px 1fr 16px;gap:10px;align-items:center;margin:13px 0;font-size:.7rem;color:var(--fs-muted);}
+    .fs-mini-bar{display:flex;height:9px;gap:2px;overflow:hidden;border-radius:3px;}
+    .fs-mini-bar i{display:block;height:9px;}
+    .fs-mini-row small{text-align:right;}
+    .fs-mini-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.62rem;color:var(--fs-muted);margin:1.2rem 0;}
+    .fs-mini-legend span{display:inline-flex;align-items:center;gap:5px;}
+    .fs-mini-legend i{display:inline-block;width:6px;height:6px;border-radius:50%;}
+    .fs-demo-foot{padding-top:.9rem;border-top:1px solid var(--fs-border);font-size:.62rem;color:var(--fs-muted);}
+    .fs-line-icon{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;color:var(--fs-accent);border:1px solid #365950;border-radius:8px;background:#142d2d;}
+    .fs-line-icon svg{width:21px;height:21px;}
+    .fs-feature{border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.3rem;min-height:185px;}
+    .fs-feature h3{font-size:1rem!important;margin:.85rem 0 .5rem;}
+    .fs-feature p{font-size:.84rem;line-height:1.6;margin:0;}
+    .st-key-fs_step_1,.st-key-fs_step_2,.st-key-fs_step_3,.st-key-fs_step_4{
+      border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.3rem;min-height:240px;}
+    .st-key-fs_chart_sector,.st-key-fs_chart_mix,.st-key-fs_chart_time,.st-key-fs_chart_heatmap{
+      border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.1rem;}
+    .st-key-fs_explorer_detail .story{padding:0;border:0;background:transparent;}
+    .fs-capability{padding:1.3rem;border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);}
+    .fs-capability ul{padding-left:1.2rem;margin-bottom:0;}.fs-capability li{margin:.45rem 0;font-size:.87rem;}
+    #vg-tooltip-element.vg-tooltip{background:var(--fs-raised);color:var(--fs-text);border:1px solid var(--fs-border);border-radius:8px;}
+    @media(max-width:1050px){
+      .st-key-fs_home_hero [data-testid="stHorizontalBlock"],.st-key-fs_explorer_layout [data-testid="stHorizontalBlock"],.st-key-fs_dashboard_charts [data-testid="stHorizontalBlock"]{flex-direction:column;}
+      .st-key-fs_home_hero [data-testid="stColumn"],.st-key-fs_explorer_layout [data-testid="stColumn"],.st-key-fs_dashboard_charts [data-testid="stColumn"]{width:100%;flex:1 1 100%;}
+      .st-key-fs_hero_ctas [data-testid="stHorizontalBlock"]{flex-direction:row;}
+      .st-key-fs_hero_ctas [data-testid="stColumn"]{width:auto;flex:1 1 45%;}
+    }
     @media(max-width:700px){
-      [data-testid="stMainBlockContainer"]{padding:2.1rem 1rem 2rem;}
+      [data-testid="stMainBlockContainer"]{padding:3.5rem 1rem 2rem;}
       .st-key-fs_map,.st-key-fs_graph_detail,.st-key-fs_cloud,.st-key-fs_explorer_detail{padding:.8rem;}
       .fs-header-meta{align-items:flex-start;}.fs-badge{font-size:.63rem;}
       .st-key-fs_kpis [data-testid="stHorizontalBlock"]{flex-wrap:wrap;gap:.65rem;}
       .st-key-fs_kpis [data-testid="stColumn"]{min-width:140px;flex:1 1 45%;}
       [data-testid="stMetric"]{min-height:100px;padding:.8rem;}
+      .fs-hero h1{font-size:2.65rem!important;}.fs-feature{min-height:0;}
+      .st-key-fs_step_1,.st-key-fs_step_2,.st-key-fs_step_3,.st-key-fs_step_4{min-height:0;}
+      .fs-demo-window{padding:1rem;}.fs-mini-row{grid-template-columns:75px 1fr 14px;gap:8px;}
     }
     @media(prefers-reduced-motion:reduce){button,a,summary{transition:none;}}
     </style>'''

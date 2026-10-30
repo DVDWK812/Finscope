@@ -45,5 +45,44 @@ Implementation references: [Streamlit container keys](https://docs.streamlit.io/
 
 ## Milestone B — page presentation
 
-Pending implementation and separate tested main release. Agent browser checks
-are development evidence, not completed human usability sessions.
+Milestone A was released as `412b12bf5e8452e48aff747df6c2fc156de57e7d`.
+Both [regression jobs](https://github.com/DVDWK812/Finscope/actions/runs/41068853354)
+and [isolation CI](https://github.com/DVDWK812/Finscope/actions/runs/41068853481)
+passed for that SHA. The actual public app served the new menu and graph; all six
+pages loaded. Hosted measurements at all four requested sizes matched the local
+panel widths above, with no overlapping or clipped node text.
+
+Milestone B adds a two-column landing hero with Explore Demo/Get FinScope CTAs.
+Its illustrative dashboard is computed from the 24 existing records: six
+industries, 11 positive labels (46% rounded) and actual per-sector tone counts.
+There are no invented prices, charts or model outputs. A four-card icon guide
+describes the separate local workflow.
+
+Dashboard filters sit in a compact disclosure with a visible scope summary.
+Equal KPI surfaces, common chart backgrounds/colours, bottom legends and readable
+day labels unify sector, mix, time and heatmap views. The underlying raw-report
+counts, denominator, date range and empty-cell meanings are unchanged. Phones
+use two KPI columns; chart panels stack on narrower screens.
+
+Explorer replaces 24 repeated detail cards with a bounded native list and one
+integrated detail panel. Native row selection and a keyboard-accessible headline
+picker resolve stable article IDs. Changing the picker clears stale table
+highlighting; changing filters discards invalid selections. Clearing a picker
+shows an explicit empty state and can recover. Tones use the shared text colours.
+
+Installation is three numbered steps with platform tabs and wrapped, copyable
+commands. These are displayed instructions only; no local-branch or install/model
+command was executed. Available capabilities and planned integrations are separate.
+
+Before B release: 236 offline tests pass, including existing tests adapted to
+list/detail behavior while retaining all-record coverage. New regressions verify
+factual landing counts, stale-filter selection and clear/recovery. Syntax and
+seven offline previews pass. Local review covers all six pages at 1440×900,
+1280×800, 768×1024 and 390×844: no document overflow, clipped controls or tracebacks.
+The list's row selection was operated in a real browser. Shared token contrast,
+keyboard focus and reduced-motion support remain. These targeted checks are not
+a full accessibility certification or completed human usability sessions.
+
+Final B SHA/CI and real hosted before/after images are verified after push and
+recorded in the ignored evidence directory. No new dependency or runtime boundary
+change accompanies this presentation milestone.

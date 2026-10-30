@@ -1,5 +1,14 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**31 October — showcase design milestone B:** continue A's verified design with a
+fixture-backed landing preview, consistent analytics cards, compact filters and
+list/detail browsing. Keep every original report selectable; native row selection
+and accessible picker share stable references, including clear/filter recovery.
+Show setup as instructions, not public install/model actions. The 236-test suite,
+syntax and offline previews pass; final exact CI/hosted acceptance is recorded
+after push. [Visual redesign evidence](SHOWCASE_REDESIGN.md). No data, evaluation
+or local-product behavior changes.
+
 **31 October — showcase design milestone A:** Adopt a shared institutional dark
 theme, native icon-button navigation and responsive evidence-card graph. Fit
 desktop width; preserve readable mobile panning and inspection. Keep actual

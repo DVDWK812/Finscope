@@ -1,5 +1,31 @@
 # Development log
 
+## Premium showcase milestone B — 31 October 2026 Sydney
+
+Verified A release 412b12bf5e8452e48aff747df6c2fc156de57e7d: regression run
+41068853354 (both jobs success), isolation 41068853481 (success), actual public
+six-page navigation and four-size graph checks passed. Captured hosted images;
+desktop has no map scrolling, and node text has no clipping/overlap.
+
+Added a factual 24-record landing illustration, explicit demo/install CTAs,
+four concise icon steps, common chart surfaces/legends, compact filters,
+two-column mobile KPIs and cleaner heatmap labels. Explorer is a bounded native
+table with semantic tone text, row selection and one detail panel. A keyboard
+picker is the alternative; switching it clears old row highlighting. Browser QA
+checked row selection, found clearable-selector behavior and prompted an empty
+state/recovery regression. Installation is three steps with wrapped commands;
+available/planned features are separated. No displayed clone/install/model command
+was executed and local was untouched.
+
+All 236 isolated tests pass; syntax and seven offline previews pass. Existing
+list assertions now inspect every record through the new detail interaction,
+with original counts/filters and isolation coverage retained. Local browser
+review covers all six pages at 1440×900, 1280×800, 768×1024 and 390×844; no page
+overflow, clipped controls or traceback. Exact B CI and deployed acceptance are
+verified after push. Evidence remains in ignored reports/showcase_premium_20261031.
+Codex performed implementation/testing. Frozen/private evidence and unrelated
+edits remain protected; no provider, inference, product DB, Moodle or submission.
+
 ## Premium showcase milestone A — 31 October 2026 Sydney
 
 Inspected status/README/API evaluation/tests, fetched and safely fast-forwarded

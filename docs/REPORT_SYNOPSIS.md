@@ -2,6 +2,13 @@
 
 Evidence current: **31 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
+**Visual-design milestone B:** factual landing preview, unified analytics, visual
+guide, list/detail Explorer and simpler setup; 236 tests pass before release.
+All six local preview pages pass four-size review. A's exact CI and actual public
+checks passed; B's hosted release is verified separately after push. No fixture,
+frequency, model method, frozen metric or human-attestation change
+([design evidence](SHOWCASE_REDESIGN.md)).
+
 **Visual-design milestone A:** shared dark tokens, compact accessible menu and
 responsive fictional graph/inspector; 233 tests pass before release. Local browser
 checks cover two desktop widths, tablet and mobile. This changes presentation,

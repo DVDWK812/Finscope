@@ -1,5 +1,12 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**31 October visual redesign, milestone B:** a factual landing-dashboard preview,
+consistent chart/KPI surfaces, concise visual guide, compact list/detail Explorer
+and three-step setup continue the shared design. 236 tests, syntax and offline
+previews pass before B release. A's exact CI and hosted checks have passed;
+B's final exact-commit CI and real hosted acceptance follow push.
+[Design, factual scope and screenshots](SHOWCASE_REDESIGN.md).
+
 **31 October visual redesign:** Milestone A introduces shared dark tokens,
 compact native-button navigation, consistent headers and a responsive graph with
 integrated inspection. Existing fictional evidence and counting remain unchanged.
