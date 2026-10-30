@@ -13,7 +13,22 @@ def decode(payload):
 
 class ProductStorage:
     def __init__(self,store):self.store=store
+    def apply_permissions(self,item):
+        """Explicit article-level edits outrank subsequent source-level grants."""
+        from dataclasses import replace
+        from .text_processing import canonical_url
+        with closing(self.store.connect()) as db:
+            edited={r[0] for r in db.execute('SELECT DISTINCT article_id FROM local_permission_history')}
+            originals=db.execute('SELECT id,payload FROM local_news').fetchall()
+        url=canonical_url(item.url)
+        for identity,payload in originals:
+            old=json.loads(payload)
+            if identity==item.article_id or url and old['source']==item.source and canonical_url(old['url'])==url:
+                if identity in edited:return replace(item,article_id=identity,rights=ContentRights(**old['rights']))
+                break
+        return item
     def save(self,item):
+        item=self.apply_permissions(item)
         item.rights.require('retain');item.rights.require('analyze');item.rights.require('preview')
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
@@ -33,11 +48,12 @@ class ProductStorage:
     def news(self):
         originals={n.article_id:n for n in self.store.list_news()}
         with closing(self.store.connect()) as db:
+            edited={r[0] for r in db.execute('SELECT DISTINCT article_id FROM local_permission_history')}
             for (payload,) in db.execute('SELECT payload FROM product_content ORDER BY created,rowid'):
                 item=decode(payload)
                 # Permission history remains authoritative for already saved originals.
                 from dataclasses import replace
-                if item.article_id in originals:item=replace(item,rights=originals[item.article_id].rights)
+                if item.article_id in edited and item.article_id in originals:item=replace(item,rights=originals[item.article_id].rights)
                 originals[item.article_id]=item
         return list(originals.values())
     def classification(self,item,key):
@@ -56,6 +72,10 @@ class ProductStorage:
                 data=json.loads(payload)
                 if data['taxonomy']==taxonomy and current.get(article)==version:result[article]=data
         return result
+    def classification_history(self,article_id,taxonomy):
+        with closing(self.store.connect()) as db:
+            rows=db.execute('SELECT content_version,cache_key,created,payload FROM product_classifications WHERE article_id=? ORDER BY created,rowid',(article_id,)).fetchall()
+        return [{'content_version':v,'classifier_cache_key':k,'created_utc':t,'classification':json.loads(p)} for v,k,t,p in rows if json.loads(p)['taxonomy']==taxonomy]
     def cached(self,item,key):
         with closing(self.store.connect()) as db:
             row=db.execute('SELECT analysis_id FROM product_analysis_cache WHERE article_id=? AND content_version=? AND cache_key=?',

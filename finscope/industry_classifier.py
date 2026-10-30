@@ -73,7 +73,8 @@ class IndustryClassifier:
         response=(self.transport or model_request)('POST',LMSTUDIO_ORIGIN+'/v1/chat/completions',payload,None,180)
         try:
             choice=response['choices'][0];result=json.loads(choice['message']['content'])
-            if response['model']!=model['model_id'] or choice['finish_reason']!='stop' or set(result)!={'ids','evidence'}:raise ValueError
+            if (len(response['choices'])!=1 or choice['message'].get('tool_calls') or choice['message'].get('refusal')
+                    or response['model']!=model['model_id'] or choice['finish_reason']!='stop' or set(result)!={'ids','evidence'}):raise ValueError
             if not isinstance(result['ids'],list) or not set(result['ids'])<=set(ids):raise ValueError
             if not isinstance(result['evidence'],str) or result['ids'] and (not result['evidence'] or result['evidence'] not in selected_text):raise ValueError
         except (KeyError,IndexError,TypeError,ValueError):raise ModelError('Local classifier output failed ID/evidence validation; no classification saved') from None

@@ -6,10 +6,13 @@ import re
 import unicodedata
 from urllib.parse import urlsplit,urlunsplit,parse_qsl,urlencode
 
-VERSION='product-lead-span-1'
+VERSION='product-lead-span-2'
 
 
 def clean(text):
+    if re.search(r'<[!/a-zA-Z]',text):
+        from .public_sources import plain_text
+        text=plain_text(text)
     return ' '.join(unicodedata.normalize('NFKC',text).replace('\x00','').split())
 
 
@@ -38,21 +41,25 @@ def prepare(item):
     prefix=title+'\n' if basis!='title' else ''
     span_end=min(len(full),max(1,1400-len(prefix)))
     excerpt=prefix+full[:span_end]
-    fingerprint=hashlib.sha256(json.dumps([title,summary,body],ensure_ascii=False).encode()).hexdigest()
+    language=detect_language(excerpt);language_method='text vocabulary and script check'
+    if language=='unknown' and item.language=='en' and len(full)<300 and all(ord(c)<128 or c in '–—’“”' for c in full):
+        language='en';language_method='source document/feed explicitly declares en; short Latin text script check'
+    fingerprint=hashlib.sha256(json.dumps([title,summary,body,language],ensure_ascii=False).encode()).hexdigest()
     evidence={'preprocessing_version':VERSION,'analysis_basis':basis,'selection':'leading character span; one original, one label',
               'span_start':0,'span_end':span_end,'source_characters':len(full),'coverage':span_end/max(1,len(full)),
-              'aggregation':'none; selected excerpt sentiment only','content_sha256':fingerprint}
+              'aggregation':'none; selected excerpt sentiment only','content_sha256':fingerprint,'language_method':language_method}
     url=canonical_url(item.url)
     # Provider identity prevents accidental merging across independent publishers.
     identity=hashlib.sha256((item.source+'|'+url).encode()).hexdigest()[:32] if url else item.article_id
     return replace(item,article_id=identity,title=title,summary=summary,body=body,processed_text=excerpt,
-                   content_version=fingerprint,language=detect_language(excerpt),text_basis=basis),evidence
+                   content_version=fingerprint,language=language,text_basis=basis),evidence
 
 
 def keywords(items,limit=32):
     """Distinct-article document frequency, including normalized multiword phrases."""
     stop=set('the a an and or of to in on for with from by as at is are was were be been this that it its their they new said will can more than which have has not into about also using use nist news research study researchers national institute standards technology'.split())
     stop.update('的 了 和 是 在 与 对 为 将 及 等 中 一个 我们 他们'.split())
+    stop.update('help helps year years month months january february march april may june july august september october november december said says say through across also could would should available according around first second third last latest report reports reported reporting than these those there here where when what which who whom how more most less fewer very much many such some other another both each every only same together following before after further while during between among'.split())
     phrases={'large language model':r'large language models?|\bLLMs?\b|大语言模型',
              'artificial intelligence':r'artificial intelligence|\bAI\b|人工智能',
              'semiconductor':r'semiconductors?|chipmakers?|半导体',

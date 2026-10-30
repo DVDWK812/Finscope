@@ -13,6 +13,7 @@ from .local_news import Analysis,ContentRights,FetchBlocked,LocalIngestionServic
 from .task_queue import TaskQueue,ProcessLock,Cancelled
 from .product_storage import ProductStorage,decode
 from .text_processing import prepare,VERSION
+from .model_providers import ModelError
 
 
 class ResourceBlocked(ValueError):pass
@@ -33,7 +34,7 @@ def resource_check(mode,*,loading=False):
 class Worker:
     def __init__(self,store,*,fetch=None,infer=None,resources=resource_check):
         self.store=store;self.queue=TaskQueue(store);self.data=ProductStorage(store)
-        self.fetch_override=fetch;self.infer_override=infer;self.resources=resources;self.backend=None
+        self.fetch_override=fetch;self.infer_override=infer;self.resources=resources;self.backend=None;self.source_warnings={}
     def fetch(self,source,c,check):
         if self.fetch_override:return self.fetch_override(source,c,check)
         from .local_collectors import SOURCES,collect_rba
@@ -41,7 +42,9 @@ class Worker:
         service=LocalIngestionService(self.store)
         check()
         if source in {'abs_html','nist_rss','accc_rss'}:
-            return collect_source(service,source,limit=c['limit'],explicit=True,check_cancel=check)[0]
+            items,report=collect_source(service,source,limit=c['limit'],explicit=True,check_cancel=check,include_body=True)
+            if report.get('body_errors'):self.source_warnings[source]='Body request/extraction failed; permitted feed text used, source ledger stop retained'
+            return items
         if source in {'rba_rss','rba_html'}:
             from . import rss_collector,html_collector
             module=rss_collector if source=='rba_rss' else html_collector
@@ -107,7 +110,7 @@ class Worker:
         def stage(name):check();self.queue.update(identity,stage=name,counts=counts)
         try:
             check();self.resources(c['model'],loading=self.backend is None)
-            model_key=self.model_key(c) if not self.infer_override else c['model']+'|mock-test|'+VERSION
+            model_key=self.model_key(c) if not self.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+VERSION
             from .industry_classifier import IndustryClassifier
             classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
             any_source=False
@@ -125,7 +128,11 @@ class Worker:
                     try:
                         fetched=([n for n in self.data.news() if n.article_id in c['article_ids']]
                                  if source=='saved_originals' else self.fetch(source,c,check));items=[]
+                        if source in self.source_warnings:errors.append(source+': '+self.source_warnings[source])
                         for item in fetched:
+                            try:item=self.data.apply_permissions(item)
+                            except ValueError:
+                                counts['failed']+=1;errors.append('One text/URL record failed validation');continue
                             if item.rights.preview and item.rights.retain and item.rights.analyze and item.rights.reference:
                                 items.append(item)
                             else:
@@ -172,7 +179,7 @@ class Worker:
                     self.queue.save_step(identity,infer_step,'pending',{})
                     try:
                         result=self.infer(item,c)
-                        result=replace(result,provenance={**result.provenance,**coverage,'task_id':identity,'language':item.language})
+                        result=replace(result,provenance={**result.provenance,**coverage,'text_basis':'selected_'+item.text_basis+'_excerpt','task_id':identity,'language':item.language})
                         self.data.analysis(item,model_key,result)
                         self.queue.save_step(identity,infer_step,'ok',{'analysis_id':result.analysis_id});counts['analyzed']+=1
                     except Exception:
@@ -184,6 +191,8 @@ class Worker:
             self.queue.update(identity,status='cancelled',stage='cancelled',counts=counts,error='Stopped; completed stages retained; no further requests or inference')
         except ResourceBlocked as error:
             self.queue.update(identity,status='blocked',stage='resources / model',counts=counts,error=str(error))
+        except ModelError as error:
+            self.queue.update(identity,status='blocked',stage='local model preflight',counts=counts,error=str(error))
         except Exception:
             self.queue.update(identity,status='partial_failed',stage='failed',counts=counts,error='Local processing failed; originals/history retained; inspect configuration, then explicit resume')
         return True

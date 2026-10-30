@@ -10,12 +10,12 @@ python -m venv .venv-ai
 .venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt
 # Explicit preparation only; inference never downloads models automatically.
 .venv-ai/Scripts/python.exe -m finscope.model_assets --prepare --acknowledge-model-licenses
-.venv-ai/Scripts/python.exe -m streamlit run streamlit_app.py --server.address localhost
+./launch_local.ps1 -Port 8511
 ```
 
-Open the localhost URL printed by Streamlit. Read the four-step first-run guide, then choose **Add news → Analyze → Dashboard**. Returning users enter the dashboard directly. The guide can be reopened from the sidebar.
+Open the printed localhost URL. Read the concise first-run guide and configure sources, source permissions, current UTC-day budgets and the local model in **Settings**. Daily use is one **更新并分析** action: a persistent worker fetches, processes, classifies, analyzes and saves results while the UI remains usable. Dashboard / Industries / Knowledge Graph / News Explorer share filters; Settings retains the advanced manual workspace.
 
-On Windows, after setup, `./launch_local.ps1` starts the product bound to localhost;
+On Windows, after setup, `./launch_local.ps1` starts Streamlit and one OS-locked local worker bound to localhost;
 `./launch_local.ps1 -Port 8511` chooses a different port. This task continues on
 the user-requested `local` branch, separately from the web showcase work on `main`.
 
@@ -26,9 +26,11 @@ The local library is `reports/finscope_local.sqlite3` (ignored by Git); set `FIN
 - **Marketaux:** user key, financial keyword feed, `group_similar=false`, at most 3 records/request on the free plan. Lookback filters do not guarantee free archive access.
 - **NewsData.io:** latest feed, approximately 48 hours, possible free-plan delay. Its existing manual pause remains active; the connector does not override it.
 - **Finnhub:** user key and company ticker. This is company news, not sector-wide coverage; historical entitlement depends on the account.
-- **Local Collector:** fixed RBA RSS/HTML or ABS release index (headlines/dates, source-level CC BY 4.0 attribution saved). ACCC RSS is unavailable after HTTP 403; its adapter is offline-tested only. ABS uses at most two GETs (robots + one index), separately selecting up to 50 response records, with no pagination/retry/body crawling. RBA local-output import remains available; date-only records retain that precision.
+- **Local sources:** fixed RBA RSS/HTML, ABS releases (CC BY 4.0) and NIST official news (unmarked public-information text; copyright exceptions apply). Automatic runs select at most 20 records/source: ABS uses ≤3 GETs including one permitted body, NIST ≤5 including up to three bodies. Legacy ABS index preview remains two GETs. No pagination, arbitrary URL crawling or retries; source attribution, text basis, raw date and exclusions persist. ACCC remains disabled after HTTP 403.
 
-Enter keys in masked fields or copy `.env.example` to `.env` and configure them locally. No key enters SQLite, Git, reports, export or global caches. The benchmark retains its original `.env` behavior. **Fetch news** is explicit, quota-confirmed and never triggered by page load. A durable local reservation, existing shared/study holds, a conservative 3-request/provider/UTC-day cap and 60-second spacing precede dispatch. There are no automatic retries or pagination. A failure/unknown outcome stops further requests pending the applicable hold/review. Do not delete request ledgers or shorten holds.
+Enter keys in masked Settings fields for Windows Credential Manager, or configure the project's ignored `.env`. Keys never enter SQLite/jobs, Git, reports or exports. API budgets expire with their attested UTC date. Explicit updates continue through the existing dual-ledger reservations, 3-actions/provider/UTC-day cap and 60-second spacing. NewsData stays manually paused; failures/unknown outcomes and Retry-After holds are preserved. Refreshing, filtering or reopening the app never starts a fetch or inference.
+
+The launcher owns the single worker; direct `streamlit run` serves the UI without starting it. SQLite schema changes create a consistent backup under ignored `reports/backups/`. Jobs persist queued/running/terminal states and checkpoints, support cancellation and explicit resume, and never automatically repeat unknown requests. Full permitted text and content revisions remain local; lead-excerpt offsets/coverage and model history are recorded. The independent two-level catalogs are FinScope US business v1 (11/56, not GICS) and official CSRC JR/T 0020—2024 Table 2 (19/91); unknown news topics never become CSRC S/91.
 
 API success is separate from permission to display, retain, process or send publisher text. Preview is local personal noncommercial access; storage/NLP/transmission remain off until a permission reference and the relevant rights are supplied. Full publisher pages are never fetched. Approved self-authored or licensed text can be saved and analyzed independently. Missing publication times remain unknown.
 

@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 from finscope.local_news import LocalNewsStore,LocalIngestionService,FetchBlocked
 from finscope.local_collectors import SOURCES
-from finscope.public_sources import parse_source,extract_nist_body,SourceError,collect_source,original_url
+from finscope.public_sources import parse_source,extract_nist_body,extract_abs_body,SourceError,collect_source,original_url
 from finscope.task_queue import Cancelled
 
 
@@ -32,6 +32,11 @@ class NistTests(unittest.TestCase):
         self.assertIn('semiconductor',text)
         for word in ('navigation','secret_code','Third-party','footer'):self.assertNotIn(word,text)
         with self.assertRaises(SourceError):extract_nist_body(body().replace(b'new semiconductor',b'copyright new semiconductor'))
+        revised,_=extract_nist_body(body().replace(b'field--name-body',b'text-with-summary'))
+        self.assertEqual(revised,text)
+    def test_abs_body_selector_excludes_contact_notes_and_preserves_article(self):
+        html=b'<nav>Ignore this</nav><div id="page-content"><p>The official statistics release describes energy exports and renewable electricity production in Australia. This is an authored engineering fixture only.</p><h2>Media notes</h2><p>Contact media@example.invalid</p></div><footer>Ignore footer</footer>'
+        text,byline=extract_abs_body(html);self.assertIn('energy exports',text);self.assertNotIn('media@example',text);self.assertNotIn('Ignore',text);self.assertEqual(byline,'Australian Bureau of Statistics')
     def test_fixed_urls_reject_remote_internal_and_redirect_like_urls(self):
         for value in ('http://127.0.0.1/x','https://evil.invalid/news-events/news/2026/x','https://www.nist.gov@127.0.0.1/news-events/news/x','https://www.nist.gov/news-events/news/x?url=http://127.0.0.1'):
             self.assertEqual(original_url('nist_rss',value),'')

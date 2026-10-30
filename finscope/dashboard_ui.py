@@ -43,7 +43,7 @@ def publication_label(item):
     return 'Publication date unknown'
 
 
-def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
+def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, sector_options=None,model_choices=None,model_widget_key='local_result_model'):
     restore_filters()
     dates = sorted(date.fromisoformat(n.published_day) for n in news if n.published_day)
     start, end = (dates[0], dates[-1]) if dates else (datetime.now(timezone.utc).date(),)*2
@@ -71,7 +71,10 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
         selected = st.date_input("Publication date range (UTC)", value=(start, end), key="local_dates",on_change=remember_filter,args=('local_dates',),
                                  help='Exact timestamps use UTC; date-only records keep their original calendar day. Unknown publication dates stay separate.')
     with middle:
-        sectors = st.multiselect("Sectors", SECTORS, key="local_sectors", placeholder="All sectors",on_change=remember_filter,args=('local_sectors',))
+        options=sector_options or SECTORS
+        if sector_options is not None and any(s not in options for s in st.session_state.get('local_sectors',[])):
+            st.session_state['local_sectors']=[s for s in st.session_state['local_sectors'] if s in options]
+        sectors = st.multiselect("Sectors", options, key="local_sectors", placeholder="All sectors",on_change=remember_filter,args=('local_sectors',))
     with right:
         search = st.text_input("Search news", key="local_search", placeholder="Headlines, summaries or source",on_change=remember_filter,args=('local_search',))
     with st.expander("More filters", expanded=False):
@@ -84,7 +87,7 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
     if for_analysis:
         models = (analysis_model,) if analysis_model else ()
     else:
-        choices = result_models(analyses)
+        choices = list(model_choices) if model_choices is not None else result_models(analyses)
         default = default_result_model(analyses)
         if default not in choices:
             choices.insert(0, default)
@@ -94,8 +97,16 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None):
             parts=value.split(' · ')
             name=' · '.join(parts[:2])
             return name+' · '+parts[-1][:8] if sum(v.startswith(name+' · ') for v in choices)>1 else name
-        current = st.selectbox("Results model", choices, key="local_result_model",format_func=model_label,
-                              on_change=remember_filter,args=('local_result_model',))
+        if model_widget_key!='local_result_model':
+            if st.session_state.get(model_widget_key) not in choices:st.session_state[model_widget_key]=st.session_state['local_result_model']
+            def remember_product_model():
+                st.session_state['local_result_model']=st.session_state[model_widget_key];remember_filter('local_result_model')
+            current=st.selectbox('Results model',choices,key=model_widget_key,format_func=model_label,on_change=remember_product_model)
+            st.session_state['local_result_model']=current
+            st.caption('Current results: '+' · '.join(current.split(' · ')[:2]))
+        else:
+            current = st.selectbox("Results model", choices, key="local_result_model",format_func=model_label,
+                                  on_change=remember_filter,args=('local_result_model',))
         models = (current,)
     undated = sum(not n.published_day for n in news)
     if undated:
@@ -164,11 +175,11 @@ def timeline_chart(news, results, start, end):
         'tooltip':[{'field':'Date'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':320},width='stretch')
 
 
-def heatmap(news, results, start, end, store):
+def heatmap(news, results, start, end, store, *, sectors_override=None,background=False):
     st.subheader("Date × sector")
     metric = st.radio("Heatmap measure", ["Article volume", "Sentiment balance"], horizontal=True)
     try:
-        cells = heatmap_cells(news, results, start, end, sectors=st.session_state.get('local_sectors') or SECTORS, date_basis="published")
+        cells = heatmap_cells(news, results, start, end, sectors=st.session_state.get('local_sectors') or sectors_override or SECTORS, date_basis="published")
     except ValueError as error:
         st.info(str(error)); return
     from .chart_interactions import interactive_chart, chart_scope
@@ -187,14 +198,14 @@ def heatmap(news, results, start, end, store):
         records=cell_members(news,{'Date':day,'Sector':sector})
         st.subheader(f"{sector} · {day}")
         st.caption(f"{len(records)} local originals · {sum(n.article_id in results for n in records)} analyzed")
-        related_articles(records,results,store,context='heatmap')
+        related_articles(records,results,store,context='heatmap',background=background)
     undated=[n for n in news if not n.published_day]
     if undated:
         with st.expander(f"Unknown publication date: {len(undated)} originals"):
-            related_articles(undated,results,store,context='heatmap_unknown')
+            related_articles(undated,results,store,context='heatmap_unknown',background=background)
 
 
-def related_articles(news, results, store, *, context):
+def related_articles(news, results, store, *, context,background=False):
     if not news:
         st.info("No local articles in this selection.")
         return
@@ -202,17 +213,17 @@ def related_articles(news, results, store, *, context):
     keep_valid_selection(context+'_related',by_id)
     key=st.selectbox("Related articles",list(by_id),format_func=lambda key:by_id[key].title,
                      key=context+'_related')
-    article_details(by_id[key],results.get(key),store,context=context)
+    article_details(by_id[key],results.get(key),store,context=context,background=background)
 
 
-def article_details(item, result, store, *, context="explorer"):
+def article_details(item, result, store, *, context="explorer",background=False):
     st.subheader(item.title)
     st.caption(f"{item.source} · {publication_label(item)}")
     if item.provider=='authored_synthetic':
         st.caption('Synthetic development text')
     st.write(f"**{result.label if result else 'Not analyzed'}** · {', '.join(item.sectors)}"+
              (f" · {result.family}" if result else ''))
-    if item.provider in {"rba_rss","rba_html","abs_html","accc_rss"}:
+    if item.provider in {"rba_rss","rba_html","abs_html","accc_rss","nist_rss"}:
         try:
             origin=json.loads(item.provenance)
             st.caption(origin.get("attribution","Reserve Bank of Australia")+' · '+origin.get('derivative_attribution','AI analysis is derived; no RBA endorsement.'))
@@ -220,10 +231,10 @@ def article_details(item, result, store, *, context="explorer"):
             pass
     if item.summary:
         st.text(item.summary)
-    st.caption("Headline + supplied summary; not full article text." if item.summary else "Headline only; no summary or full article supplied.")
+    st.caption('Permitted body saved locally; analysis excerpt coverage is retained in result provenance.' if item.body else "Headline + supplied summary; not full article text." if item.summary else "Headline only; no summary or full article supplied.")
     if item.url:
         st.link_button("Open original article", item.url)
-    if not result:
+    if not result and not background:
         from .product_ui import next_step
         next_step('Analyze news →','Analyze',context+'_'+item.article_id+'_next')
     with st.expander("Provenance, permissions and analysis history"):
@@ -256,6 +267,16 @@ def article_details(item, result, store, *, context="explorer"):
             except ValueError as error:
                 st.error(str(error))
     with st.expander("Reanalyze this original",expanded=False):
+        if background:
+            from .pipeline_ui import reanalyze
+            reanalyze(item,store,prefix)
+        else:
+            manual_reanalysis(item,store,prefix)
+    if result and result.candidate_id:
+        show_candidate(item,result,store)
+
+
+def manual_reanalysis(item,store,prefix):
         from .model_ui import controls,execute
         from .model_providers import ModelError
         settings=controls(prefix,store=store)
@@ -268,7 +289,9 @@ def article_details(item, result, store, *, context="explorer"):
                 st.error(str(error))
             except Exception:
                 st.error("Reanalysis failed. No fake output was substituted; previous versions remain saved.")
-    if result and result.candidate_id:
+
+
+def show_candidate(item,result,store):
         latest = {a.article_id:a for a in store.list_analyses() if a.family==result.family
                   and a.model_id==result.model_id and a.revision==result.revision
                   and a.embedding_revision==result.embedding_revision}

@@ -23,7 +23,7 @@ def selected_value(event, scope, valid_ids):
 def interactive_chart(kind, data, *, key, selected=None):
     scope=chart_scope(kind,data)
     event=_chart(kind=kind,data=data,scope=scope,selected=selected,key=key,default=None)
-    ids={n['id'] for n in data['nodes']} if kind=='graph' else {c['Date']+'|'+c['Sector'] for c in data['cells']}
+    ids=({n['id'] for n in data['nodes']} if kind=='graph' else {c['term'] for c in data['terms']} if kind=='cloud' else {c['Date']+'|'+c['Sector'] for c in data['cells']})
     value=selected_value(event,scope,ids)
     marker=json.dumps(event,sort_keys=True)
     if value is not None and st.session_state.get(key+'_handled') != marker:

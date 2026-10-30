@@ -1,6 +1,6 @@
 # FinScope — team report synopsis
 
-Evidence current: **29 October 2026 Sydney**. The three team members write the
+Evidence current: **31 October 2026 Sydney**. The three team members write the
 academic report independently. This is a concise factual reference, not a submission
 manuscript or PDF. The user confirmed there are **no required section headings**;
 the organization below is optional. No Moodle access or coursework submission.
@@ -18,9 +18,11 @@ the organization below is optional. No Moodle access or coursework submission.
 
 ## Architecture and methods
 
-Source adapter / fixed RBA or ABS collector / approved text → preview and distinct usage
-permissions → local originals → selected model → versioned SQLite results → shared
-filters → Overview, Sector sentiment, Trends, Heatmap, Evidence graph and Explorer.
+Configured, permitted fixed sources → one explicit update action → single local
+worker and durable SQLite queue → text/content versions → independent two-level
+industry classification → selected local sentiment model → versioned results.
+Dashboard, Industries, Knowledge Graph and News Explorer share filters; Settings
+retains advanced manual operations. Migration backs up the existing database.
 [Implementation/evidence](LOCAL_REDESIGN.md), [local setup](../README.md).
 
 - Provider calls require explicit Fetch, current available budget, durable intent,
@@ -31,7 +33,11 @@ filters → Overview, Sector sentiment, Trends, Heatmap, Evidence graph and Expl
   attention-mask mean pooling and normalized 384-dimensional vectors. Pretrained
   pinned/hash-verified models; no team training or fine-tuning. Preparation is explicit,
   with local-only inference and no download/remote-code fallback.
-- Keyword sectors are multi-label, with Unclassified. Cosine ≥0.80 within 72 hours
+- Product industry topics use versioned US-BUSINESS-1 (11/56, authored business
+  topics, not GICS) or CSRC-JRT0020-2024 (official Table 2: 19/91). Literal evidence,
+  method and classification history are retained; company business is separate
+  and unverified. Macro themes are separate, not a third industry level. The old
+  five-sector evaluation rules remain unchanged. Historical cosine ≥0.80 within 72 hours
   compares representatives and creates **unverified candidates**; order matters.
   Exact-time absence disables temporal grouping. Raw originals remain the counting
   basis; model history and candidate members are retained. Neither event deduplication
@@ -110,3 +116,30 @@ FinScope validation. Primary-source details checked 29 October.
 
 Maintenance: update dated verified facts and preserve historical qualifications;
 the team owns academic interpretation, authorship and submission.
+
+31 October local P0 engineering acceptance: two explicit browser updates fetched
+21 new real originals (20 NIST, one ABS); the real library is ABS 21 / NIST 20 /
+RBA one, dated 29 June–30 October. Three actions used eight bounded collector GETs,
+separate from parsed-record counts. ABS successfully supplied one licensed body
+(1,675 characters); analysis used a traceable leading 1,349-character excerpt.
+NIST supplied permitted RSS summaries, but its first body extraction failed on
+changed markup. Summary fallback and the existing failure-day hold remained;
+the selector repair was checked offline against actual browser-observed DOM,
+not claimed as a second successful body fetch. No news API/OpenAI dispatch.
+
+At the user's request Qwen was unloaded and Gemma selected. Fifty real Gemma
+HTTP-200/schema-valid versions were added (including one explicit body reanalysis),
+covering 40 current real originals; two older originals remain pending. No LLM
+probabilities were invented. Dictionary classification currently evidences three
+primary/four secondary topics across seven originals; 35 are unclassified.
+This is limited official/research coverage, not broad US-equity coverage or an
+independent accuracy evaluation. Optional local LLM classification has mock
+validation only. All prior database rows and 171 frozen files are unchanged.
+
+The worker continued while the only app tab was closed; reopening showed the
+same advancing job. Actual graph, word-cloud and date/sector heatmap clicks
+opened matching originals. A graph-detail insertion could move and blank the
+cloud iframe: a failing-before regression now verifies stable host positions.
+370 offline tests and benchmark dry run pass; no external calls occur from
+view/filter/refresh actions. Browser operation is engineering evidence, not
+three independent human usability participation.

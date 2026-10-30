@@ -431,3 +431,55 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
 
 - 31 October user-requested Qwen retry (30 October 14:39–14:47 UTC): no model was initially loaded. Unchanged resource checks measured 18.08 GiB free RAM / 12.07 GiB free VRAM before loading qwen/qwen3.8-27b Q4_K_M (context 2048, GPU 0.5, parallel 1). Load and API exposure succeeded. Actual FinScope browser single analysis of the previously approved authored fixture returned HTTP 200, schema-valid Positive plus rationale, 15466.52 ms, probabilities absent; SQLite 23 originals / 30 versions, Gemma history preserved. Dashboard selected Qwen and detail showed its actual ID/quantization/rationale; local screenshot and dated retry evidence saved under ignored reports/. One anonymous MutationObserver TypeError was observed during dashboard navigation; inference and result display succeeded, so this is not a zero-console-error claim. No news/OpenAI request, download, safeguard change or challenge inference.
 - Retry verification: all 319 offline tests and benchmark dry run passed; all 171 frozen hashes and every pre-existing database row remained unchanged. Only Qwen was loaded. After inference, observed free RAM was 2.59 GiB / VRAM 3.37 GiB: this is a successful bounded smoke test with limited remaining headroom, not sustained-load validation; context/offload safeguards were not relaxed.
+
+- 31 October local P0, background milestone `ce22c9f`: persistent SQLite jobs,
+  OS worker lock, backup/schema migration, checkpoints, explicit cancellation/
+  resume, guarded source dispatch, content/model cache isolation; 328 offline
+  tests and dry run passed. Classification milestone `22ac301`: standalone
+  text processing and taxonomy/classifier, US 11/56 and official CSRC 2024 19/91,
+  source-level text permissions and fixed NIST collector. Both pushed local
+  milestones have successful CI; main was read only.
+- Actual browser update task `0ac902c433a44057baa1f2feef4bca4d` fetched NIST/ABS:
+  21 new, 19 duplicates, 40 classifications, 29 real Gemma analyses; 11 short
+  English headlines initially remained pending. It continued after refresh,
+  navigation and closing the only app tab (12→19 new / 11→18 analyzed observed
+  across closing/reopening). NIST body markup differed, so permitted RSS
+  summaries were used and the failure-day stop persisted.
+- Corrected trusted-source HTML/feed language evidence for short headlines,
+  selected-excerpt version/provenance and ABS body support. Explicit second task
+  `99ec07d2b81e4f9e8d705804039105d5`: NIST blocked with zero GETs; ABS robots/index/
+  one body HTTP 200, zero new/20 duplicates/20 real analyses. One body has 1,675
+  characters with recorded span 0–1,349, coverage 0.805373, no aggregation claim.
+  NIST selector repair parsed 4,609 characters from actual browser-observed DOM
+  offline, excluding media credits; it was not retried through the held collector.
+- Browser worker reanalysis `7db65e93c2634faf99c87149600dfafd` completed with one
+  new Gemma Neutral history version, 1,561.25 ms, zero source requests. In total
+  50 new HTTP-200/schema-valid Gemma versions, no probabilities; Qwen was unloaded
+  per user selection, no downloads/other model suppliers/external LLM dispatch.
+  Library: 44 originals/80 histories, including two preserved development records;
+  real-only ABS 21/NIST 20/RBA one, 29 June–30 October, 40 current Gemma results.
+  Three primary/four secondary topics across seven originals, 35 unclassified;
+  ten original URLs/dates/classification/entity quotes checked as engineering
+  content review, not independent human accuracy or frozen-challenge evaluation.
+- Five-page automatic UI, shared model/date/industry filters, worker single-item
+  reanalysis, evidence graph and article-document-frequency cloud added. Actual
+  industry/article graph clicks, cloud `beverages` and 30 October Consumer Staples
+  heatmap cell opened the matching ABS body original. Fixed blank cloud after
+  graph-detail insertion: regression failed with cloud host path 21→24, then
+  passed after a stable detail container. Bounded readiness/height protocol tests
+  also retained. Earlier component warnings and empty-chart extent warnings were
+  observed; subsequent bounded graph→cloud repeat had no console warn/error.
+- Final offline suite 370 tests and benchmark dry run passed. Permission edits
+  outrank subsequent source grants; no UI duplicate FinBERT cache while worker
+  runs. Verification retained every prior row in six tables and all 171 frozen
+  hashes; real collection added exactly eight HTTP GETs/three action reservations.
+  Source credentials were scanned without displaying values: no leaks in code,
+  SQLite, backups or P0 text evidence. Local reports/screenshots remain ignored;
+  optional LLM classifier correctness is mock-only. No API pause/ledger reset.
+- Final browser repeat also verified Consumer Staples→Food and beverages options
+  and retained selections across Industries→Graph. A 390×844 responsive check
+  measured document width 390, graph height 511; article-node and manufacturing
+  cloud clicks worked, listing exactly three NIST originals. Viewport restored.
+  Explicit finite stacked-bar bounds removed remaining transition extent warnings;
+  the subsequent Dashboard/filter/Industries/Graph console window was clean.
+  Earlier warnings are retained above, not erased from the acceptance record.

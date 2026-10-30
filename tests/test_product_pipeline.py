@@ -2,6 +2,7 @@ from contextlib import closing
 from dataclasses import replace
 from pathlib import Path
 import tempfile
+import json
 import unittest
 from unittest.mock import patch
 from uuid import uuid4
@@ -43,6 +44,21 @@ class PipelineTests(unittest.TestCase):
         self.q.submit(C);w.run_one();self.q.submit(C);w.run_one()
         self.assertEqual(calls,[1]);self.assertEqual(len(self.store.list_news()),1)
         self.assertEqual(self.q.get()['counts']['duplicates'],1)
+    def test_selected_local_model_ids_have_separate_caches(self):
+        calls=[];w=self.worker(infer=lambda *a:(calls.append(a[1]['model_id']) or prediction(*a)))
+        for model in ('gemma-local-test','qwen-local-test'):
+            self.q.submit({**C,'model':'Local LM Studio','model_id':model});w.run_one()
+        self.assertEqual(calls,['gemma-local-test','qwen-local-test']);self.assertEqual(len(self.store.list_analyses()),2)
+    def test_explicit_saved_original_reanalysis_adds_history_without_http(self):
+        w=self.worker();self.q.submit(C);w.run_one();item=ProductStorage(self.store).news()[0]
+        self.q.submit({**C,'sources':[],'article_ids':[item.article_id],'force_reanalysis':True})
+        w.fetch_override=lambda *a:self.fail('Saved-original reanalysis cannot fetch news');w.run_one()
+        self.assertEqual(len(self.store.list_news()),1);self.assertEqual(len(self.store.list_analyses()),2)
+    def test_body_result_provenance_overrides_provider_headline_basis(self):
+        w=self.worker(fetch=lambda *a:[replace(fixture(),body='The company reported a new medical device and a higher quarterly revenue. '*30)])
+        self.q.submit(C);w.run_one();result=self.store.list_analyses()[0]
+        self.assertEqual(result.provenance['analysis_basis'],'body');self.assertEqual(result.provenance['text_basis'],'selected_body_excerpt')
+        self.assertLess(result.provenance['coverage'],1)
     def test_unknown_dispatch_is_not_reissued_after_restart_resume(self):
         key,_=self.q.submit(C);self.q.update(key,status='running');self.q.save_step(key,'fetch:abs_html','pending',{})
         self.q.interrupt_orphans();self.q.resume(key)
@@ -69,12 +85,33 @@ class PipelineTests(unittest.TestCase):
         with closing(self.store.connect()) as db:
             self.assertNotIn('Restricted marker private text',str(db.execute('SELECT * FROM product_steps').fetchall()))
         self.assertEqual(self.store.list_news(),[])
+    def test_manual_article_nlp_revocation_overrides_next_source_grant(self):
+        w=self.worker();self.q.submit(C);w.run_one();item=self.store.list_news()[0]
+        self.store.update_rights(item.article_id,replace(item.rights,analyze=False,reference='User revoked local NLP'))
+        self.q.submit(C);w.run_one()
+        self.assertEqual(len(self.store.list_analyses()),1);self.assertFalse(ProductStorage(self.store).news()[0].rights.analyze)
+        self.assertEqual(self.q.get()['counts']['skipped'],1)
+    def test_new_content_scope_is_kept_without_overwriting_original_permission_history(self):
+        data=ProductStorage(self.store);item,_,_=data.save(prepare(fixture())[0])
+        body,_=prepare(replace(item,body='The company reported a new product. '*20,rights=replace(item.rights,reference='Expanded licensed body scope')))
+        data.save(body);self.assertEqual(data.news()[0].rights.reference,'Expanded licensed body scope')
+        self.assertEqual(self.store.list_news()[0].rights.reference,'Authored offline test')
+    def test_advanced_ui_cannot_load_another_finbert_while_worker_alive(self):
+        from finscope.model_ui import execute,RunSettings
+        from finscope.model_providers import ModelError
+        self.q.heartbeat()
+        with patch('streamlit_app.cached_pipeline',side_effect=AssertionError('No UI model load')):
+            with self.assertRaisesRegex(ModelError,'worker owns FinBERT'):execute(fixture(),self.store,RunSettings('Local FinBERT'))
     def test_invalid_record_does_not_stop_other_records(self):
         self.q.submit(C);self.worker(fetch=lambda *a:[replace(fixture(),url='file:///private'),fixture(number='2')]).run_one()
         self.assertEqual(len(self.store.list_analyses()),1);self.assertEqual(self.q.get()['counts']['failed'],1)
     def test_non_english_not_processed_or_marked_neutral(self):
         self.q.submit(C);self.worker(fetch=lambda *a:[fixture('这是一条中文测试新闻，芯片设计公司发布新的产品。')]).run_one()
         self.assertEqual(self.store.list_analyses(),[]);self.assertEqual(self.q.get()['counts']['skipped'],1)
+    def test_declared_english_short_title_keeps_provenance_and_chinese_guard(self):
+        item=replace(fixture(''),title='Retail turnover rises',language='en')
+        processed,evidence=prepare(item);self.assertEqual(processed.language,'en');self.assertIn('declares en',evidence['language_method'])
+        processed,_=prepare(replace(item,title='中文新闻标题',language='en'));self.assertEqual(processed.language,'zh')
     def test_model_failure_retains_text_and_no_fabricated_neutral(self):
         def fail(*a):raise ValueError('Do not expose arbitrary model exception text')
         self.q.submit(C);self.worker(infer=fail).run_one()
@@ -85,6 +122,33 @@ class PipelineTests(unittest.TestCase):
         def resources(*a,**k):raise ResourceBlocked('RAM low')
         self.q.submit(C);self.worker(fetch=lambda *a:calls.append(1),resources=resources).run_one()
         self.assertEqual(calls,[]);self.assertEqual(self.q.get()['status'],'blocked')
+    def test_disconnected_model_preflight_is_blocked_before_source_dispatch(self):
+        from finscope.model_providers import ModelError
+        w=Worker(self.store,fetch=lambda *a:self.fail('Cannot fetch while model is unavailable'),resources=lambda *a,**k:None)
+        w.model_key=lambda c:(_ for _ in ()).throw(ModelError('Connection refused at 127.0.0.1:1234',kind='connection_refused'))
+        self.q.submit(C);w.run_one();self.assertEqual(self.q.get()['status'],'blocked');self.assertIn('Connection refused',self.q.get()['error'])
+    def test_expired_api_quota_is_blocked_without_reading_credentials_or_http(self):
+        from dataclasses import asdict
+        c={**C,'sources':['marketaux'],'source_permissions':{'marketaux':asdict(fixture().rights)},'budgets':{'marketaux':{'utc_day':'2000-01-01','remaining':1,'topic':'technology','symbol':''}}}
+        w=Worker(self.store,resources=lambda *a,**k:None)
+        with patch('finscope.local_credentials.credential',side_effect=AssertionError('Expired budget must block before credentials')):
+            with self.assertRaisesRegex(FetchBlocked,'expired'):w.fetch('marketaux',c,lambda:None)
+    def test_optional_local_classifier_uses_legal_ids_and_literal_quotes_only(self):
+        model={'model_id':'gemma-test','callable':True,'variant':'variant','format':'gguf','quantization':'Q4_K_M','size_bytes':10,'reasoning':{'allowed_options':['off']}}
+        calls=[]
+        def transport(method,url,payload,*args):
+            calls.append((method,url,payload))
+            return {'model':'gemma-test','choices':[{'finish_reason':'stop','message':{'content':json.dumps({'ids':['technology.chip-design'],'evidence':'chip design'})}}]}
+        with patch('finscope.model_providers.LMStudioProvider.inventory',return_value={'gemma-test':model}):
+            c=IndustryClassifier(llm_model='gemma-test',transport=transport);result=c.classify(prepare(fixture())[0])
+        self.assertIn('technology.chip-design',[v['id'] for v in result['labels']]);self.assertEqual(calls[0][1],'http://127.0.0.1:1234/v1/chat/completions')
+        self.assertTrue(calls[0][2]['response_format']['json_schema']['strict'])
+    def test_optional_local_classifier_rejects_invented_ids(self):
+        from finscope.model_providers import ModelError
+        model={'model_id':'gemma-test','callable':True,'variant':'variant','format':'gguf','quantization':'Q4_K_M','size_bytes':10,'reasoning':{}}
+        def bad(*args):return {'model':'gemma-test','choices':[{'finish_reason':'stop','message':{'content':json.dumps({'ids':['invented-sector'],'evidence':'chip design'})}}]}
+        with patch('finscope.model_providers.LMStudioProvider.inventory',return_value={'gemma-test':model}):
+            with self.assertRaises(ModelError):IndustryClassifier(llm_model='gemma-test',transport=bad).classify(prepare(fixture())[0])
     def test_body_summary_title_fallback_and_explicit_long_span(self):
         for basis,item in [('body',replace(fixture(),body='The body contains new information. '*150)),('summary',fixture()),('title',replace(fixture(),summary=''))]:
             n,p=prepare(item);self.assertEqual(n.text_basis,basis);self.assertLessEqual(len(n.analysis_text),1400)

@@ -346,7 +346,10 @@ def legacy_fixture_main() -> None:
 
 
 def main() -> None:
-    from finscope.product_ui import main as local_main
+    if st.session_state.get('advanced_manual_ui',False):
+        from finscope.product_ui import main as local_main
+    else:
+        from finscope.pipeline_ui import main as local_main
     local_main()
 
 

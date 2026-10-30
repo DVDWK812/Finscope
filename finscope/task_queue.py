@@ -41,6 +41,8 @@ class ProcessLock:
 
 
 def migrate(store):
+    with closing(store.connect()) as existing:
+        if existing.execute('PRAGMA user_version').fetchone()[0]==1:return
     with ProcessLock(str(store.path)+'.schema.lock'), closing(store.connect()) as db:
         version = db.execute('PRAGMA user_version').fetchone()[0]
         if version > 1:
@@ -75,7 +77,7 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis'}
+    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
@@ -84,6 +86,7 @@ def validate_config(config):
         raise ValueError('Select registered sources')
     if c.get('article_ids') and (not isinstance(c['article_ids'],list) or not 1<=len(c['article_ids'])<=20 or any(not isinstance(v,str) or len(v)!=32 or any(x not in '0123456789abcdef' for x in v) for v in c['article_ids'])):raise ValueError('Invalid original selection')
     if type(c.get('force_reanalysis',False)) is not bool:raise ValueError('Invalid reanalysis flag')
+    if not isinstance(c.get('result_model_key',''),str) or len(c.get('result_model_key',''))>600:raise ValueError('Invalid selected model version')
     if c.get('model') not in {'Local FinBERT','Local LM Studio','Local Ollama'}:
         raise ValueError('Automatic tasks require an explicitly selected local model; paid external calls remain manual')
     if c.get('taxonomy') not in {'US-BUSINESS-1','CSRC-JRT0020-2024'}:
@@ -143,7 +146,7 @@ class TaskQueue:
     def get(self,identity=None):
         with closing(self.store.connect()) as db:
             db.row_factory=sqlite3.Row
-            row=db.execute('SELECT * FROM product_tasks '+('WHERE id=?' if identity else 'ORDER BY created DESC LIMIT 1'),(identity,) if identity else ()).fetchone()
+            row=db.execute('SELECT * FROM product_tasks '+('WHERE id=?' if identity else 'ORDER BY rowid DESC LIMIT 1'),(identity,) if identity else ()).fetchone()
         if not row:return None
         result=dict(row)
         for key in ('snapshot','counts'):result[key]=json.loads(result[key])

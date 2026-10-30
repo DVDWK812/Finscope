@@ -11,11 +11,11 @@ svg{display:block;background:#f7faf9;border:1px solid #e2ebe8;border-radius:10px
 </style></head><body><main id="root"></main>
 <script>
 // Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
-const root=document.getElementById('root');let args={},counter=0,lastHeight=null;
+const root=document.getElementById('root');let args={},counter=0,lastHeight=null,hasRendered=false,readyAttempts=0;
 function post(type,extra={}){parent.postMessage({isStreamlitMessage:true,type,...extra},'*')}
 // A host render can trigger ResizeObserver again at the same size. Avoid a
 // frame-height/render loop that replaces SVG nodes during a pointer click.
-function resize(){const height=Math.ceil(root.getBoundingClientRect().height);if(height!==lastHeight){lastHeight=height;post('streamlit:setFrameHeight',{height})}}
+function resize(){if(!hasRendered)return;const height=Math.ceil(root.getBoundingClientRect().height);if(height!==lastHeight){lastHeight=height;post('streamlit:setFrameHeight',{height})}}
 function el(tag,text,attrs={}){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
 function svgEl(tag,attrs={}){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
 function choose(id){root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}
@@ -36,12 +36,20 @@ root.append(el('div','Grey: no local news · Amber: not analyzed · Blue-grey: n
 function graph(data){
 let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),svg=svgEl('svg',{viewBox:'0 0 1100 500','aria-label':'Interactive evidence graph',role:'group'}),group=svgEl('g');svg.append(group);
 for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',label,{'aria-label':label});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${550*(1-scale)},${250*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span','Click a node to see related articles; hover a link for its evidence.'));root.append(toolbar,svg);
-const colors={'Article':'#217c65','Sector':'#c08b28','Text entity':'#5475ba','Keyword theme':'#9a679e','Company query':'#a88156','Source':'#88969c','Unverified candidate':'#b5715c'};
+const colors={'Article':'#217c65','Sector':'#c08b28','Subindustry':'#9a679e','Text entity':'#5475ba','Keyword theme':'#9a679e','Company query':'#a88156','Source':'#88969c','Unverified candidate':'#b5715c'};
 const point=n=>[70+n.x*235,35+n.y*425];
 for(const edge of data.edges){const a=point({x:edge.x,y:edge.y}),b=point({x:edge.x2,y:edge.y2});const line=svgEl('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:'edge'});const title=svgEl('title');title.textContent=`${edge.relationship}: ${edge.evidence}`;line.append(title);group.append(line)}
 for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${n.kind}: ${n.label}`});const circle=svgEl('circle',{r:n.kind==='Article'?10:8,fill:colors[n.kind]||'#667',stroke:args.selected===n.id?'#193e33':'#fff','stroke-width':args.selected===n.id?4:2}),text=svgEl('text',{class:'label',y:-17,'text-anchor':'middle'});text.textContent=n.display_label;const title=svgEl('title');title.textContent=`${n.kind}: ${n.label}`;const hit=svgEl('rect',{x:-85,y:-31,width:170,height:48,fill:'transparent'});g.append(hit,circle,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
 const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${kind}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
 }
-addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;args=e.data.args;root.replaceChildren();if(args.kind==='graph')graph(args.data);else heatmap(args.data);resize()});
-new ResizeObserver(resize).observe(root);post('streamlit:componentReady',{apiVersion:1});
+function cloud(data){
+const panel=el('div',undefined,{role:'list','aria-label':'Keywords by distinct article count'});
+panel.style.cssText='display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:12px;padding:20px;border:1px solid #cad8d4;border-radius:14px';
+for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} articles`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;color:#27685e;border-color:#dce6e2`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
+}
+addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else heatmap(args.data);resize()});
+// A moving component may load before its host registers the iframe. Retry only
+// this local readiness handshake, at most eight times; never news/model calls.
+function announceReady(){if(hasRendered||readyAttempts++>=8)return;post('streamlit:componentReady',{apiVersion:1});setTimeout(announceReady,250)}
+new ResizeObserver(resize).observe(root);announceReady();
 </script></body></html>

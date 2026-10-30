@@ -33,6 +33,9 @@ class ProductUITests(unittest.TestCase):
         if page:
             LocalNewsStore(self.db).set_setting("guide_completed", True)
         app = AppTest.from_file(str(APP), default_timeout=15)
+        # These retained assertions exercise the explicitly accessible advanced
+        # manual workspace. The default worker UI has independent workflow tests.
+        app.session_state['advanced_manual_ui']=True
         if page:
             app.session_state["workspace_page"] = page
         app.run()

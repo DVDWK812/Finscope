@@ -123,3 +123,22 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
 - 31 October 2026 Sydney: independent LMStudioProvider uses only fixed loopback endpoints and [official JSON Schema Chat Completions](https://lmstudio.ai/docs/developer/openai-compat/structured-output). [Native model metadata](https://lmstudio.ai/docs/developer/rest/list) distinguishes downloaded files and loaded instances; exposed IDs alone do not prove inference. Loading is explicit through the installed lms CLI with [resource estimation](https://lmstudio.ai/docs/cli/local-models/load), 2048 context, one prediction, 50% offload and measured RAM/VRAM reserves; it refuses a second loaded model. No download, LAN bind, tool/search execution or external fallback.
 
 - 31 October actual-load correction: this installed CLI accepts a uniquely matched model key, not the API's @quantization alias; its estimates arrive on stderr. GGUF rejects even negative vLLM engine-config/CWD flags, so those are omitted (no engine script supplied). Close stdin and validate the CLI catalog/unique variant before load; use 80% offload for ≤8 GiB downloads and 50% for larger models, preserving resource reserves. Real Gemma JSON Schema inference succeeded; Qwen resource preflight refused before loading. No safeguard was relaxed to pass the smoke check.
+
+- 31 October local P0: the launcher owns one OS-locked worker and a versioned,
+  backed-up SQLite task queue. UI update/reanalysis submits jobs; refresh/filter
+  only reads. Durable source/inference intents prevent unknown outcomes from
+  replaying on resume; credentials stay in project .env/Windows vault.
+- The default US-BUSINESS-1 catalog is authored 11/56 business topics, independent
+  of issuer classification and frozen rules. The user selected the official
+  [JR/T 0020—2024 Table 2](https://www.csrc.gov.cn/csrc/c101954/c7520291/content.shtml):
+  exact 19/91, with manufacturing auxiliary groups retained as source metadata.
+- Add fixed [NIST RSS](https://www.nist.gov/coo/nist-rss-feeds) under its
+  [copyright/disclaimer policy](https://www.nist.gov/copyrights-disclaimers):
+  unmarked staff-authored text only, attribution/no endorsement; special-rights,
+  third-party content and media excluded. One action allows at most five GETs
+  (robots/feed/up to three bodies); automatic ABS allows three GETs (one body)
+  under its existing CC BY 4.0 terms. Legacy preview/API budgets are unchanged.
+  NIST body-layout failure fell back to permitted summaries and retained its
+  failure-day hold; no retry or alternate URL bypass. ABS body extraction and
+  excerpt provenance succeeded. Actual coverage is three primary/four secondary
+  topics, with 35/42 real originals unclassified; not broad market coverage.

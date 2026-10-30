@@ -174,6 +174,10 @@ def lmstudio_action(action):
 
 def execute(item,store,settings):
     if settings.mode=="Local FinBERT":
+        # Advanced manual screens must not load a second copy beside the worker.
+        from .task_queue import TaskQueue
+        if TaskQueue(store).worker_alive():
+            raise ModelError('The local worker owns FinBERT. Return to the automatic News Explorer and queue reanalysis of this original.',kind='worker_owns_model')
         from streamlit_app import cached_pipeline
         return FinBERTProvider(cached_pipeline).analyze(item,store)
     if settings.mode=="Local Ollama":

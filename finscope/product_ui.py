@@ -445,6 +445,8 @@ def main():
         page = st.radio("Workspace", ["Dashboard", "Add news", "Analyze", "Settings / Help"], key="workspace_page")
         st.divider()
         st.caption("Local SQLite · Your original records persist")
+        if st.session_state.get('advanced_manual_ui') and st.button('Return to automatic workspace'):
+            st.session_state['advanced_manual_ui']=False;st.rerun()
         if st.button("User Guide"):
             st.session_state["show_guide"] = True
             st.rerun()

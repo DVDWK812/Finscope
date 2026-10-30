@@ -68,7 +68,7 @@ def select_articles(news, analyses, filters):
             continue
         if filters.models and result is None and filters.require_results:
             continue
-        if filters.search.casefold() not in " ".join((item.title, item.summary, item.source, item.company)).casefold():
+        if filters.search.casefold() not in " ".join((item.title, item.summary, item.source, item.company,item.body)).casefold():
             continue
         selected.append(item)
     return selected, {n.article_id: latest[n.article_id] for n in selected if n.article_id in latest}
@@ -132,7 +132,10 @@ THEMES = {"Earnings / results": ("earnings", "revenue", "profit"),
           "Semiconductors": ("semiconductor", "chipmaker")}
 
 
-def evidence_graph(news, results, *, show_sources=True, show_text=False, show_similar=True):
+def evidence_graph(news, results, *, show_sources=True, show_text=False, show_similar=True, classifications=None, taxonomy=None, article_limit=8,node_limit=45,company=None,show_publisher_entities=False):
+    if classifications is not None:
+        from .product_analytics import taxonomy_graph
+        return taxonomy_graph(news,results,classifications,taxonomy,article_limit=article_limit,node_limit=node_limit,company=company,show_publisher_entities=show_publisher_entities)[0]
     nodes, edges = {}, []
     group_counts = Counter(a.candidate_id for a in results.values() if a.candidate_id)
     def node(identity, kind, label, article_id=""):

@@ -42,6 +42,15 @@ SOURCES = {
         "license":"CC BY 4.0", "license_url":"https://creativecommons.org/licenses/by/4.0/", "verified_on":"2026-10-30 Australia/Sydney"},
 }
 
+# The automatic product may fetch one staff-authored ABS body after its index.
+# Legacy index preview remains exactly two HTTP requests, with no body traversal.
+SOURCES['abs_html'].update(body_limit=1,body_http_budget=3,body_scope='Official ABS release text under CC BY 4.0; exclude separately restricted and third-party content')
+for _source in SOURCES.values():
+    _source.setdefault('minimum_interval_seconds',1)
+    _source.setdefault('timeout_seconds',15)
+    _source.setdefault('max_records',50 if _source.get('bucket') in {'abs','accc','nist'} else 3)
+    _source.setdefault('date_parser','Preserve exact feed timestamp or original date-only index evidence')
+
 
 def collector_items(articles, provenance, rights):
     rights.require("preview")

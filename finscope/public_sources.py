@@ -24,6 +24,7 @@ from .local_news import ContentRights,FetchBlocked,NewsItem,utcnow
 from .local_collectors import SOURCES
 from .rate_limits import retry_deadline,safe_retry_after
 from .rss_collector import _publication,CollectionError
+from .task_queue import Cancelled
 
 USER_AGENT='FinScope-LocalNews/1.0'
 MAX_BYTES=1_000_000
@@ -129,6 +130,7 @@ def licensed_item(source_id,title,url,summary,raw_date,*,date_precision=False,so
 
 def parse_abs(payload,limit=50):
     tree=Tree();tree.feed(payload.decode('utf-8-sig'))
+    declared=next((n.attrs.get('lang','') for n in tree.root.walk() if n.tag=='html'),'').lower()
     items=[];seen=set()
     for anchor in tree.root.walk():
         if anchor.tag!='a':continue
@@ -147,7 +149,11 @@ def parse_abs(payload,limit=50):
                 if re.fullmatch(r'\d{4}-\d{2}-\d{2}',value):raw_date=value;break
             row=row.parent
         item=licensed_item('abs_html',title,url,'',raw_date,date_precision=True)
-        if item:items.append(item)
+        if item:
+            if declared in {'en','en-au','en-us','en-gb'}:
+                evidence=json.loads(item.provenance);evidence['language_original']=declared
+                item=replace(item,language='en',provenance=json.dumps(evidence,ensure_ascii=False))
+            items.append(item)
         if len(items)>=limit:break
     if not items:
         raise SourceError('ABS index schema returned no supported release records')
@@ -186,7 +192,7 @@ def parse_source(source_id,payload,limit):
 
 def http_get(url):
     allowed={c[k] for c in SOURCES.values() for k in ('url','robots') if k in c and 'license' in c}
-    if url not in allowed and original_url('nist_rss',url)!=url:raise SourceError('Endpoint is not allowlisted')
+    if url not in allowed and not any(original_url(k,url)==url for k in ('nist_rss','abs_html')):raise SourceError('Endpoint is not allowlisted')
     start=time.monotonic()
     try:
         with requests.get(url,headers={'User-Agent':USER_AGENT},timeout=(5,15),allow_redirects=False,stream=True) as response:
@@ -203,7 +209,7 @@ def http_get(url):
         raise SourceError('Source transport failed; no retry',status=None) from None
 
 
-def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None,check_cancel=lambda:None):
+def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None,check_cancel=lambda:None,include_body=False):
     if explicit is not True or source_id not in {'abs_html','accc_rss','nist_rss'} or type(limit) is not int or not 1<=limit<=MAX_RECORDS:
         raise FetchBlocked('Explicit collection from a registered source with 1–50 parsed records is required')
     config=SOURCES[source_id]
@@ -215,12 +221,12 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
     directory.mkdir(parents=True,exist_ok=False)
     log=[];transport=get or http_get
     allowed_urls={config['robots'],config['url']}
-    request_budget=config.get('http_budget',HTTP_BUDGET)
+    request_budget=config.get('body_http_budget',config.get('http_budget',HTTP_BUDGET)) if include_body else config.get('http_budget',HTTP_BUDGET)
     def request(url,filename):
         check_cancel()
         if len(log)>=request_budget or url not in allowed_urls or any(r['url']==url for r in log):
             raise SourceError('HTTP budget/endpoint bound exceeded')
-        if source_id=='nist_rss' and log:
+        if (source_id=='nist_rss' or include_body) and log:
             # Cancellation remains responsive during source spacing.
             for _ in range(10):
                 check_cancel();time.sleep(.1)
@@ -255,15 +261,16 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
         payload=request(config['url'],'response.html' if source_id=='abs_html' else 'response.xml')
         items=parse_source(source_id,payload,limit)
         body_errors=[];body_hold=None
-        if source_id=='nist_rss':
+        if source_id=='nist_rss' or include_body and source_id=='abs_html':
             for index,item in enumerate(items[:config['body_limit']]):
                 if not item.rights.analyze or not policy.can_fetch(USER_AGENT,item.url):continue
                 allowed_urls.add(item.url)
                 try:
                     page=request(item.url,'body.html')
-                    body,byline=extract_nist_body(page)
-                    evidence=json.loads(item.provenance);evidence.update(body_status='extracted',body_byline=byline,body_sha256=hashlib.sha256(body.encode()).hexdigest())
-                    items[index]=replace(item,body=body,provenance=json.dumps(evidence,ensure_ascii=False))
+                    body,byline=extract_nist_body(page) if source_id=='nist_rss' else extract_abs_body(page)
+                    evidence=json.loads(item.provenance);evidence.update(body_status='extracted',body_byline=byline,body_sha256=hashlib.sha256(body.encode()).hexdigest(),body_extraction_version='official-body-containers-2')
+                    if source_id=='abs_html':evidence.update(rights_scope=config['body_scope'])
+                    items[index]=replace(item,body=body,rights=replace(item.rights,reference=item.rights.reference+'; '+config.get('body_scope','official news text')),provenance=json.dumps(evidence,ensure_ascii=False))
                 except SourceError as error:
                     evidence=json.loads(item.provenance);evidence.update(body_status='fallback_to_permitted_feed_text',body_reason=str(error))
                     items[index]=replace(item,provenance=json.dumps(evidence,ensure_ascii=False))
@@ -281,7 +288,7 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
         report.update(status='failed',reason=str(error) if isinstance(error,SourceError) else 'Invalid source encoding',records=0)
         status='failed';items=[]
         hold=retry_deadline(getattr(error,'retry_after',None),utcnow()) if getattr(error,'retry_after',None) or getattr(error,'status',None)==429 else None
-    except __import__('finscope.task_queue',fromlist=['Cancelled']).Cancelled:
+    except Cancelled:
         report.update(status='cancelled',reason='Explicit cancellation; completed HTTP stages preserved',records=0)
         with closing(service.store.connect()) as db:
             db.execute("UPDATE local_requests SET completed_at=?,status='cancelled',outcome='cancelled' WHERE id=?",(utcnow().isoformat(),request_id));db.commit()
@@ -310,7 +317,12 @@ def parse_nist(payload,limit):
         seen.add(url)
         item=licensed_item('nist_rss',plain_text(row.findtext('title','')),url,plain_text(row.findtext('description','')),
                            row.findtext('pubDate','').strip())
-        if item:items.append(item)
+        if item:
+            declared=root.findtext('./channel/language','').lower()
+            if declared in {'en','en-us','en-au','en-gb'}:
+                evidence=json.loads(item.provenance);evidence['language_original']=declared
+                item=replace(item,language='en',provenance=json.dumps(evidence,ensure_ascii=False))
+            items.append(item)
         if len(items)>=limit:break
     if not items:raise SourceError('NIST RSS contained no supported official news')
     return items
@@ -319,11 +331,11 @@ def parse_nist(payload,limit):
 def extract_nist_body(payload):
     tree=Tree();tree.feed(payload.decode('utf-8-sig'))
     # Drupal's article-body field, never the whole page/main/navigation.
-    candidates=[n for n in tree.root.walk() if 'field--name-body' in n.attrs.get('class','').split()]
+    candidates=[n for n in tree.root.walk() if {'field--name-body','text-with-summary'} & set(n.attrs.get('class','').split())]
     if len(candidates)!=1:raise SourceError('Body selector unavailable; using feed text')
     node=candidates[0]
     for child in list(node.walk()):
-        if child.tag in {'script','style','nav','footer','figure','aside','iframe','noscript'}:
+        if child.tag in {'script','style','nav','footer','figure','aside','iframe','noscript'} or re.search(r'\b(?:advertisement|ad-slot|social-share|related-content)\b',child.attrs.get('class','')):
             child.children=[]
     body=clean_body=node.text()
     body=' '.join(body.split())
@@ -332,3 +344,18 @@ def extract_nist_body(payload):
         raise SourceError('Body has a special-rights marker; using permitted feed text')
     bylines=[n.text() for n in tree.root.walk() if 'field--name-field-author' in n.attrs.get('class','')]
     return body,' '.join(' '.join(bylines).split())[:500]
+
+
+def extract_abs_body(payload):
+    tree=Tree();tree.feed(payload.decode('utf-8-sig'))
+    candidates=[n for n in tree.root.walk() if n.attrs.get('id')=='page-content']
+    if len(candidates)!=1:raise SourceError('ABS body container unavailable; using licensed headline')
+    node=candidates[0]
+    for child in node.walk():
+        if child.tag in {'script','style','nav','footer','figure','aside','iframe','noscript'}:child.children=[]
+    # The official body container also contains media-contact notes. Keep the
+    # article itself, before that explicitly identified section.
+    text=' '.join(node.text().split());text=re.split(r'\bMedia notes\b',text,maxsplit=1,flags=re.I)[0].strip()
+    if not 120<=len(text)<=100000:raise SourceError('ABS body length invalid; using licensed headline')
+    if re.search(r'copyright|all rights reserved|©|third.party|courtesy of|supplied by',text,re.I):raise SourceError('ABS body has a special-rights marker; headline retained')
+    return text,'Australian Bureau of Statistics'
