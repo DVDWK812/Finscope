@@ -66,6 +66,11 @@ class NewsItem:
     publication_date: str = ""  # Date-only collector evidence, never midnight UTC.
     company: str = ""  # Evidence: returned by a ticker-specific company feed.
     provenance: str = "provider headline and available summary"
+    body: str = field(default="", repr=False)
+    processed_text: str = field(default="", repr=False)
+    content_version: str = ""
+    language: str = "unknown"
+    text_basis: str = ""
 
     @property
     def record_date(self):
@@ -79,7 +84,7 @@ class NewsItem:
 
     @property
     def analysis_text(self):
-        return self.title + ("\n" + self.summary if self.summary else "")
+        return self.processed_text or self.title + ("\n" + self.summary if self.summary else "")
 
     @classmethod
     def from_article(cls, article, rights, *, now=None, company="", publication_date=""):
