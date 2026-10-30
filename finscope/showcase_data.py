@@ -164,7 +164,7 @@ def select(records, start=START, end=END, sectors=(), sentiments=(), search=""):
     return [r for r in records if start <= r.day <= end
             and (not sectors or r.sector in sectors)
             and (not sentiments or r.sentiment in sentiments)
-            and query in " ".join((r.title, r.company, r.source, r.sector)).casefold()]
+            and query in " ".join((article_label(r), r.title, r.company, r.source, r.sector)).casefold()]
 
 
 

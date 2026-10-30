@@ -1,5 +1,17 @@
 # Development log
 
+## Readable-headline search follow-up — 31 October 2026 Sydney
+
+The final inspection found that shortened display labels with reordered wording
+were not searchable in Explorer. Added the same display label to the existing
+text search (original title/company/source/industry matching remains). Extended
+the article-resolution regression to search the visible label and verify only
+its record's summary appears. All 231 tests pass again (8.269 s); syntax checks
+pass. This does not affect headline frequencies or candidate memberships. The
+first release's regression jobs passed while its initial hosted visit still
+showed the old UI; final exact-commit CI and deployed acceptance are checked for
+the follow-up SHA, without treating push or earlier CI as deployment evidence.
+
 ## Readable public news relationships — 31 October 2026 Sydney
 
 - Inspected status/docs/tests and fetched/fast-forwarded main safely (already current at 7779786). Preserved/excluded five unrelated edits; never switched to or modified local. Protected all 23 frozen evidence files by hash.

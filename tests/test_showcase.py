@@ -143,6 +143,9 @@ class ShowcaseTests(unittest.TestCase):
         app.text_input[0].set_value("Cedar Therapeutics").run()
         content = "\n".join(m.value for m in app.markdown)
         self.assertTrue(all(article_label(r) in content and r.title in content for r in rows))
+        app.text_input[0].set_value(article_label(chosen)).run()
+        self.assertTrue(any(chosen.summary in m.value for m in app.markdown))
+        self.assertFalse(any(r.summary in m.value for r in rows if r != chosen for m in app.markdown))
         self.assertFalse(app.exception)
 
     def test_unrelated_company_reports_do_not_gain_candidate_clutter(self):
