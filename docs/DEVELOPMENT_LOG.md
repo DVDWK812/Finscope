@@ -1,5 +1,28 @@
 # Development log
 
+## Public showcase closeout — 31 October 2026 Sydney
+
+Corrected the local-product CTA to `/tree/local` and labelled the separate
+`/tree/main` showcase source. Both platform tabs and the current/historical setup
+guides now use `--branch local --single-branch`. Read-only inspection of local's
+README/model-provider source at head `ce22c9ff04e9cc8877e1e764103761469f1c8abc`
+confirmed optional LM Studio/Ollama/external API implementations; corrected the
+stale planned-feature wording, without exercising those integrations.
+
+All 236 tests, Python syntax and seven dry-run previews pass in an isolated export
+of committed main plus the release paths. Six offline pages render at desktop and
+390px; the premium design and fixtures are unchanged. Exact push CI and hosted
+acceptance follow release and will be recorded separately. The five unrelated
+edits and 23 protected evidence files retain their byte hashes; local is untouched.
+
+Inspected GitHub default/tracking branches and both workflows (push/PR without a
+branch filter). Public administration reports main/deploy/streamlit_app.py;
+General settings has URL/Python controls but no branch migration. The official
+[coordinate-change procedure](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/rename-your-app)
+requires deletion/redeployment. Rename to web is deferred, with no duplicate
+branch, app deletion, redeployment or URL/admin change. Maintenance only after
+final acceptance; further nonessential showcase work stops.
+
 ## Hosted reset-control correction — 31 October 2026 Sydney
 
 B release cf3cd559f082f9b3ac2fa5f2fb86304b11b96e8d passed both regression jobs

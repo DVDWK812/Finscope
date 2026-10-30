@@ -12,6 +12,8 @@ from .showcase_visuals import graph_layout, relationship_markup, visible_graph, 
 from .showcase_theme import TOKENS, NAV_ITEMS, NAV_KEYS, SENTIMENT_COLORS, badge, brand, dashboard_preview, eyebrow, line_icon, theme_css
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
+SHOWCASE_SOURCE = REPOSITORY + "/tree/main"
+LOCAL_PRODUCT = REPOSITORY + "/tree/local"
 PAGES = ("Home", "User Guide", "Dashboard Preview", "Knowledge Graph", "News Explorer", "Get FinScope")
 COLORS = [SENTIMENT_COLORS[name] for name in SENTIMENTS]
 DEMO_LABEL = "Demo Data / Illustrative Preview"
@@ -370,7 +372,8 @@ def explorer():
 
 def get_finscope():
     heading("Make FinScope your local workspace", "A personal research application on localhost. Your sources and saved results stay in your local workspace.")
-    st.link_button("Get the source on GitHub", REPOSITORY, icon=":material/open_in_new:", type="primary")
+    st.link_button("Get the local product on GitHub", LOCAL_PRODUCT, icon=":material/open_in_new:", type="primary")
+    st.caption("Download the functional application from the local branch. The separate main branch contains this public showcase.")
     st.subheader("Install and start")
     st.caption("Python 3.11+ · Run these commands on your own computer · Explicit model preparation")
     windows, unix = st.tabs(["Windows · PowerShell", "macOS / Linux"])
@@ -389,12 +392,12 @@ def get_finscope():
         st.markdown('<section class="fs-capability">' + eyebrow("AVAILABLE IN THE LOCAL PRODUCT")
                     + '<h3>Your personal news workspace</h3><ul><li>Provider fetch and preview connectors</li>'
                     '<li>Pinned local FinBERT + MiniLM</li><li>Persistent SQLite and original links</li>'
-                    '<li>Sector/time analytics, heatmap and evidence graph</li><li>Fixed RBA collector CLIs</li></ul></section>', unsafe_allow_html=True)
+                    '<li>Sector/time analytics, heatmap and evidence graph</li><li>Fixed RBA / ABS collectors and local imports</li></ul></section>', unsafe_allow_html=True)
     with planned:
-        st.markdown('<section class="fs-capability">' + eyebrow("OPTIONAL INTEGRATIONS / IN DEVELOPMENT")
-                    + '<h3>Additional ways to connect</h3><ul><li>Local Ollama model selection</li>'
-                    '<li>Explicitly consented external LLM APIs</li><li>RBA collector controls in the app</li></ul>'
-                    '<p>Separate local-product work; availability is not demonstrated by this preview.</p></section>', unsafe_allow_html=True)
+        st.markdown('<section class="fs-capability">' + eyebrow("OPTIONAL LOCAL INTEGRATIONS")
+                    + '<h3>Additional ways to connect</h3><ul><li>Local LM Studio</li><li>Local Ollama</li>'
+                    '<li>External LLM API with explicit send consent</li></ul>'
+                    '<p>Implemented on the local branch; require configured services or an account, permitted inputs and model assets where applicable. Not exercised by this showcase.</p></section>', unsafe_allow_html=True)
     with st.expander("Provider keys, quotas and permissions", expanded=False):
         st.write("Configure provider keys only in the local app's masked fields or project .env. Confirm quota and input rights before fetching, retaining or analyzing text. NewsData's existing pause remains in force; external model calls require explicit transmission consent.")
 
@@ -415,7 +418,7 @@ def main():
         st.divider()
         st.markdown(badge("Fictional examples"), unsafe_allow_html=True)
         st.caption("The complete product runs locally.")
-        st.link_button("Source on GitHub", REPOSITORY, icon=":material/open_in_new:", width="stretch")
+        st.link_button("Showcase source", SHOWCASE_SOURCE, icon=":material/open_in_new:", width="stretch")
     {"Home": home, "User Guide": guide, "Dashboard Preview": dashboard,
      "Knowledge Graph": knowledge_graph, "News Explorer": explorer, "Get FinScope": get_finscope}[page]()
     st.markdown('<div class="fs-footer"><span>FinScope · Financial news in context</span><span>Authored examples · Local-first product</span></div>', unsafe_allow_html=True)

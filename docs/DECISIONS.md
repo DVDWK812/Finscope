@@ -1,5 +1,15 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**31 October — final showcase closeout:** direct product downloads and clone
+commands to local; identify main separately as showcase source. Optional local
+integrations are implemented but require configuration/rights and are not tested
+by this site. Preserve the premium UI and restrict subsequent showcase work to
+critical bug fixes/security updates after acceptance. GitHub's default and the
+Streamlit coordinate remain main; defer web rename because the documented
+[migration](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/rename-your-app)
+requires app deletion/redeployment, which needs explicit user approval. No change
+to local, frozen evidence, evaluation or public runtime isolation.
+
 **31 October — showcase design milestone B:** continue A's verified design with a
 fixture-backed landing preview, consistent analytics cards, compact filters and
 list/detail browsing. Keep every original report selectable; native row selection

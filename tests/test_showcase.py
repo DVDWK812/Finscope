@@ -74,6 +74,17 @@ class ShowcaseTests(unittest.TestCase):
         self.assertIn("streamlit run streamlit_app.py", content)
         self.assertIn("--server.address localhost --server.port 8501", content)
         self.assertNotIn("-r deploy/requirements.txt", content)
+        clone_commands = [code.value for code in app.code if "git clone" in code.value]
+        self.assertEqual(len(clone_commands), 2)
+        for command in clone_commands:
+            self.assertIn("git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git", command)
+        links = {item.proto.label: item.proto.url for item in app.get("link_button")}
+        self.assertEqual(links["Get the local product on GitHub"], "https://github.com/DVDWK812/Finscope/tree/local")
+        self.assertEqual(links["Showcase source"], "https://github.com/DVDWK812/Finscope/tree/main")
+        markup = "\n".join(m.value for m in app.markdown)
+        self.assertIn("OPTIONAL LOCAL INTEGRATIONS", markup)
+        self.assertIn("Local LM Studio", markup)
+        self.assertNotIn("IN DEVELOPMENT", markup)
 
     def test_dashboard_filters_raw_counts_and_reset(self):
         app = self.app()

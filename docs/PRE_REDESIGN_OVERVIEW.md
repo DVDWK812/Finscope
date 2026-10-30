@@ -116,22 +116,18 @@ This is a **feasibility study**, not an objective leaderboard. Finnhub uses tick
 
 See [evaluation protocol](docs/API_EVALUATION.md), [Codex task](CODEX_TASK.md), [developer instructions](AGENTS.md) and [development log](docs/DEVELOPMENT_LOG.md).
 
-## GitHub setup and version control
+## Historical GitHub setup and version control
 
-The public repository is [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope). Phase 1 PR #2 was merged into `main`. **The project now uses `main` as its only active development branch.** Do not create new feature branches or PRs. Before editing, fetch and fast-forward `main`; push tested commits to `origin main` and verify GitHub Actions.
+The public repository is [DVDWK812/Finscope](https://github.com/DVDWK812/Finscope). Phase 1 PR #2 was merged into `main`. The former main-only product workflow is superseded: `main` now serves the public showcase and `local` contains the full product. Use the [current installation guide](../README.md#launch-locally). The current product checkout command is:
 
 ```bash
-git clone --branch main https://github.com/DVDWK812/Finscope.git
+git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git
 cd Finscope
-# In an existing checkout with a clean working tree:
-git fetch origin
-git switch main
-git pull --ff-only origin main
 ```
 
 Do not discard uncommitted work, force-push or overwrite diverged history. Older Phase 1 branch references in historical logs document past work rather than current instructions.
 
-If using Codex, supply `CODEX_TASK.md` as its phase-1 objective. All team-authored changes and AI coding assistance must be disclosed in the course report. For public deployment, verify each provider's usage and redistribution rights.
+`CODEX_TASK.md` describes historical Phase 1 objectives, not a current development request. All team-authored changes and AI coding assistance must be disclosed accurately. Publisher usage and redistribution rights remain separate gates.
 
 The repository's MIT licence covers the project software; provider data and linked publisher content remain subject to their own rights. Track unresolved Phase 1 evidence and permission gates in [Issue #1](https://github.com/DVDWK812/Finscope/issues/1).
 
