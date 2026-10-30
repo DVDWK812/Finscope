@@ -404,6 +404,25 @@ def about():
     with st.expander('Local model setup'):
         st.code('.venv-ai/Scripts/python.exe -m pip install -r requirements-local.txt',language='powershell')
         prepare_finbert()
+    with st.expander('API connection diagnostics'):
+        from .connection_diagnostics import api_diagnostic
+        store=local_store()
+        st.caption('Read-only local state; no API probe, quota reset or permission grant.')
+        for provider in ('marketaux','newsdata','finnhub','openai'):
+            key='analysis_openai_key' if provider=='openai' else 'key_'+provider
+            env='analysis_openai_env' if provider=='openai' else 'env_'+provider
+            try:
+                report=api_diagnostic(store,provider,ui_key_present=bool(st.session_state.get(key)),use_env=st.session_state.get(env,True))
+                st.write(f"**{provider} · {report['state']}**")
+                st.caption(f"Credential: {'read' if report['credentials']['present'] else 'missing'} · {report['credentials']['source']}")
+                st.caption(f"Product requests: {report['product_attempt_count']} · Historical HTTP observations: {len(report['historical_http_evidence'])}")
+                for record in report['holds']:
+                    if record['active'] or record['kind'].startswith('Failure'):
+                        st.text(f"{record['kind']} · {'active' if record['active'] else 'expired'} · {record['status']} · trigger UTC {record['trigger_utc']} · until UTC {record['until_utc']} / Sydney {record['until_sydney']}")
+                st.write('Before requesting: '+'; '.join(report['required_before_request']))
+                st.caption(report['downstream_nlp'])
+            except (OSError,ValueError):
+                st.error(provider+' local diagnostic state needs review; no request was made.')
 
 
 def main():

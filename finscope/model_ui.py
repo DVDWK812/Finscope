@@ -65,8 +65,12 @@ def controls(prefix="analysis", *, store=None):
         st.caption(state)
         if st.button("List installed Ollama models",key=prefix+"_ollama_list"):
             try:
-                st.session_state["installed_ollama_models"]=OllamaProvider().installed_models()
-                st.session_state["ollama_status"] = "Available · Local service responded; installed models listed"
+                inventory=OllamaProvider().inventory()
+                st.session_state["installed_ollama_models"]=inventory['models']
+                st.session_state["ollama_status"] = (
+                    f"Available · {len(inventory['models'])} compatible local models; {inventory['filtered']} remote/invalid/incompatible entries excluded" if inventory['models'] else
+                    "Unavailable · Installed models were filtered: require local GGUF weights, a valid digest and no remote/cloud origin" if inventory['total'] else
+                    "Available service · No installed models; no inference is possible")
                 st.rerun()
             except ModelError as error:
                 st.session_state["installed_ollama_models"] = {}
@@ -78,7 +82,7 @@ def controls(prefix="analysis", *, store=None):
         options.model=st.selectbox("Installed local model",list(installed),index=None,key=prefix+"_ollama_model")
         options.ready=bool(options.model)
         if not installed:
-            st.info("Start your installed Ollama service and prepare a licensed local model yourself, then list it here.")
+            st.info("Ollama requires its own running service and compatible weights. LM Studio models are separate; FinBERT remains available independently.")
     else:
         options.model=st.selectbox("Supported OpenAI model",OPENAI_MODELS,key=prefix+"_openai_model")
         options.api_key=st.text_input("OpenAI API key",type="password",max_chars=500,key=prefix+"_openai_key")

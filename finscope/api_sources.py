@@ -37,9 +37,13 @@ ENV_KEYS = {
 }
 
 
+def project_env_path() -> Path:
+    return Path(__file__).resolve().parents[1] / ".env"
+
+
 def local_credentials() -> dict[str, str | None]:
     """Read only the project's .env; never inherit shell or parent-folder keys."""
-    return dotenv_values(Path(__file__).resolve().parents[1] / ".env", interpolate=False)
+    return dotenv_values(project_env_path(), interpolate=False)
 
 
 @dataclass(frozen=True)

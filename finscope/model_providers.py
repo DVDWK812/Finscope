@@ -24,9 +24,10 @@ INSTRUCTIONS = ("Classify the financial text's expressed tone as Positive, Neutr
 
 
 class ModelError(ValueError):
-    def __init__(self, reason, *, status=None, retry_after=None):
+    def __init__(self, reason, *, status=None, retry_after=None, kind="validation"):
         super().__init__(reason)
         self.status, self.retry_after = status, retry_after
+        self.kind = kind
 
 
 def model_request(method, endpoint, payload=None, headers=None, timeout=60):
@@ -43,15 +44,22 @@ def model_request(method, endpoint, payload=None, headers=None, timeout=60):
         if response.status_code != 200:
             retry = safe_retry_after(response.headers.get("Retry-After",""))
             raise ModelError(f"Model request failed (HTTP {response.status_code}); no retry was made",
-                             status=response.status_code,retry_after=retry)
+                             status=response.status_code,retry_after=retry,kind="http_error")
         if len(response.content) > 1024*1024:
             raise ModelError("Model response exceeded the size limit")
         data = response.json()
         if not isinstance(data,dict):
             raise ModelError("Unexpected model response shape")
         return data
+    except requests.Timeout:
+        raise ModelError("Model service timed out; check the selected model and local server; no retry was made",kind="timeout") from None
+    except requests.ConnectionError as error:
+        refused=bool(re.search(r"10061|ECONNREFUSED|Errno (?:111|61)|connection refused",str(error),re.I))
+        origin="127.0.0.1:11434" if endpoint.startswith(OLLAMA_ORIGIN) else "OpenAI API"
+        reason=("Connection refused at "+origin+"; no service accepted the connection" if refused else "Could not connect to "+origin)
+        raise ModelError(reason+"; no retry was made",kind="connection_refused" if refused else "connection_error") from None
     except requests.RequestException:
-        raise ModelError("Model service is unavailable; no retry was made") from None
+        raise ModelError("Model transport failed; no retry was made",kind="transport_error") from None
     except (ValueError,TypeError) as error:
         if isinstance(error,ModelError):
             raise
@@ -176,7 +184,7 @@ class OllamaProvider:
     def __init__(self,transport=model_request):
         self.transport=transport
 
-    def installed_models(self):
+    def inventory(self):
         data=self.transport("GET",OLLAMA_ORIGIN+"/api/tags",None,None,5)
         if not isinstance(data.get("models"),list) or len(data["models"])>1000:
             raise ModelError("Unexpected local model registry")
@@ -191,7 +199,10 @@ class OllamaProvider:
                     and isinstance(digest,str) and re.fullmatch(r"(?:sha256:)?[a-f0-9]{64}",digest)
                     and isinstance(details,dict) and details.get("format")=="gguf" and type(row.get("size")) is int and row["size"]>0):
                 models[name]=digest
-        return models
+        return {"models":models,"total":len(data["models"]),"filtered":len(data["models"])-len(models)}
+
+    def installed_models(self):
+        return self.inventory()["models"]
 
     def analyze(self,item,store,*,model=None,**options):
         validate_input(item)
