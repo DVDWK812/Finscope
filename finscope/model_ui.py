@@ -107,6 +107,8 @@ def controls(prefix="analysis", *, store=None):
 
 def lmstudio_controls(prefix,options):
     st.caption(st.session_state.get('lmstudio_status','Untested · Refresh models to check 127.0.0.1:1234'))
+    if st.session_state.get('lmstudio_operation_error'):
+        st.error('Last model action: '+st.session_state['lmstudio_operation_error'])
     if st.button('Refresh LM Studio models',key=prefix+'_lmstudio_refresh'):
         try:
             refresh_lmstudio()
@@ -122,7 +124,8 @@ def lmstudio_controls(prefix,options):
     options.ready=False
     selected=models.get(options.model)
     if not selected:
-        st.info('Start the installed LM Studio server on 127.0.0.1:1234, then refresh. No model download is performed.')
+        st.info('Choose a downloaded model above; selection never loads or infers.' if models else
+                'Start the installed LM Studio server on 127.0.0.1:1234, then refresh. No model download is performed.')
         return
     st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB · "+
                ('Loaded · API exposed; inference requires Run' if selected['callable'] else 'Loaded · not exposed by /v1/models' if selected['loaded'] else 'Not loaded · cannot infer'))
@@ -135,12 +138,13 @@ def lmstudio_controls(prefix,options):
         if st.button('Unload selected LM Studio model',key=prefix+'_lmstudio_unload'):
             lmstudio_action(lambda:LMStudioProvider().unload(options.model,explicit=True))
     else:
-        st.caption('Safe load: context 2048, one prediction, 50% GPU offload; estimate and free RAM/VRAM checked first.')
+        from .lmstudio_runtime import gpu_ratio
+        st.caption(f"Safe load: context 2048, one prediction, {float(gpu_ratio(selected)):.0%} GPU offload; estimate and free RAM/VRAM checked first.")
         if st.button('Load selected LM Studio model',disabled=bool(others),key=prefix+'_lmstudio_load'):
             lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True))
     options.ready=bool(selected['callable'])
     report=st.session_state.get('lmstudio_last_load',{})
-    if isinstance(report,dict) and report.get('estimate'):
+    if isinstance(report,dict) and report.get('model_key')==selected['key'] and report.get('estimate'):
         with st.expander('LM Studio load resources'):
             estimate,snapshot=report['estimate'],report['resources_before_load']
             st.caption(f"Estimate: GPU {estimate['gpu_bytes']/1024**3:.2f} GiB / total {estimate['total_bytes']/1024**3:.2f} GiB · context {estimate['context_length']}")
@@ -151,6 +155,7 @@ def refresh_lmstudio():
     from .local_news import utcnow
     models=LMStudioProvider().inventory()
     st.session_state['lmstudio_models']=models
+    st.session_state.pop('lmstudio_operation_error',None)
     st.session_state['lmstudio_status']=f"Available local service · {len(models)} downloaded local LLMs · checked {utcnow().strftime('%H:%M:%S UTC')}"
 
 
@@ -161,7 +166,7 @@ def lmstudio_action(action):
             st.session_state['lmstudio_last_load']=report
             refresh_lmstudio()
     except ModelError as error:
-        st.session_state['lmstudio_status']='Failed · '+str(error)
+        st.session_state['lmstudio_operation_error']=str(error)
         st.error(str(error))
         return
     st.rerun()

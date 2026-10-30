@@ -25,15 +25,15 @@ def lms_executable():
 
 def run_lms(arguments,timeout=30):
     try:
-        result=subprocess.run([lms_executable(),*arguments],capture_output=True,text=True,encoding='utf-8',
+        result=subprocess.run([lms_executable(),*arguments],stdin=subprocess.DEVNULL,capture_output=True,text=True,encoding='utf-8',
                               errors='replace',timeout=timeout,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     except subprocess.TimeoutExpired:
         raise ModelError('LM Studio load/estimate timed out; inspect lms ps before another action; no retry',kind='timeout') from None
     except OSError:
         raise ModelError('LM Studio CLI could not start; inspect the local installation',kind='not_configured') from None
-    if result.returncode or len(result.stdout)>1024*1024:
+    if result.returncode or len(result.stdout)+len(result.stderr)>1024*1024:
         raise ModelError('LM Studio CLI rejected the operation; inspect its local UI/logs; no retry',kind='load_error')
-    return result.stdout
+    return result.stdout if '--json' in arguments else result.stdout+'\n'+result.stderr
 
 
 def system_resources():
@@ -74,21 +74,45 @@ def system_resources():
 def check_resources(estimate,resources):
     cpu=max(0,estimate['total_bytes']-estimate['gpu_bytes'])
     if resources['ram_available']<cpu+6*GIB or resources['gpu_available']<estimate['gpu_bytes']+2*GIB:
-        raise ModelError('Insufficient measured RAM/VRAM for this load: keep 4 GiB RAM + 2 GiB overhead and 2 GiB VRAM free; close other models/apps or load safely in LM Studio',kind='resource_limit')
+        raise ModelError(f"Insufficient resources: RAM {resources['ram_available']/GIB:.2f} GiB available / {(cpu+6*GIB)/GIB:.2f} GiB required; "
+                         f"VRAM {resources['gpu_available']/GIB:.2f} GiB available / {(estimate['gpu_bytes']+2*GIB)/GIB:.2f} GiB required. "
+                         'Includes 4 GiB RAM reserve + 2 GiB overhead and 2 GiB VRAM reserve; load stopped.',kind='resource_limit')
+
+
+def gpu_ratio(model):
+    return '0.8' if model['size_bytes']<=8*GIB else GPU_RATIO
+
+
+def cli_model_key(model,runner):
+    # Native API variant IDs are not necessarily lms load selectors. Validate
+    # the CLI's own local catalog and never accept its interactive fallback.
+    try:
+        catalog=json.loads(runner(['ls','--json','--llm','--variants'],15))
+        rows=[r for r in catalog if r['model']['modelKey']==model['key']]
+        if len(rows)!=1:raise ValueError
+        row=rows[0];variants=row['variants']
+        if (len(variants)!=1 or variants[0]['modelKey']!=model['variant']
+                or variants[0].get('deviceIdentifier') or variants[0]['sizeBytes']!=model['size_bytes']):raise ValueError
+        return row['model']['modelKey']
+    except (KeyError,TypeError,ValueError):
+        raise ModelError('CLI model/variant could not be matched uniquely to the local API catalog; select and load the exact file in LM Studio',kind='invalid_registry') from None
 
 
 def load_model(model,*,explicit=False,runner=run_lms,resources=system_resources):
     if explicit is not True:
         raise ModelError('Loading needs an explicit Load selected model action')
-    variant=model['variant']
-    args=['load',variant,'--context-length',str(CONTEXT_LENGTH),'--gpu',GPU_RATIO,'--parallel','1',
-          '--no-engine-config-file','--no-engine-cwd']
+    key=cli_model_key(model,runner)
+    ratio=gpu_ratio(model)
+    # GGUF does not support vLLM engine configuration/CWD options, including
+    # their --no-* forms. Supply neither; no engine script or tools are used.
+    args=['load',key,'--context-length',str(CONTEXT_LENGTH),'--gpu',ratio,'--parallel','1','--yes']
     output=runner([*args,'--estimate-only'],30)
     gpu=re.search(r'Estimated GPU Memory:\s*([\d.]+) GiB',output)
     total=re.search(r'Estimated Total Memory:\s*([\d.]+) GiB',output)
-    if not gpu or not total or re.search(r'(?:cannot|may not|not enough|insufficient)',output,re.I):
+    if (not gpu or not total or re.search(r'(?:cannot|may not|not enough|insufficient)',output,re.I)
+            or float(total[1])*GIB<model['size_bytes'] or float(gpu[1])>float(total[1])):
         raise ModelError('LM Studio did not provide a safe resource estimate; load was stopped',kind='resource_limit')
-    estimate={'gpu_bytes':float(gpu[1])*GIB,'total_bytes':float(total[1])*GIB,'context_length':CONTEXT_LENGTH,'gpu_ratio':GPU_RATIO}
+    estimate={'gpu_bytes':float(gpu[1])*GIB,'total_bytes':float(total[1])*GIB,'context_length':CONTEXT_LENGTH,'gpu_ratio':ratio}
     snapshot=resources();check_resources(estimate,snapshot)
-    runner([*args,'--identifier',model['key'],'--ttl','1800','--yes'],180)
-    return {'estimate':estimate,'resources_before_load':snapshot}
+    runner([*args,'--identifier',model['key'],'--ttl','1800'],180)
+    return {'model_key':model['key'],'estimate':estimate,'resources_before_load':snapshot}

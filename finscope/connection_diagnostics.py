@@ -1,9 +1,7 @@
 """Read-only connection gates. Never probe providers, reserve requests or expose keys."""
 from contextlib import closing
-from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import json
-from pathlib import Path
 import sqlite3
 from zoneinfo import ZoneInfo
 
@@ -90,7 +88,8 @@ def api_diagnostic(store, provider, *, ui_key_present=False, use_env=True, servi
                 except (OSError, ValueError, TypeError):
                     pass
     if provider == 'openai':
-        state = 'Paused' if any(h['active'] for h in holds) else 'Not configured' if not credentials['present'] else 'Untested'
+        state = ('Paused' if any(h['active'] for h in holds) else 'Not configured' if not credentials['present'] else
+                 'Available' if rows and rows[-1][3]=='ok' else 'Failed' if rows and rows[-1][3]=='failed' else 'Untested')
     else:
         state = service.source_status(provider, configured=credentials['present']).state
     missing = []
@@ -98,6 +97,7 @@ def api_diagnostic(store, provider, *, ui_key_present=False, use_env=True, servi
         missing.append('Configure '+credentials['variable']+' in the project .env or masked UI field')
     if provider == 'newsdata':
         missing.append('Explicit authorization and a reviewed code change are required to resume the manual pause')
+        missing.extend(['Fresh confirmed available account request budget', 'Local preview permission attestation for this Fetch action'])
     elif provider == 'openai':
         missing.extend(['Recorded permission to transmit the selected text to OpenAI', 'Explicit send consent and paid account budget for this Run action'])
     else:

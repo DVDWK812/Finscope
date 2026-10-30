@@ -9,7 +9,7 @@ from unittest.mock import patch
 from finscope.local_news import LocalNewsStore
 from finscope.local_analytics import Filters,model_key,select_articles,result_models
 from finscope.model_providers import LMStudioProvider,LMSTUDIO_ORIGIN,ModelError,model_request
-from finscope.lmstudio_runtime import GIB,load_model
+from finscope.lmstudio_runtime import GIB,load_model,cli_model_key,run_lms
 from test_local_news import item
 import test_product_ui as product_test
 
@@ -25,7 +25,7 @@ class LocalTransport:
             return {'data':[{'id':k} for k in KEYS]}
         if endpoint.endswith('/api/v1/models'):
             return {'models':[{'type':'llm','key':k,'selected_variant':k+'@q4_k_m','format':'gguf',
-                'size_bytes':6000000000,'architecture':'authored','quantization':{'name':'Q4_K_M'},
+                'size_bytes':6000000000 if k==KEYS[0] else 17742040464,'architecture':'authored','quantization':{'name':'Q4_K_M'},
                 'loaded_instances':[{'id':k,'config':{'context_length':2048}}] if self.loaded==k else [],
                 'capabilities':{'reasoning':{'allowed_options':['off','on']}}} for k in KEYS]}
         if endpoint.endswith('/unload'):
@@ -41,6 +41,10 @@ class LMStudioTests(unittest.TestCase):
         self.store=LocalNewsStore(Path(temp.name)/'news.sqlite3');self.original=item();self.store.save_news(self.original)
         self.http=LocalTransport();self.provider=LMStudioProvider(self.http)
 
+    def catalog(self,model):
+        return json.dumps([{'model':{'modelKey':model['key']},'variants':[{'modelKey':model['variant'],
+            'sizeBytes':model['size_bytes'],'deviceIdentifier':None}]}])
+
     def test_downloaded_loaded_and_callable_are_distinct_real_ids(self):
         models=self.provider.inventory()
         self.assertEqual(set(models),set(KEYS));self.assertTrue(models[KEYS[0]]['callable'])
@@ -53,6 +57,15 @@ class LMStudioTests(unittest.TestCase):
         self.assertEqual(LMStudioProvider(empty).inventory(),{})
         native={'models':[{'type':'embedding','key':'embedding'},{'type':'llm','key':'remote','device_identifier':'another-machine'}]}
         self.assertEqual(LMStudioProvider(lambda m,u,*a:native if '/api/' in u else {'data':[]}).inventory(),{})
+
+    def test_loaded_instance_api_id_can_differ_from_download_name(self):
+        def backend(method,url,payload=None,*args):
+            data=self.http(method,url,payload,*args)
+            if url.endswith('/v1/models') and '/api/' not in url:return {'data':[{'id':'actual-local-instance'}]}
+            if url.endswith('/api/v1/models'):data['models'][0]['loaded_instances'][0]['id']='actual-local-instance'
+            return data
+        result=LMStudioProvider(backend).analyze(self.original,self.store,model=KEYS[0])
+        self.assertEqual(result.model_id,'actual-local-instance');self.assertEqual(result.provenance['model_key'],KEYS[0])
 
     def test_wrong_port_and_remote_endpoint_are_rejected_before_transport(self):
         with patch('requests.sessions.Session.request') as request:
@@ -134,21 +147,50 @@ class LMStudioTests(unittest.TestCase):
     def test_resource_limit_prevents_actual_load_and_download(self):
         model=self.provider.inventory()[KEYS[1]];calls=[]
         def runner(args,timeout):
-            calls.append(args);return 'Estimated GPU Memory: 9.42 GiB\nEstimated Total Memory: 18.51 GiB'
+            calls.append(args)
+            return self.catalog(model) if args[0]=='ls' else 'Estimated GPU Memory: 9.42 GiB\nEstimated Total Memory: 18.51 GiB'
         with self.assertRaises(ModelError) as caught:
             load_model(model,explicit=True,runner=runner,resources=lambda:{'ram_available':10*GIB,'gpu_available':4*GIB})
-        self.assertEqual(caught.exception.kind,'resource_limit');self.assertEqual(len(calls),1)
-        self.assertIn('--estimate-only',calls[0])
+        self.assertEqual(caught.exception.kind,'resource_limit');self.assertEqual(len(calls),2)
+        self.assertIn('--estimate-only',calls[1]);self.assertEqual(calls[1][calls[1].index('--gpu')+1],'0.5')
+        self.assertFalse(any(args[0]=='load' and '--estimate-only' not in args for args in calls))
 
     def test_safe_load_settings_use_only_selected_model_and_measured_resources(self):
         calls=[];model=self.provider.inventory()[KEYS[0]]
         def runner(args,timeout):
-            calls.append(args);return 'Estimated GPU Memory: 3.25 GiB\nEstimated Total Memory: 6.18 GiB'
+            calls.append(args)
+            return self.catalog(model) if args[0]=='ls' else 'Estimated GPU Memory: 5.01 GiB\nEstimated Total Memory: 6.18 GiB'
         report=load_model(model,explicit=True,runner=runner,resources=lambda:{'ram_available':20*GIB,'gpu_available':12*GIB})
-        self.assertEqual(report['estimate']['context_length'],2048);self.assertEqual(len(calls),2)
-        self.assertEqual(calls[-1][1],KEYS[0]+'@q4_k_m')
-        self.assertIn('--no-engine-config-file',calls[-1]);self.assertNotIn('--estimate-only',calls[-1])
+        self.assertEqual(report['estimate']['context_length'],2048);self.assertEqual(len(calls),3)
+        self.assertEqual(calls[-1][1],KEYS[0]);self.assertEqual(report['estimate']['gpu_ratio'],'0.8')
+        self.assertFalse(any('engine-config' in arg or 'engine-cwd' in arg for arg in calls[-1]))
+        self.assertNotIn('--estimate-only',calls[-1])
         self.assertNotIn('download',str(calls))
+
+    def test_cli_catalog_must_uniquely_match_the_api_variant_without_interactive_fallback(self):
+        model=self.provider.inventory()[KEYS[0]]
+        for catalog in ([],[{'model':{'modelKey':KEYS[0]},'variants':[]}],
+                        [{'model':{'modelKey':KEYS[0]},'variants':[{'modelKey':KEYS[0]+'@q4_k_m'},{'modelKey':KEYS[0]+'@q8'}]}],
+                        [{'model':{'modelKey':KEYS[0]},'variants':[{'modelKey':'wrong-quantization'}]}]):
+            with self.subTest(catalog=catalog),self.assertRaises(ModelError):
+                cli_model_key(model,lambda *a:json.dumps(catalog))
+        self.assertEqual(cli_model_key(model,lambda *a:self.catalog(model)),KEYS[0])
+
+    def test_cli_is_noninteractive_and_redacts_timeout_and_nonzero_errors(self):
+        import subprocess
+        with patch('finscope.lmstudio_runtime.lms_executable',return_value='mock-lms'),patch('finscope.lmstudio_runtime.subprocess.run') as run:
+            run.side_effect=subprocess.TimeoutExpired('UNIT-PRIVATE-KEY',1)
+            with self.assertRaises(ModelError) as caught:run_lms(['ls'])
+            self.assertEqual(caught.exception.kind,'timeout');self.assertNotIn('UNIT-PRIVATE-KEY',str(caught.exception))
+            self.assertEqual(run.call_args.kwargs['stdin'],subprocess.DEVNULL)
+
+    def test_cli_estimate_on_stderr_is_read_but_json_catalog_stays_stdout_only(self):
+        from types import SimpleNamespace
+        with patch('finscope.lmstudio_runtime.lms_executable',return_value='mock-lms'),patch('finscope.lmstudio_runtime.subprocess.run') as run:
+            run.return_value=SimpleNamespace(returncode=0,stdout='',stderr='Estimated GPU Memory: 5.01 GiB\nEstimated Total Memory: 6.18 GiB')
+            self.assertIn('Estimated GPU Memory',run_lms(['load','authored','--estimate-only']))
+            run.return_value=SimpleNamespace(returncode=0,stdout='[]',stderr='Non-JSON diagnostic')
+            self.assertEqual(run_lms(['ls','--json']),'[]')
 
     def test_unload_requires_explicit_selection_and_does_not_infer(self):
         with self.assertRaises(ModelError):self.provider.unload(KEYS[0])
@@ -167,11 +209,24 @@ class LMStudioUITests(unittest.TestCase):
             app=self.app('Analyze');app.selectbox(key='analysis_model').set_value('Local LM Studio').run()
             self.assertFalse(http.calls)
             app.button(key='analysis_lmstudio_refresh').click().run()
+            self.assertTrue(any('Choose a downloaded model' in i.value for i in app.info))
             app.selectbox(key='analysis_lmstudio_model').set_value(KEYS[1]).run();app.run()
             self.assertFalse(app.exception)
             self.assertTrue(any('Not loaded' in c.value for c in app.caption))
             self.assertTrue(next(b for b in app.button if b.label=='Run real AI analysis').disabled)
         self.assertTrue(all(c[0]=='GET' for c in http.calls))
+
+    def test_resource_refusal_does_not_report_the_healthy_service_as_disconnected(self):
+        LocalNewsStore(self.db).save_news(item());http=LocalTransport();http.loaded=None
+        provider=LMStudioProvider(http)
+        with patch('finscope.model_ui.LMStudioProvider',return_value=provider),patch.object(provider,'load',side_effect=ModelError('Insufficient test resources',kind='resource_limit')):
+            app=self.app('Analyze');app.selectbox(key='analysis_model').set_value('Local LM Studio').run()
+            app.button(key='analysis_lmstudio_refresh').click().run()
+            app.selectbox(key='analysis_lmstudio_model').set_value(KEYS[0]).run()
+            app.button(key='analysis_lmstudio_load').click().run();app.run()
+            self.assertTrue(any('Insufficient test resources' in e.value for e in app.error))
+            self.assertTrue(any('Available local service' in c.value for c in app.caption))
+            self.assertFalse(app.exception)
 
     def test_single_batch_switch_and_saved_versions_reuse_the_analysis_flow(self):
         store=LocalNewsStore(self.db);one=item();two=replace(one,article_id='second-authored',title='Second authored test')

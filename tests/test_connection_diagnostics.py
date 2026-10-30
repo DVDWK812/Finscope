@@ -11,6 +11,7 @@ import requests
 from finscope.connection_diagnostics import api_diagnostic, credential_report
 from finscope.local_news import LocalIngestionService, LocalNewsStore
 from finscope.model_providers import ModelError, OllamaProvider, OLLAMA_ORIGIN, model_request
+import test_product_ui as product_test
 
 
 class DiagnosticTests(unittest.TestCase):
@@ -82,6 +83,13 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(report['historical_http_evidence'][0]['http_status'],200)
         self.assertEqual(report['state'],'Untested');self.assertNotIn('DO NOT DISPLAY',json.dumps(report))
 
+    def test_openai_recorded_failure_is_separate_from_missing_credentials(self):
+        with closing(self.store.connect()) as db:
+            db.execute("INSERT INTO local_model_requests VALUES ('authored-request','openai','2026-10-29T00:00:00Z','2026-10-29T00:00:01Z','failed',NULL)");db.commit()
+        self.assertEqual(self.report('openai',ui_key_present=True)['state'],'Failed')
+        self.assertEqual(self.report('openai')['state'],'Not configured')
+        self.assertEqual(self.report('openai')['product_attempt_count'],1)
+
     def test_connection_refusal_timeout_http_and_transport_errors_remain_distinct(self):
         for error,kind in [(requests.ConnectionError('[WinError 10061] UNIT-PRIVATE-KEY'),'connection_refused'),
                            (requests.ConnectionError('DNS UNIT-PRIVATE-KEY'),'connection_error'),
@@ -106,3 +114,16 @@ class DiagnosticTests(unittest.TestCase):
         with patch('requests.sessions.Session.request',side_effect=AssertionError('No diagnostic network')):
             for provider in ('marketaux','newsdata','finnhub','openai'):self.report(provider)
         self.assertEqual(self.store.path.read_bytes(),before)
+
+
+class DiagnosticUITests(unittest.TestCase):
+    setUp=product_test.ProductUITests.setUp
+    app=product_test.ProductUITests.app
+
+    def test_windows_credential_path_is_literal_not_markdown_escaped(self):
+        source=r'C:\Users\Authored\.codex\FinScope\.env'
+        with patch('finscope.connection_diagnostics.credential_report',return_value={
+                'present':True,'variable':'AUTHORED_KEY','source':source}):
+            app=self.app('Settings / Help')
+            self.assertTrue(any(source in t.value for t in app.text))
+            self.assertFalse(app.exception)

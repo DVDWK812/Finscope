@@ -11,7 +11,7 @@ the organization below is optional. No Moodle access or coursework submission.
   evidence and possible semantic overlap; no price forecasting or market-impact claim.
 - **Latest architecture:** single-user Streamlit on localhost, persistent local
   SQLite, `.env`/masked credentials, default pinned CPU FinBERT/MiniLM, optional
-  local Ollama or explicitly consented external LLM. This task now uses the
+  local LM Studio/Ollama or explicitly consented external LLM. This task now uses the
   user-requested **local** branch; a separate task owns the web showcase on main.
 - Historical approved-input public hosting remains dated engineering evidence;
   cloud hosting/session/cache work is not a local-product requirement.
@@ -39,7 +39,9 @@ filters → Overview, Sector sentiment, Trends, Heatmap, Evidence graph and Expl
 - All views share raw-article filters and latest matching model per original.
   Heatmaps retain missing/low-sample counts. Graph links show source metadata,
   matched sector terms, ticker-query provenance and unverified candidates; no causation.
-- Optional OpenAI structured labels/rationales require transmission permission and
+- LM Studio uses local loaded IDs/quantization and JSON Schema sentiment/rationale,
+  with explicit resource-checked load/unload and no downloads or tool/search calls.
+  Optional OpenAI structured labels/rationales require transmission permission and
   explicit send consent, and have **no invented calibrated probabilities**. Ollama
   uses installed local GGUF metadata/digests at loopback only. Keys never enter the
   database/export/logs. Stored permissions do not themselves grant publisher rights.
@@ -79,6 +81,8 @@ the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commi
 30 October local usability check: **261 offline tests** plus dry run; actual browser RBA local import, pinned FinBERT reanalysis (Neutral), SQLite history, sector results, original URL, and heatmap/graph node clicks verified. Two originals remain two after reanalysis; no new news API or external LLM requests. Ollama service discovery unavailable; live inference remains pending. This is engineering acceptance, not accuracy or human usability evidence.
 
 30 October real-source follow-up: ABS robots/index HTTP 200 at 29 October 16:18 UTC yielded **20 new licensed headlines/date-only records**, saved and actually analyzed by pinned local FinBERT/MiniLM; one reanalysis added history, not an original. Real library: ABS 20 + existing RBA 1, 27 August–29 October; Energy 1, Financials 1, Unclassified 19 (authored development text excluded). Three classified sectors remain unmet. ACCC RSS returned 403 once and is disabled. Browser heatmap/article/sector-node clicks and ABS original verified; source text is headline-only. These checks are engineering acceptance, not an accuracy evaluation; frozen evidence remains unchanged.
+
+31 October local LLM check: actual `google/gemma-4-e4b` GGUF/Q4_K_M, context 2048, returned valid structured Positive labels in four authored-text requests (single, two-item batch and detail reanalysis), 1.72–2.69 s per request excluding load. SQLite retained originals and all versions; no probability invented. `qwen/qwen3.8-27b` Q4_K_M was discovered but not loaded/inferred: observed free RAM 9.10 GiB / VRAM 8.25 GiB were below the conservative 15.09 / 11.42 GiB thresholds. These are engineering checks, not accuracy evidence. No news/OpenAI requests or frozen-challenge inference occurred.
 
 Pending: Marketaux downstream rights and stable availability; NewsData resumption
 if explicitly authorized; live Ollama inference (discovery reported unavailable);

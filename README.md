@@ -39,7 +39,8 @@ FinBERT is the default local model and requires no API key. Its genuine three-cl
 **Local LM Studio** discovers downloaded LLMs through its fixed `127.0.0.1:1234`
 server, using `/v1/models` and `/api/v1/models` to distinguish downloaded, loaded
 and API-exposed states. Refresh never infers or downloads. Explicit Load checks
-`lms` estimates and current RAM/VRAM first (2048 context, one prediction, 50% GPU);
+`lms` estimates and current RAM/VRAM first (2048 context, one prediction,
+80% GPU for downloads up to 8 GiB, otherwise 50%);
 unload another model explicitly before switching. Chat Completions uses JSON Schema
 structured sentiment and saves actual IDs/quantization, rationale and history,
 without invented probabilities or external fallback. Start the installed server
