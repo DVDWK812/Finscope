@@ -84,6 +84,8 @@ the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commi
 
 31 October local LLM check: actual `google/gemma-4-e4b` GGUF/Q4_K_M, context 2048, returned valid structured Positive labels in four authored-text requests (single, two-item batch and detail reanalysis), 1.72–2.69 s per request excluding load. SQLite retained originals and all versions; no probability invented. `qwen/qwen3.8-27b` Q4_K_M was discovered but not loaded/inferred: observed free RAM 9.10 GiB / VRAM 8.25 GiB were below the conservative 15.09 / 11.42 GiB thresholds. These are engineering checks, not accuracy evidence. No news/OpenAI requests or frozen-challenge inference occurred.
 
+31 October Qwen retry, explicitly requested by the user: free RAM/VRAM had risen to 18.08/12.07 GiB immediately before load, so the unchanged safety checks permitted `qwen/qwen3.8-27b` Q4_K_M at context 2048 / 50% GPU offload, with Gemma unloaded. One actual browser-triggered request on the same authored fixture returned HTTP 200, valid structured Positive output and rationale in 15.47 s; SQLite retained 23 originals and increased history from 29 to 30 versions. Dashboard and detail displayed the Qwen result. This supersedes the earlier resource blockage for this measured attempt only, not an accuracy or sustained-load claim.
+
 Pending: Marketaux downstream rights and stable availability; NewsData resumption
 if explicitly authorized; live Ollama inference (discovery reported unavailable);
 live external API account/model verification (zero real article transmissions);
