@@ -86,3 +86,8 @@ a full accessibility certification or completed human usability sessions.
 Final B SHA/CI and real hosted before/after images are verified after push and
 recorded in the ignored evidence directory. No new dependency or runtime boundary
 change accompanies this presentation milestone.
+
+Hosted acceptance found that removing filter session keys could reset counts
+while retaining a browser chip. A follow-up assigns all reset values explicitly
+and strengthens the existing regression; final hosted acceptance checks both
+visible controls and totals. This preserves the raw-report counting method.

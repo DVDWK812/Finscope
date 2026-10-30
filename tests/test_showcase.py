@@ -87,6 +87,9 @@ class ShowcaseTests(unittest.TestCase):
         next(b for b in app.button if b.label == "Reset preview").click().run()
         self.assertFalse(app.exception)
         self.assertEqual(app.metric[0].value, "24")
+        self.assertEqual(app.multiselect(key="preview_sectors").value, [])
+        self.assertEqual(app.multiselect(key="preview_sentiments").value, [])
+        self.assertEqual(tuple(app.date_input(key="preview_dates").value), (START, END))
 
     def test_explorer_and_graph_resolve_only_fictional_records(self):
         app = self.app()

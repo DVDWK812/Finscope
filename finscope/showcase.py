@@ -86,8 +86,11 @@ def guide():
 
 
 def reset_filters():
-    for key in ("preview_sectors", "preview_sentiments", "preview_dates"):
-        st.session_state.pop(key, None)
+    # Explicit assignments send changed widget values back to the browser.
+    # Removing keys resets server defaults but can leave old client filter chips.
+    st.session_state["preview_sectors"] = []
+    st.session_state["preview_sentiments"] = []
+    st.session_state["preview_dates"] = (START, END)
 
 
 def preview_filters():

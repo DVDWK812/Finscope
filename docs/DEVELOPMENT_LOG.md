@@ -1,5 +1,18 @@
 # Development log
 
+## Hosted reset-control correction — 31 October 2026 Sydney
+
+B release cf3cd559f082f9b3ac2fa5f2fb86304b11b96e8d passed both regression jobs
+(41073023032) and isolation (41073022842). Its actual hosted pages passed the
+24 page/size checks after a public-runtime restart. The final functional probe
+then found a browser discrepancy: Reset restored 24 reports and the all-sample
+caption, but a previously selected Technology chip remained. Changed the callback
+from deleting session keys to explicitly assigning empty industry/tone lists and
+the original date tuple, so browser widget updates accompany server counts.
+Strengthened the existing reset regression to assert all three widget values.
+This is a presentation-state correction; fixture data and counting are unchanged.
+The final follow-up SHA receives its own full tests, exact CI and hosted checks.
+
 ## Premium showcase milestone B — 31 October 2026 Sydney
 
 Verified A release 412b12bf5e8452e48aff747df6c2fc156de57e7d: regression run
