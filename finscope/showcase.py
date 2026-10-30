@@ -1,10 +1,12 @@
 """Public, synthetic-only product storytelling. Independent of the local runtime."""
 from datetime import timedelta
+from html import escape
 
 import streamlit as st
 import streamlit.components.v1 as components
 
-from .showcase_data import END, START, SECTORS, SENTIMENTS, examples, graph, graph_overview, select, word_cloud_terms
+from .showcase_data import (END, START, SECTORS, SENTIMENTS, article_label,
+                            candidate_groups, examples, graph, graph_overview, select, word_cloud_terms)
 from .showcase_visuals import relationship_markup, visible_graph, word_cloud_markup
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
@@ -204,15 +206,30 @@ def dashboard():
 
 
 def story(row, details=False):
-    st.markdown(f'<div class="story"><div class="story-meta">FICTIONAL · {row.day:%d %b %Y} · {row.source}</div>'
-                f'<h3>{row.title}</h3><span class="tone {row.sentiment.lower()}">{row.sentiment} · illustrative label</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="story"><div class="story-meta">FICTIONAL · {row.day:%d %b %Y} · {escape(row.source)}</div>'
+                f'<h3>{escape(article_label(row))}</h3><span class="tone {row.sentiment.lower()}">{row.sentiment} · illustrative label</span></div>', unsafe_allow_html=True)
     if details:
+        st.write("Complete headline: " + row.title)
         st.write(row.summary)
-        st.caption(f"{row.article_id} · {row.company} · {row.sector} · Illustrative candidate {row.candidate}")
+        st.caption(f"{row.company} · {row.sector}")
+        group = next((g for g in candidate_groups(examples()) if row.article_id in g["article_ids"]), None)
+        if group:
+            st.caption(f'Unverified candidate: {group["label"]}. {group["basis"]}')
         st.caption("Fictional sample only. No publisher URL exists; no original-article link is fabricated.")
+        with st.expander("Technical details", expanded=False):
+            st.write({"Article ID": row.article_id, "Candidate reference": row.candidate or "None"})
 
 
-def render_relationship_graph(data, height=440, include_sources=True):
+def article_selector(label, rows, key):
+    by_id = {r.article_id: r for r in rows}
+    if st.session_state.get(key) not in by_id:
+        st.session_state.pop(key, None)
+    chosen = st.selectbox(label, list(by_id), key=key,
+                          format_func=lambda ident: article_label(by_id[ident]))
+    return by_id[chosen]
+
+
+def render_relationship_graph(data, height=520, include_sources=False):
     markup = relationship_markup(visible_graph(data, include_sources), height)
     components.html('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
                     '<style>body{margin:0;background:#0c1423;color:#dbe7f6;}</style></head><body>'
@@ -234,14 +251,13 @@ def headline_cloud(records):
     selected = next(item for item in terms if item["term"] == term)
     matches = [row for row in records if row.article_id in selected["article_ids"]]
     st.caption(f'{len(matches)} fictional headline(s) contain “{term}”. Counts are once per headline.')
-    st.dataframe([{"Article ID": r.article_id, "Title": r.title, "Company": r.company,
+    st.dataframe([{"Headline": article_label(r), "Complete headline": r.title, "Company": r.company,
                    "Industry": r.sector, "Sentiment": r.sentiment, "Fictional source": r.source}
                   for r in matches], hide_index=True, width="stretch")
-    ids = [r.article_id for r in matches]
-    if st.session_state.get("graph_cloud_article") not in ids:
-        st.session_state.pop("graph_cloud_article", None)
-    chosen = st.selectbox("Open a matching fictional article", ids, key="graph_cloud_article")
-    story(next(r for r in matches if r.article_id == chosen), details=True)
+    with st.expander("Technical details: word matches", expanded=False):
+        st.dataframe([{"Article ID": r.article_id, "Headline": article_label(r)} for r in matches],
+                     hide_index=True, width="stretch")
+    story(article_selector("Open a matching fictional article", matches, "graph_cloud_article"), details=True)
 
 
 def knowledge_graph():
@@ -273,28 +289,25 @@ def knowledge_graph():
     else:
         a, b, c, d = st.columns(4)
         a.metric("Fictional reports", len(rows))
-        b.metric("Candidate groups", len({r.candidate for r in rows}))
+        groups = candidate_groups(rows)
+        b.metric("Unverified topic groups", len(groups))
         c.metric("Illustrative sources", len({r.source for r in rows}))
         d.metric("Positive / Negative", f'{sum(r.sentiment == "Positive" for r in rows)} / '
                                       f'{sum(r.sentiment == "Negative" for r in rows)}')
-        st.subheader("Company → Articles → Candidates / Sources")
-        include_sources = st.checkbox("Show fictional sources", value=True, key="graph_company_sources")
+        st.subheader("Industry → Company → Articles")
+        include_sources = st.checkbox("Show fictional sources", value=False, key="graph_company_sources")
         render_relationship_graph(graph(all_rows, company), include_sources=include_sources)
-        st.caption("Report nodes are identified by SYN codes. Hover over a node or link to inspect "
-                   "its fictional evidence. Candidate links are NOT confirmed event identity.")
+        st.caption("Headlines describe each fictional report. Sentiment is written in text as well as colour. "
+                   "Dashed links show shared topics only; they do not confirm the same event.")
         st.subheader("Potentially related reports")
-        groups = sorted({r.candidate for r in rows})
-        st.dataframe([
-            {"Candidate": candidate,
-             "Original reports": len([r for r in rows if r.candidate == candidate]),
-             "Illustrative tone(s)": ", ".join(sorted({r.sentiment for r in rows if r.candidate == candidate})),
-             "Report IDs": ", ".join(r.article_id for r in rows if r.candidate == candidate)}
-            for candidate in groups], hide_index=True, width="stretch")
-        chosen = st.selectbox("Inspect an illustrative article",
-                              [r.article_id for r in rows], key="graph_article",
-                              format_func=lambda ident: next(
-                                  f"{r.article_id} · {r.title}" for r in rows if r.article_id == ident))
-        story(next(r for r in rows if r.article_id == chosen), details=True)
+        if groups:
+            st.dataframe([{"Topic": g["label"], "Reports": len(g["article_ids"]),
+                           "Headlines": " / ".join(g["headlines"]),
+                           "Status": "Unverified candidate", "Relationship basis": g["basis"]}
+                          for g in groups], hide_index=True, width="stretch")
+        else:
+            st.info("These fictional reports remain separate. No multi-report candidate topic is shown.")
+        story(article_selector("Inspect an illustrative article", rows, "graph_article"), details=True)
 
     st.divider()
     st.subheader("Headline word cloud")

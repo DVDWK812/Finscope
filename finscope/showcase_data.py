@@ -23,6 +23,49 @@ class Example:
     sentiment: str
     candidate: str
     synthetic: bool = True
+    display_label: str = ""
+
+
+# Authored summaries of the headlines, shared by every public article surface.
+# Original titles remain the sole input to word-frequency calculations.
+ARTICLE_LABELS = (
+    "Chip Laboratory Expands", "Research Facility Announced",
+    "Component Costs Rise", "Product Briefing Scheduled",
+    "Research Centre Opens", "Research Calendar Published",
+    "Laboratory Partnership Expands", "Project Timeline Revised",
+    "Investor Meeting Announced", "Savings Tool Introduced",
+    "Operating Costs Rise", "Digital Service Expands",
+    "Supply Contract Awarded", "Supply Agreement Outlined",
+    "Operations Calendar Published", "Installation Delays Reported",
+    "Transport Costs Rise", "Annual Update Scheduled",
+    "Recycling Line Improves", "Processing Upgrade Completed",
+    "Store Format Launches", "Store Calendar Published",
+    "Logistics Delay Reported", "Next Briefing Announced",
+)
+CANDIDATE_TOPICS = {
+    "C-1-0": ("Laboratory Expansion Coverage",
+              "Both headlines concern laboratory or research-facility expansion; identical event identity is not established."),
+    "C-2-0": ("Research Updates",
+              "A research-centre opening and a research calendar share a broad research topic, but describe different announcements."),
+    "C-4-0": ("Supply Agreement Reports",
+              "Both headlines concern supply contracts or agreements; the examples do not establish that they describe one contract."),
+}
+
+
+def article_label(row):
+    return row.display_label or row.title
+
+
+def candidate_groups(records):
+    """Only reviewed, multi-report fictional topic links become visible groups."""
+    groups = []
+    for ident, (label, basis) in CANDIDATE_TOPICS.items():
+        members = [r for r in records if r.candidate == ident]
+        if len(members) > 1:
+            groups.append(dict(id=ident, label=label, basis=basis,
+                               article_ids=tuple(r.article_id for r in members),
+                               headlines=tuple(article_label(r) for r in members)))
+    return groups
 
 
 def examples():
@@ -64,7 +107,7 @@ def examples():
     context = (
         (
             "In this fictional scenario, the expansion increases chip prototype testing capacity. It is an announced plan, not an observed earnings outcome.",
-            "This fictional facility announcement describes the same broad laboratory expansion theme as SYN-001; candidate overlap is illustrative only.",
+            "This fictional facility announcement shares the broad laboratory expansion theme of the chip laboratory report; candidate overlap is illustrative only.",
             "A separate fictional update describes higher materials and packaging costs. It does not establish an effect on the laboratory project.",
             "The company announces the date of a product briefing but provides no new financial guidance.",
         ),
@@ -108,7 +151,11 @@ def examples():
                 f"SYN-{number:03}", company, sector, sources[number % 3],
                 START + timedelta(days=(company_index * 2 + position * 3) % 14),
                 title, context[company_index][position],
-                label, f"C-{company_index + 1}-{0 if position < 2 else position}"))
+                # Meeting/savings and store-launch/calendar pairings were removed:
+                # a shared company alone does not support a candidate topic link.
+                label, "" if company_index in (2, 5) and position < 2 else
+                f"C-{company_index + 1}-{0 if position < 2 else position}",
+                display_label=ARTICLE_LABELS[number - 1]))
     return tuple(records)
 
 
@@ -164,7 +211,8 @@ def graph_overview(records):
         return {"nodes": [], "edges": []}
     nodes, edges = {}, []
     sectors = [sector for sector in SECTORS if any(r.sector == sector for r in records)]
-    companies = sorted({r.company for r in records})
+    companies = sorted({r.company for r in records},
+                       key=lambda name: (SECTORS.index(next(r.sector for r in records if r.company == name)), name))
     sources = sorted({r.source for r in records})
     for i, sector in enumerate(sectors):
         nodes["sector:" + sector] = dict(id="sector:" + sector, name=sector,
@@ -186,12 +234,14 @@ def graph_overview(records):
             subset = [r for r in company_rows if r.sector == sector]
             edges.append(dict(from_id="sector:" + sector, to_id="company:" + company,
                 relationship="Illustrative industry classification", count=len(subset),
-                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset)))
+                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset),
+                headlines=tuple(article_label(r) for r in subset)))
         for source in sorted({r.source for r in company_rows}):
             subset = [r for r in company_rows if r.source == source]
             edges.append(dict(from_id="company:" + company, to_id="source:" + source,
                 relationship="Fictional source reports on company", count=len(subset),
-                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset)))
+                article_id=subset[0].article_id, article_ids=tuple(r.article_id for r in subset),
+                headlines=tuple(article_label(r) for r in subset)))
     for edge in edges:
         edge.update({"from": edge["from_id"], "to": edge["to_id"]})
         left, right = nodes[edge["from_id"]], nodes[edge["to_id"]]
@@ -212,40 +262,44 @@ def graph(records, company):
                                        kind=kind, detail=detail))
         return node_id
 
-    def edge(left, right, relationship, article_id):
+    def edge(left, right, relationship, members):
         # Keep the previously tested from/to schema while supporting explicit IDs.
         edges.append({"from_id": left, "to_id": right, "from": left, "to": right,
-                      "relationship": relationship, "count": 1, "article_id": article_id})
+                      "relationship": relationship, "count": len(members),
+                      "article_id": members[0].article_id,
+                      "article_ids": tuple(r.article_id for r in members),
+                      "headlines": tuple(article_label(r) for r in members)})
 
     company_id = add("company", company, "Company",
                      f"{len(rows)} fictional source reports")
     industry_id = add("sector:" + rows[0].sector, rows[0].sector, "Industry",
                       "Illustrative sector assignment")
-    edge(industry_id, company_id, "Illustrative sector assignment", rows[0].article_id)
+    edge(industry_id, company_id, "Illustrative sector assignment", rows)
+    groups = {g["id"]: g for g in candidate_groups(rows)}
     for row in rows:
-        article_id = add(row.article_id, row.article_id, "Article",
-                         f"{row.day.isoformat()} · {row.title} · {row.sentiment}")
+        article_id = add(row.article_id, article_label(row), "Article", row.title)
         nodes[article_id].update(article_id=row.article_id, title=row.title, summary=row.summary,
             company=row.company, industry=row.sector, sentiment=row.sentiment,
-            source=row.source, candidate=row.candidate)
+            source=row.source, candidate=row.candidate, published=row.day.isoformat())
         source_id = add("source:" + row.source, row.source, "Source",
                         "Fictional publication/source")
-        candidate_id = add(row.candidate, row.candidate, "Unverified candidate",
-                           "Illustrative grouping only; not confirmed event identity")
-        edge(company_id, article_id, "Company appears in fictional article", row.article_id)
-        edge(article_id, candidate_id, "Unverified candidate membership", row.article_id)
-        edge(article_id, source_id, "Fictional publication source", row.article_id)
+        edge(company_id, article_id, "Company appears in fictional article", [row])
+        if row.candidate in groups:
+            group = groups[row.candidate]
+            candidate_id = add(row.candidate, group["label"], "Unverified candidate", group["basis"])
+            nodes[candidate_id]["article_ids"] = group["article_ids"]
+            edge(article_id, candidate_id, "Unverified candidate membership", [row])
+        edge(article_id, source_id, "Fictional publication source", [row])
 
     nodes[company_id].update(x=10, y=53)
     nodes[industry_id].update(x=10, y=10)
     article_ids = [r.article_id for r in rows]
     for i, node_id in enumerate(article_ids):
         nodes[node_id].update(x=39, y=_spaced(i, len(article_ids)))
-    candidates = sorted({r.candidate for r in rows})
+    candidates = sorted(groups)
     for candidate in candidates:
         ys = [nodes[r.article_id]["y"] for r in rows if r.candidate == candidate]
-        nodes[candidate].update(x=67, y=sum(ys) / len(ys),
-                                 detail=f"{len(ys)} illustrative member report(s); not verified")
+        nodes[candidate].update(x=70, y=sum(ys) / len(ys))
     sources = sorted({r.source for r in rows})
     for i, source in enumerate(sources):
         nodes["source:" + source].update(x=92, y=_spaced(i, len(sources), 18, 82))

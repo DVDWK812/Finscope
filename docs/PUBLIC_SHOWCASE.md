@@ -1,5 +1,43 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+## Human-readable relationship preview — 31 October 2026 Sydney
+
+Article nodes, selectors, word-match lists and News Explorer now share 24 concise
+authored headline labels. Full headlines, company/industry, preset sentiment,
+publication date, fictional source and distinct summaries remain in hover/details.
+Technical codes remain internal, available under collapsed Technical details;
+they are not map labels or default article text. Sentiment is written out and
+uses consistent colours. Company Focus defaults to Industry → Company → Articles,
+with sources hidden until requested. Single-report candidate nodes are omitted.
+
+Only reviewed topics with at least two reports create candidate nodes. Every
+such node says **Unverified candidate**; related topics do not establish one event.
+
+| Fictional topic | Internal articles | Review outcome |
+|---|---|---|
+| Laboratory Expansion Coverage | SYN-001, SYN-002 | Retained C-1-0: laboratory/facility theme; identity unknown |
+| Research Updates | SYN-005, SYN-006 | Retained C-2-0: opening and calendar are distinct research announcements |
+| Supply Agreement Reports | SYN-013, SYN-014 | Retained C-4-0: supply theme; same contract unconfirmed |
+| Prior Harbor meeting/savings pairing | SYN-009, SYN-010 | Removed C-3-0 membership: company alone was insufficient |
+| Prior Maple format/calendar pairing | SYN-021, SYN-022 | Removed C-6-0 membership: launch and routine calendar were insufficient |
+
+Other singleton references remain internal without graph nodes. All 24 article
+IDs, original titles, dates, companies, industries, sources and preset sentiments
+are unchanged. One authored summary replaces its technical cross-reference with
+plain language. Every word frequency and matching-ID set is identical to the
+previous commit, for the full sample and each company; no counting method changed.
+
+Before release, 231 offline tests, syntax checks and seven dry-run CLI previews
+pass. Four added regressions cover readable labels/tooltips, stable references,
+reviewed memberships/singletons and article lookup across all three surfaces.
+Existing tests remain; isolation guards reject news HTTP, runtime/model imports
+and database calls. The local desktop browser renders wrapped readable headlines
+and an explicit unverified topic. Exact pushed-main CI and actual deployed
+desktop/mobile checks follow push, with evidence/screenshots retained in ignored
+`reports/showcase_readable_20261031/`. Agent checks are not human usability evidence.
+No local-branch edit, frozen evaluation change or actual provider/model/database
+operation is part of this showcase work.
+
 ## Graph / word-cloud verification — 30 October 2026 Sydney
 
 Latest branch policy: **main = public showcase; local = full product**. This work fetched/fast-forwarded only main, preserved five unrelated modified files byte-for-byte, and never switched to, reset, merged or pushed local. Setup instructions now explicitly clone the local branch; those displayed commands were not executed.

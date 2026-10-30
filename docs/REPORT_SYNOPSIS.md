@@ -1,6 +1,8 @@
 # FinScope — team report synopsis
 
-Evidence current: **30 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+Evidence current: **31 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+
+**31 October public update:** 24 readable headline labels now connect graph, word lookup and Explorer. Only three reviewed multi-report fictional topic groups appear, explicitly unverified; two misleading company-only pairings were removed and singleton nodes suppressed. Original article IDs/titles and every word-frequency result are unchanged. The isolated main candidate passes 231 tests, syntax checks and seven offline previews; exact CI and hosted checks follow push ([scope/evidence](PUBLIC_SHOWCASE.md)). Frozen metrics and human-provenance qualifications below remain unchanged.
 
 **30 October public update:** main maintains the synthetic-only showcase; local maintains the full product. Company/industry relationship views and a headline-derived frequency cloud retain fictional article-level evidence and scope/word drill-down. The public candidate passes 227 tests, including unchanged isolation guards; phone-width cloud words no longer overlap. Exact CI and actual deployment are verified separately ([evidence](PUBLIC_SHOWCASE.md)). No local-branch change, model inference, provider call or frozen-result change follows from this preview work.
 
@@ -11,7 +13,7 @@ The existing public URL is now designated an independent synthetic-only product 
 The showcase is deployed and browser-checked: six views, 24 fictional records,
 synthetic dashboard/graph/explorer and full-local setup guidance. It has no
 provider/model/database runtime or credential input. The isolated committed-main
-candidate passes 220 tests; the earlier 1.50 test-API incompatibility and repair
+separation baseline passed 220 tests; the earlier 1.50 test-API incompatibility and repair
 are retained in the separation evidence. Existing local inference remains verified
 by a separate approved authored-text smoke; frozen challenge results below are unchanged.
 Milestone 1 delivered first-run guidance, masked/.env provider connectors and

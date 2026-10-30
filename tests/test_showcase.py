@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
-from finscope.showcase_data import END, START, examples, graph, graph_overview, select, word_cloud_terms
+from finscope.showcase_data import (END, START, article_label, candidate_groups,
+                                   examples, graph, graph_overview, select, word_cloud_terms)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,8 +118,103 @@ class ShowcaseTests(unittest.TestCase):
         app.radio(key="graph_perspective").set_value("Company focus").run()
         self.assertFalse(app.exception)
 
+    def test_human_article_selection_resolves_stable_id_and_shared_display_label(self):
+        rows = [r for r in examples() if r.company == "Cedar Therapeutics"]
+        app = self.app()
+        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        self.assertFalse(app.checkbox(key="graph_company_sources").value)
+        app.selectbox(key="graph_company").set_value("Cedar Therapeutics").run()
+        self.assertEqual(set(app.selectbox(key="graph_article").options), {article_label(r) for r in rows})
+        app.selectbox(key="graph_article").set_value("SYN-007").run()
+        chosen = next(r for r in rows if r.article_id == "SYN-007")
+        content = "\n".join(m.value for m in app.markdown)
+        self.assertIn(article_label(chosen), content)
+        self.assertIn(chosen.title, content)
+        self.assertIn(chosen.summary, content)
+        self.assertTrue(app.expander)
+        self.assertTrue(all(not e.proto.expanded for e in app.expander))
+        app.selectbox(key="graph_cloud_word").set_value("research").run()
+        self.assertNotIn("SYN-", " ".join(app.selectbox(key="graph_cloud_article").options))
+        app.selectbox(key="graph_cloud_article").set_value("SYN-005").run()
+        matches = next(d.value for d in app.dataframe if "Complete headline" in d.value.columns)
+        self.assertEqual(set(matches["Headline"]), {article_label(r) for r in examples()
+                                                  if r.article_id in ("SYN-002", "SYN-005", "SYN-006")})
+        app.radio(key="showcase_page").set_value("News Explorer").run()
+        app.text_input[0].set_value("Cedar Therapeutics").run()
+        content = "\n".join(m.value for m in app.markdown)
+        self.assertTrue(all(article_label(r) in content and r.title in content for r in rows))
+        self.assertFalse(app.exception)
+
+    def test_unrelated_company_reports_do_not_gain_candidate_clutter(self):
+        app = self.app()
+        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        for company in ("Harbor Ledger Bank", "Maple Commerce", "Copperleaf Minerals"):
+            app.selectbox(key="graph_company").set_value(company).run()
+            self.assertEqual(app.metric[1].value, "0")
+            self.assertTrue(any("remain separate" in item.value for item in app.info))
+            self.assertFalse(app.exception)
+
 
 class FictionalDataTests(unittest.TestCase):
+    def test_readable_labels_and_complete_tooltips_never_expose_technical_codes(self):
+        from html.parser import HTMLParser
+        from finscope.showcase_visuals import relationship_markup, visible_graph
+
+        class SvgText(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.tag = ""
+                self.words = []
+
+            def handle_starttag(self, tag, attrs):
+                self.tag = tag
+
+            def handle_data(self, data):
+                if self.tag in ("text", "title"):
+                    self.words.append(data)
+
+            def handle_endtag(self, tag):
+                self.tag = ""
+
+        rows = examples()
+        self.assertEqual([r.article_id for r in rows], [f"SYN-{n:03}" for n in range(1, 25)])
+        self.assertEqual(len({article_label(r) for r in rows}), 24)
+        self.assertTrue(all(8 < len(article_label(r)) <= 32 for r in rows))
+        for company in {r.company for r in rows}:
+            data = graph(rows, company)
+            self.assertEqual(len({n["id"] for n in data["nodes"]}), len(data["nodes"]))
+            parsed = SvgText()
+            parsed.feed(relationship_markup(visible_graph(data, False)))
+            self.assertNotRegex(" ".join(parsed.words), r"\b(?:SYN-\d+|C-\d+-\d+)\b")
+            for row in (r for r in rows if r.company == company):
+                node = next(n for n in data["nodes"] if n["id"] == row.article_id)
+                self.assertEqual(node["label"], article_label(row))
+                tooltip = next(w for w in parsed.words if row.title in w and row.summary in w)
+                for field in (row.company, row.sector, row.sentiment, row.day.isoformat(), row.source):
+                    self.assertIn(field, tooltip)
+                self.assertIn(row.sentiment + " sentiment", parsed.words)
+
+    def test_reviewed_candidate_topics_and_singleton_suppression(self):
+        rows = examples()
+        expected = {"C-1-0": {"SYN-001", "SYN-002"},
+                    "C-2-0": {"SYN-005", "SYN-006"},
+                    "C-4-0": {"SYN-013", "SYN-014"}}
+        groups = candidate_groups(rows)
+        self.assertEqual({g["id"]: set(g["article_ids"]) for g in groups}, expected)
+        self.assertTrue(all(g["label"] and g["basis"] and len(g["article_ids"]) > 1 for g in groups))
+        self.assertTrue(all(not r.candidate for r in rows if r.article_id in
+                            ("SYN-009", "SYN-010", "SYN-021", "SYN-022")))
+        for company in {r.company for r in rows}:
+            data = graph(rows, company)
+            for node in (n for n in data["nodes"] if n["kind"] == "Unverified candidate"):
+                self.assertEqual(set(node["article_ids"]), expected[node["id"]])
+                self.assertGreater(len([e for e in data["edges"] if e["to_id"] == node["id"]]), 1)
+        self.assertFalse(candidate_groups([rows[0]]))
+        self.assertFalse(any(n["kind"] == "Unverified candidate" for n in graph([rows[0]], rows[0].company)["nodes"]))
+        research = next(t for t in word_cloud_terms(rows) if t["term"] == "research")
+        self.assertEqual(research, {"term": "research", "count": 3,
+                                    "article_ids": ("SYN-002", "SYN-005", "SYN-006")})
+
     def test_article_node_context_and_both_edge_schemas_are_preserved(self):
         records = examples()
         self.assertEqual(len({row.summary for row in records}), len(records))

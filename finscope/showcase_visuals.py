@@ -6,6 +6,7 @@ import textwrap
 
 NODE_COLORS = {"Industry": "#e9c776", "Company": "#60e5bc", "Article": "#9dbfff",
                "Unverified candidate": "#d4adff", "Source": "#f69e9e"}
+SENTIMENT_COLORS = {"Positive": "#60e5bc", "Neutral": "#b8c7dc", "Negative": "#ff9b93"}
 
 
 def visible_graph(data, include_sources=True):
@@ -26,7 +27,7 @@ def relation_style(relationship):
     return "mention", "Company mentioned in article", "#66cdb0", ""
 
 
-def relationship_markup(data, height=440):
+def relationship_markup(data, height=520):
     """A bounded scrolling canvas preserves label size on narrow screens."""
     width = 860
     styles = {relation_style(e["relationship"]) for e in data["edges"]}
@@ -47,8 +48,8 @@ def relationship_markup(data, height=440):
         x, y, x2, y2 = x + 14 * dx, y + 14 * dy, x2 - 17 * dx, y2 - 17 * dy
         mid = (x + x2) / 2
         key, _, color, dash = relation_style(edge["relationship"])
-        ids = ", ".join(edge.get("article_ids", (edge["article_id"],)))
-        title = escape(f'{edge["relationship"]} · {edge["count"]} fictional report(s) · {ids}')
+        headlines = "; ".join(edge.get("headlines", ()))
+        title = escape(f'{edge["relationship"]} · {edge["count"]} fictional report(s) · {headlines}')
         svg.append(f'<path d="M{x:.1f},{y:.1f} C{mid:.1f},{y:.1f} {mid:.1f},{y2:.1f} {x2:.1f},{y2:.1f}" '
                    f'fill="none" stroke="{color}" stroke-width="{min(2.6, 1.4 + .2 * edge["count"]):.1f}" '
                    f'stroke-opacity=".78" stroke-dasharray="{dash}" marker-end="url(#fs-arrow-{key})"><title>{title}</title></path>')
@@ -56,13 +57,21 @@ def relationship_markup(data, height=440):
         x, y = positions[node["id"]]
         fields = [node["name"], node["kind"], node.get("detail", "")]
         if node["kind"] == "Article":
-            fields += [node.get(key, "") for key in ("company", "industry", "title", "summary", "sentiment", "source", "candidate")]
+            fields = [node.get(key, "") for key in
+                      ("title", "company", "industry", "sentiment", "published", "source", "summary")]
         svg.append(f'<g><title>{escape(" · ".join(filter(None, fields)))}</title>'
                    f'<circle cx="{x:.1f}" cy="{y:.1f}" r="12" fill="{NODE_COLORS[node["kind"]]}" stroke="#0c1423" stroke-width="2"/>')
-        lines = [node["name"], node["sentiment"]] if node["kind"] == "Article" else textwrap.wrap(node["label"], width=19)
+        lines = textwrap.wrap(node["label"], width=24 if node["kind"] == "Article" else 22)
+        if node["kind"] == "Article":
+            lines.append(node["sentiment"] + " sentiment")
+        elif node["kind"] == "Unverified candidate":
+            lines.append("Unverified candidate")
         for index, line in enumerate(lines):
+            tone = node["kind"] == "Article" and index == len(lines) - 1
+            color = SENTIMENT_COLORS[node["sentiment"]] if tone else "#e1eafa"
             svg.append(f'<text x="{x:.1f}" y="{y + 27 + index * 15:.1f}" text-anchor="middle" '
-                       f'font-family="system-ui,sans-serif" font-size="12" fill="#e1eafa">{escape(line)}</text>')
+                       f'font-family="system-ui,sans-serif" font-size="12" font-weight="{650 if tone else 400}" '
+                       f'fill="{color}">{escape(line)}</text>')
         svg.append('</g>')
     svg.append('</svg>')
     nodes = ''.join(f'<span><i style="background:{color}"></i>{escape(kind)}</span>'

@@ -1,5 +1,14 @@
 # Development log
 
+## Readable public news relationships — 31 October 2026 Sydney
+
+- Inspected status/docs/tests and fetched/fast-forwarded main safely (already current at 7779786). Preserved/excluded five unrelated edits; never switched to or modified local. Protected all 23 frozen evidence files by hash.
+- Replaced visible technical codes with 24 shared authored headline labels. Kept full article context and text/colour sentiment; technical references live under collapsed details. Preserved both edge schemas and stable article IDs. Industry overview companies now follow sector order to reduce crossings.
+- Reviewed fictional candidate semantics: retained C-1-0 laboratory, C-2-0 research and C-4-0 supply topic pairs, without claiming the same event. Removed C-3-0 meeting/savings and C-6-0 store launch/calendar memberships. Omitted all singleton candidate nodes. Sources default off in Company Focus; candidate labels always say Unverified candidate.
+- Compared against the prior main fixtures: all original titles/dates/company/sector/source/sentiment fields and all word-frequency/matching-ID outputs are identical, both globally and for six company scopes. One fictional summary's technical cross-reference became plain language. No frozen model/evaluation change or rerun.
+- Existing tests retained plus four new regression cases. The isolated main export passes 231 tests (9.825 s), syntax checks and seven offline previews. Guarded public tests reject HTTP, model/runtime imports and database calls. Local desktop browser renders the requested Cedar labels and one unverified research topic. Exact pushed-main CI and actual deployed desktop/mobile checks/screenshots are verified after push and retained under ignored reports/showcase_readable_20261031; no future outcome is asserted here.
+- Codex assisted with code, fixture review, tests and verification. No provider calls, inference, downloads, product database access, private annotation publication, Moodle access or coursework submission. Agent sessions do not supply human feedback or attestations.
+
 ## Main-only graph/cloud acceptance — 30 October 2026 Sydney
 
 - Inspected the working tree and fast-forwarded main from 5f55aa5 to user-requested 52696ebb1add36a546e26cba454f6e6442380178. Did not switch to/reset/merge/push local. Five unrelated local-product/environment/test edits remain byte-for-byte preserved and excluded. Hashes also protect all 23 frozen challenge/annotation files. Tests run in an isolated committed-main export rather than incorporating that other work.
