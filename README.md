@@ -36,6 +36,15 @@ API success is separate from permission to display, retain, process or send publ
 
 FinBERT is the default local model and requires no API key. Its genuine three-class probabilities and exact revision are preserved with MiniLM revision and unverified candidate groups. No mock prediction is substituted on failure. FinBERT weights: **CC BY-NC-SA 4.0**, ProsusAI / MIH AI B.V.; MiniLM: **Apache-2.0**. These weight licences do not grant publisher rights. See [model evidence](docs/AI_PROTOTYPE.md).
 
+**Local LM Studio** discovers downloaded LLMs through its fixed `127.0.0.1:1234`
+server, using `/v1/models` and `/api/v1/models` to distinguish downloaded, loaded
+and API-exposed states. Refresh never infers or downloads. Explicit Load checks
+`lms` estimates and current RAM/VRAM first (2048 context, one prediction, 50% GPU);
+unload another model explicitly before switching. Chat Completions uses JSON Schema
+structured sentiment and saves actual IDs/quantization, rationale and history,
+without invented probabilities or external fallback. Start the installed server
+with `lms server start --port 1234 --bind 127.0.0.1`; keep LAN/CORS disabled.
+
 **Local Ollama** lists installed local GGUF models only after an explicit action,
 then connects to `127.0.0.1:11434`. Cloud/remote tags, arbitrary endpoints and model
 downloads are unsupported. **External LLM API** supports OpenAI Responses with

@@ -6,9 +6,10 @@ from datetime import datetime
 import streamlit as st
 
 from .api_sources import local_credentials
-from .model_providers import ExternalLLMProvider, FinBERTProvider, ModelError, OllamaProvider, OPENAI_MODELS
+from .model_providers import (ExternalLLMProvider, FinBERTProvider, LMStudioProvider, ModelError,
+                              OllamaProvider, OPENAI_MODELS, lmstudio_revision)
 
-MODES = ["Local FinBERT", "Local Ollama", "OpenAI API"]
+MODES = ["Local FinBERT", "Local LM Studio", "Local Ollama", "OpenAI API"]
 
 
 @dataclass
@@ -29,6 +30,9 @@ class RunSettings:
             return f"FinBERT · {info['model_id']} · {info['revision']}"
         if self.mode == "OpenAI API":
             return f"External LLM · openai/{self.model} · {self.model}"
+        if self.mode == 'Local LM Studio':
+            model=st.session_state.get('lmstudio_models',{}).get(self.model)
+            return f"Local LM Studio · {model['model_id']} · {lmstudio_revision(model)}" if model else 'Local LM Studio · No selected model'
         digest = st.session_state.get("installed_ollama_models", {}).get(self.model, "")
         return f"Local Ollama · {self.model} · {digest}"
 
@@ -60,6 +64,8 @@ def controls(prefix="analysis", *, store=None):
         st.caption("Available · Local model files present · No API key" if options.ready else "Not configured · Local model files missing")
         if not options.ready:
             st.info("Prepare the pinned models from Analyze before running FinBERT.")
+    elif mode=='Local LM Studio':
+        lmstudio_controls(prefix,options)
     elif mode=="Local Ollama":
         state = st.session_state.get("ollama_status", "Untested · List models to check localhost:11434")
         st.caption(state)
@@ -99,12 +105,76 @@ def controls(prefix="analysis", *, store=None):
     return options
 
 
+def lmstudio_controls(prefix,options):
+    st.caption(st.session_state.get('lmstudio_status','Untested · Refresh models to check 127.0.0.1:1234'))
+    if st.button('Refresh LM Studio models',key=prefix+'_lmstudio_refresh'):
+        try:
+            refresh_lmstudio()
+        except ModelError as error:
+            st.session_state['lmstudio_models']={}
+            st.session_state['lmstudio_status']='Failed · '+str(error)
+        st.rerun()
+    models=st.session_state.get('lmstudio_models',{})
+    key=prefix+'_lmstudio_model'
+    if st.session_state.get(key) not in models:st.session_state.pop(key,None)
+    options.model=st.selectbox('Downloaded LM Studio model',list(models),index=None,key=key,
+        format_func=lambda k:k+' · '+models[k]['quantization'],help='Actual local model keys from LM Studio; selecting never loads or infers.')
+    options.ready=False
+    selected=models.get(options.model)
+    if not selected:
+        st.info('Start the installed LM Studio server on 127.0.0.1:1234, then refresh. No model download is performed.')
+        return
+    st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB · "+
+               ('Loaded · API exposed; inference requires Run' if selected['callable'] else 'Loaded · not exposed by /v1/models' if selected['loaded'] else 'Not loaded · cannot infer'))
+    others=[m for k,m in models.items() if k!=options.model and m['loaded']]
+    for other in others:
+        st.info('Another model is loaded: '+other['key']+'. Unload it explicitly before loading the selection.')
+        if st.button('Unload '+other['key'],key=prefix+'_lmstudio_unload_'+other['key']):
+            lmstudio_action(lambda:LMStudioProvider().unload(other['key'],explicit=True))
+    if selected['loaded']:
+        if st.button('Unload selected LM Studio model',key=prefix+'_lmstudio_unload'):
+            lmstudio_action(lambda:LMStudioProvider().unload(options.model,explicit=True))
+    else:
+        st.caption('Safe load: context 2048, one prediction, 50% GPU offload; estimate and free RAM/VRAM checked first.')
+        if st.button('Load selected LM Studio model',disabled=bool(others),key=prefix+'_lmstudio_load'):
+            lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True))
+    options.ready=bool(selected['callable'])
+    report=st.session_state.get('lmstudio_last_load',{})
+    if isinstance(report,dict) and report.get('estimate'):
+        with st.expander('LM Studio load resources'):
+            estimate,snapshot=report['estimate'],report['resources_before_load']
+            st.caption(f"Estimate: GPU {estimate['gpu_bytes']/1024**3:.2f} GiB / total {estimate['total_bytes']/1024**3:.2f} GiB · context {estimate['context_length']}")
+            st.caption(f"Available before load: RAM {snapshot['ram_available']/1024**3:.2f} GiB / VRAM {snapshot['gpu_available']/1024**3:.2f} GiB · one model, one prediction")
+
+
+def refresh_lmstudio():
+    from .local_news import utcnow
+    models=LMStudioProvider().inventory()
+    st.session_state['lmstudio_models']=models
+    st.session_state['lmstudio_status']=f"Available local service · {len(models)} downloaded local LLMs · checked {utcnow().strftime('%H:%M:%S UTC')}"
+
+
+def lmstudio_action(action):
+    try:
+        with st.spinner('Checking local resources and updating the selected model…'):
+            report=action()
+            st.session_state['lmstudio_last_load']=report
+            refresh_lmstudio()
+    except ModelError as error:
+        st.session_state['lmstudio_status']='Failed · '+str(error)
+        st.error(str(error))
+        return
+    st.rerun()
+
+
 def execute(item,store,settings):
     if settings.mode=="Local FinBERT":
         from streamlit_app import cached_pipeline
         return FinBERTProvider(cached_pipeline).analyze(item,store)
     if settings.mode=="Local Ollama":
         return OllamaProvider().analyze(item,store,model=settings.model)
+    if settings.mode=='Local LM Studio':
+        return LMStudioProvider().analyze(item,store,model=settings.model)
     if settings.mode!="OpenAI API":
         raise ModelError("Choose a supported analysis mode")
     credential=settings.api_key or (local_credentials().get("OPENAI_API_KEY") if settings.use_env else None)

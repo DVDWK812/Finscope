@@ -14,6 +14,7 @@ from .rate_limits import retry_deadline, safe_retry_after
 
 OPENAI_MODELS = ("gpt-5.4-mini-2026-03-17",)
 OLLAMA_ORIGIN = "http://127.0.0.1:11434"
+LMSTUDIO_ORIGIN = "http://127.0.0.1:1234"
 SENTIMENT_SCHEMA = {"type":"object", "properties": {
     "sentiment":{"type":"string","enum":["Positive","Neutral","Negative"]},
     "rationale":{"type":"string"}}, "required":["sentiment","rationale"], "additionalProperties":False}
@@ -33,7 +34,9 @@ class ModelError(ValueError):
 def model_request(method, endpoint, payload=None, headers=None, timeout=60):
     # Fixed endpoint allowlist; no user-provided proxy/tunnel/host is accepted.
     allowed = {"https://api.openai.com/v1/responses", OLLAMA_ORIGIN+"/api/tags",
-               OLLAMA_ORIGIN+"/api/show", OLLAMA_ORIGIN+"/api/chat"}
+               OLLAMA_ORIGIN+"/api/show", OLLAMA_ORIGIN+"/api/chat",
+               LMSTUDIO_ORIGIN+"/v1/models", LMSTUDIO_ORIGIN+"/api/v1/models",
+               LMSTUDIO_ORIGIN+"/api/v1/models/unload", LMSTUDIO_ORIGIN+"/v1/chat/completions"}
     if endpoint not in allowed:
         raise ModelError("Unsupported model endpoint")
     try:
@@ -55,7 +58,8 @@ def model_request(method, endpoint, payload=None, headers=None, timeout=60):
         raise ModelError("Model service timed out; check the selected model and local server; no retry was made",kind="timeout") from None
     except requests.ConnectionError as error:
         refused=bool(re.search(r"10061|ECONNREFUSED|Errno (?:111|61)|connection refused",str(error),re.I))
-        origin="127.0.0.1:11434" if endpoint.startswith(OLLAMA_ORIGIN) else "OpenAI API"
+        origin=("127.0.0.1:11434" if endpoint.startswith(OLLAMA_ORIGIN) else
+                "127.0.0.1:1234 (verify the configured local port)" if endpoint.startswith(LMSTUDIO_ORIGIN) else "OpenAI API")
         reason=("Connection refused at "+origin+"; no service accepted the connection" if refused else "Could not connect to "+origin)
         raise ModelError(reason+"; no retry was made",kind="connection_refused" if refused else "connection_error") from None
     except requests.RequestException:
@@ -231,5 +235,97 @@ class OllamaProvider:
                           utcnow().isoformat(),rationale=data["rationale"],elapsed_ms=round((time.perf_counter()-started)*1000,2),
                           provenance={"output_kind":"model_generated_structured_sentiment","schema":"sentiment-v1",
                                       "endpoint":"loopback_only","text_basis":"headline_and_supplied_summary"})
+        store.save_analysis(analysis)
+        return analysis
+
+
+def lmstudio_revision(model):
+    return f"{model['variant']} / {model['format']} / {model['quantization']} / {model['size_bytes']} bytes"
+
+
+class LMStudioProvider:
+    """LM Studio's fixed loopback API, with downloaded/loaded/callable states."""
+    def __init__(self,transport=model_request):
+        self.transport=transport
+
+    def inventory(self):
+        compatible=self.transport('GET',LMSTUDIO_ORIGIN+'/v1/models',None,None,5)
+        native=self.transport('GET',LMSTUDIO_ORIGIN+'/api/v1/models',None,None,5)
+        if (not isinstance(compatible.get('data'),list) or not isinstance(native.get('models'),list)
+                or len(compatible['data'])>1000 or len(native['models'])>1000):
+            raise ModelError('Unexpected LM Studio model registry',kind='invalid_registry')
+        ids={r['id'] for r in compatible['data'] if isinstance(r,dict) and isinstance(r.get('id'),str)}
+        models={}
+        valid=lambda key:isinstance(key,str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/@+-]{0,199}',key)
+        for row in native['models']:
+            if not isinstance(row,dict) or row.get('type')!='llm':continue
+            key=row.get('key');variant=row.get('selected_variant') or key
+            if (not valid(key) or not valid(variant) or row.get('format') not in {'gguf','mlx'}
+                    or type(row.get('size_bytes')) is not int or row['size_bytes']<=0
+                    or any(row.get(k) for k in ('remote_host','remote_model','device_identifier','deviceIdentifier'))):continue
+            instances=row.get('loaded_instances')
+            if not isinstance(instances,list):raise ModelError('LM Studio loaded state is missing',kind='invalid_registry')
+            loaded=[r for r in instances if isinstance(r,dict) and valid(r.get('id')) and isinstance(r.get('config'),dict)]
+            if len(loaded)!=len(instances):raise ModelError('Invalid loaded instance metadata',kind='invalid_registry')
+            instance=loaded[0] if loaded else None
+            model_id=instance['id'] if instance else key
+            quantization=row.get('quantization') or {}
+            capabilities=row.get('capabilities') or {}
+            if not isinstance(quantization,dict) or not isinstance(capabilities,dict):
+                raise ModelError('Invalid LM Studio model metadata',kind='invalid_registry')
+            reasoning=capabilities.get('reasoning') or {}
+            if not isinstance(reasoning,dict):raise ModelError('Invalid LM Studio reasoning metadata',kind='invalid_registry')
+            models[key]={'key':key,'variant':variant,'model_id':model_id,'format':row['format'],
+                'quantization':quantization.get('name') or 'not supplied',
+                'size_bytes':row['size_bytes'],'architecture':row.get('architecture') or 'not supplied',
+                'loaded':bool(loaded),'instances':loaded,'context_length':instance['config'].get('context_length') if instance else None,
+                'callable':bool(instance and model_id in ids),'reasoning':reasoning}
+        return models
+
+    def load(self,key,*,explicit=False):
+        from .lmstudio_runtime import load_model
+        models=self.inventory()
+        if key not in models:raise ModelError('Select a downloaded local LM Studio model')
+        if any(m['loaded'] for m in models.values()):
+            raise ModelError('A model is already loaded; explicitly unload it before loading another model')
+        return load_model(models[key],explicit=explicit)
+
+    def unload(self,key,*,explicit=False):
+        if explicit is not True:raise ModelError('Unloading needs an explicit action')
+        models=self.inventory()
+        if key not in models or not models[key]['loaded']:raise ModelError('Selected model is not loaded')
+        if len(models[key]['instances'])!=1:raise ModelError('Manage multiple loaded instances in LM Studio')
+        return self.transport('POST',LMSTUDIO_ORIGIN+'/api/v1/models/unload',{'instance_id':models[key]['model_id']},None,30)
+
+    def analyze(self,item,store,*,model=None,**options):
+        validate_input(item)
+        models=self.inventory()
+        if model not in models:raise ModelError('Choose an installed local LM Studio model; no downloads or fallback are performed')
+        selected=models[model]
+        if not selected['loaded'] or not selected['callable']:
+            raise ModelError('Model is downloaded but not loaded/callable; explicitly load the selected model first',kind='not_loaded')
+        context=selected['context_length']
+        if type(context) is not int or context<2048:
+            raise ModelError('Load with at least 2048 context tokens; input is never silently truncated')
+        model_id=selected['model_id']
+        payload={'model':model_id,'messages':[{'role':'system','content':INSTRUCTIONS},{'role':'user','content':item.analysis_text}],
+                 'response_format':{'type':'json_schema','json_schema':{'name':'finscope_sentiment_v1','strict':True,'schema':SENTIMENT_SCHEMA}},
+                 'temperature':0,'max_tokens':512,'stream':False}
+        if 'off' in selected['reasoning'].get('allowed_options',[]):payload['reasoning_effort']='none'
+        started=time.perf_counter()
+        response=self.transport('POST',LMSTUDIO_ORIGIN+'/v1/chat/completions',payload,None,180)
+        choices=response.get('choices')
+        if (response.get('model')!=model_id or not isinstance(choices,list) or len(choices)!=1 or not isinstance(choices[0],dict)
+                or choices[0].get('finish_reason')!='stop' or not isinstance(choices[0].get('message'),dict)
+                or choices[0]['message'].get('tool_calls') or choices[0]['message'].get('refusal')):
+            raise ModelError('LM Studio output is incomplete, refused or used an unexpected model; no result saved')
+        data=structured_sentiment(choices[0]['message'].get('content'))
+        analysis=Analysis(uuid4().hex,item.article_id,data['sentiment'],'Local LM Studio',model_id,lmstudio_revision(selected),
+            utcnow().isoformat(),rationale=data['rationale'],elapsed_ms=round((time.perf_counter()-started)*1000,2),
+            provenance={'output_kind':'model_generated_structured_sentiment','provider':'Local LM Studio','schema':'sentiment-v1',
+                        'endpoint':'loopback_only','model_key':selected['key'],'variant':selected['variant'],
+                        'format':selected['format'],'quantization':selected['quantization'],'size_bytes':selected['size_bytes'],
+                        'context_length':context,'text_basis':'headline_and_supplied_summary' if item.summary else 'headline_only',
+                        'http_status':200,'response_id':response.get('id'),'usage':response.get('usage',{})})
         store.save_analysis(analysis)
         return analysis
