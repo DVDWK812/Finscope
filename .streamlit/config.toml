@@ -9,5 +9,9 @@ maxUploadSize = 1
 fileWatcherType = "auto"
 
 [theme]
-primaryColor = "#16856b"
-base = "light"
+base = "dark"
+primaryColor = "#27685e"
+backgroundColor = "#0b1220"
+secondaryBackgroundColor = "#17263a"
+textColor = "#e7edf6"
+font = "sans serif"

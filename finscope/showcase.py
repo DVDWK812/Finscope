@@ -7,52 +7,15 @@ import streamlit.components.v1 as components
 
 from .showcase_data import (END, START, SECTORS, SENTIMENTS, article_label,
                             candidate_groups, examples, graph, graph_overview, select, word_cloud_terms)
-from .showcase_visuals import relationship_markup, visible_graph, word_cloud_markup
+from .showcase_visuals import graph_layout, relationship_markup, visible_graph, word_cloud_markup
+from .showcase_theme import TOKENS, NAV_ITEMS, NAV_KEYS, SENTIMENT_COLORS, badge, brand, eyebrow, theme_css
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
 PAGES = ("Home", "User Guide", "Dashboard Preview", "Knowledge Graph", "News Explorer", "Get FinScope")
-COLORS = ["#4de0b3", "#9caec8", "#ff8f87"]
+COLORS = [SENTIMENT_COLORS[name] for name in SENTIMENTS]
 DEMO_LABEL = "Demo Data / Illustrative Preview"
 
-STYLE = """
-<style>
-[data-testid="stAppViewContainer"] {background:#0c1423;color:#e9f0fb;}
-[data-testid="stHeader"] {background:rgba(12,20,35,.94);}
-[data-testid="stSidebar"] {background:#101d30;border-right:1px solid #26364e;}
-.block-container {max-width:1260px;padding-top:2.5rem;padding-bottom:3rem;}
-h1,h2,h3,[data-testid="stSidebar"] h2 {color:#f4f7fc!important;letter-spacing:-.035em;}
-p,li,label {line-height:1.6;}
-[data-testid="stMarkdownContainer"] p,[data-testid="stMarkdownContainer"] li {color:#c3cfe1;}
-[data-testid="stWidgetLabel"] p,[data-testid="stSidebar"] label p {color:#dbe5f4;}
-a {color:#60e5bc!important;}
-.eyebrow {color:#60e5bc;font-size:.76rem;font-weight:700;letter-spacing:.17em;margin-bottom:.9rem;}
-.hero {padding:1.6rem 0 1rem;max-width:900px;}
-.hero h1 {font-size:clamp(2.5rem,5.7vw,4.8rem);line-height:1.06;margin:0 0 1.3rem;}
-.hero p {color:#b9c7db;font-size:1.12rem;max-width:720px;}
-.accent {color:#60e5bc;}
-.preview-label {display:inline-block;border:1px solid #34594f;background:#132d2a;color:#8ceacb;
- padding:.35rem .8rem;border-radius:100px;font-size:.78rem;letter-spacing:.015em;margin:.5rem 0 1.1rem;}
-.feature {border-top:2px solid #3a766c;background:#132238;border-radius:0 0 14px 14px;padding:1.4rem;min-height:170px;}
-.feature h3 {font-size:1.1rem;margin:.2rem 0 .7rem;}
-.feature p {font-size:.95rem;color:#bbc8dc;}
-.step {color:#60e5bc;font-size:1.5rem;font-weight:700;}
-.story {padding:1.1rem 0;border-bottom:1px solid #29394f;}
-.story h3 {font-size:1.12rem;line-height:1.4;margin:.3rem 0 .5rem;}
-.story-meta {font-size:.8rem;color:#a6bad2;}
-.tone {font-size:.8rem;font-weight:650;}
-.positive {color:#60e5bc;}.negative {color:#ff9b93;}.neutral {color:#b8c7dc;}
-[data-testid="stMetric"] {background:#132238;border:1px solid #2a3c54;padding:1rem;border-radius:12px;}
-[data-testid="stMetricLabel"] p {color:#b8c7dc;}
-[data-testid="stMetricValue"] {color:#f1f6fd;}
-[data-testid="stCaptionContainer"] {color:#a9b9cf;}
-[data-testid="stCaptionContainer"] p {color:#aebed3!important;}
-.stButton button,.stLinkButton a {background:#172b43;border:1px solid #3a526d;color:#e9f4ff!important;}
-.stButton button p,.stLinkButton a p {color:#e9f4ff!important;}
-.stButton button[kind="primary"],.stLinkButton a[kind="primary"] {background:#147760;border-color:#26977c;}
-@media(max-width:768px){.block-container{padding:1.4rem 1rem 2rem;}.feature{min-height:0;margin-bottom:.7rem;}
- [data-testid="stHorizontalBlock"]{flex-wrap:wrap;}[data-testid="stColumn"]{min-width:180px;flex:1 1 45%;}}
-</style>
-"""
+STYLE = theme_css()
 
 
 def go(page):
@@ -60,9 +23,10 @@ def go(page):
 
 
 def heading(title, description):
-    st.title(title)
-    st.write(description)
-    st.markdown(f'<div class="preview-label">{DEMO_LABEL}</div>', unsafe_allow_html=True)
+    with st.container(key="fs_page_header"):
+        st.markdown('<div class="fs-header-meta">' + eyebrow("PRODUCT SHOWCASE") + badge() + '</div>', unsafe_allow_html=True)
+        st.title(title)
+        st.write(description)
 
 
 def plot(spec, **_options):
@@ -74,6 +38,7 @@ def plot(spec, **_options):
 
 
 def home():
+    st.markdown(badge(), unsafe_allow_html=True)
     st.markdown('''<section class="hero"><div class="eyebrow">FINSCOPE · LOCAL FINANCIAL INTELLIGENCE</div>
         <h1>Financial news.<br><span class="accent">A clearer perspective.</span></h1>
         <p>Bring sources, sentiment and industry context into one local workspace.
@@ -104,8 +69,7 @@ def home():
 
 
 def guide():
-    st.title("How FinScope works")
-    st.write("Four steps in the full local product. This website illustrates the workflow; it does not fetch or analyze news.")
+    heading("How FinScope works", "Four steps from approved text to an inspectable local workspace.")
     steps = (("01", "Choose a news source", "In the local app, select a supported provider or add approved text. Enter credentials only on your computer. Existing quota and permission checks apply."),
              ("02", "Choose an AI model", "Start with pinned local FinBERT and sentence embeddings. Prepare model assets explicitly once. Optional model integrations are described under Get FinScope."),
              ("03", "Fetch and analyze", "Preview returned headlines and available summaries. Confirm storage and processing rights before saving or running local analysis."),
@@ -224,18 +188,22 @@ def article_selector(label, rows, key):
     by_id = {r.article_id: r for r in rows}
     if st.session_state.get(key) not in by_id:
         st.session_state.pop(key, None)
-    chosen = st.selectbox(label, list(by_id), key=key,
+    ids = list(by_id)
+    widget_key = key + "__" + "_".join(ids)
+    selected = st.session_state.get(key)
+    chosen = st.selectbox(label, ids, key=widget_key, index=ids.index(selected) if selected in ids else 0,
                           format_func=lambda ident: article_label(by_id[ident]))
+    st.session_state[key] = chosen
     return by_id[chosen]
 
 
-def render_relationship_graph(data, height=520, include_sources=False):
-    markup = relationship_markup(visible_graph(data, include_sources), height)
+def render_relationship_graph(data, include_sources=False, mobile_zoom=1.0):
+    visible = visible_graph(data, include_sources)
+    markup = relationship_markup(visible, mobile_zoom=mobile_zoom)
+    _, canvas_height, _, _ = graph_layout(visible)
     components.html('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
-                    '<style>body{margin:0;background:#0c1423;color:#dbe7f6;}</style></head><body>'
-                    + markup + '</body></html>', height=height + 185, scrolling=False)
-    st.caption("On a phone, swipe the map horizontally to keep labels readable. "
-               "Arrow styles identify relationships; hover for evidence and use the article selector for full details.")
+                    f'<style>body{{margin:0;background:{TOKENS["surface"]};color:{TOKENS["text"]};}}</style></head><body>'
+                    + markup + '</body></html>', height=int(canvas_height * mobile_zoom) + 56, scrolling=False)
 
 
 def headline_cloud(records):
@@ -261,64 +229,67 @@ def headline_cloud(records):
 
 
 def knowledge_graph():
-    heading("Explore the news connections",
-            "See how fictional companies, sectors, publishers and unverified candidate groups relate.")
+    heading("Explore the news connections", "Follow the context from industry to company, headline and potential related coverage.")
     all_rows = examples()
-    perspective = st.radio("Graph perspective", ("Company focus", "Industry network"),
-                           horizontal=True, key="graph_perspective")
-    company = st.selectbox("Fictional company", sorted({r.company for r in all_rows}),
-                           key="graph_company")
+    with st.container(key="fs_graph_controls"):
+        a, b = st.columns([1.2, 1.4])
+        with a:
+            perspective = st.radio("Graph perspective", ("Company focus", "Industry network"), horizontal=True, key="graph_perspective")
+        with b:
+            company = st.selectbox("Fictional company", sorted({r.company for r in all_rows}), key="graph_company")
     rows = [r for r in all_rows if r.company == company]
-    if perspective == "Industry network":
-        a, b, c = st.columns(3)
-        a.metric("Fictional companies", len({r.company for r in all_rows}))
-        b.metric("Illustrated sectors", len({r.sector for r in all_rows}))
-        c.metric("Illustrative source reports", len(all_rows))
-        st.subheader("Industry → Company → Source")
-        include_sources = st.checkbox("Show fictional sources", value=False, key="graph_network_sources")
-        render_relationship_graph(graph_overview(all_rows), height=480, include_sources=include_sources)
-        st.caption("Lines reflect authored example classifications and fictional source coverage. "
-                   "Their tooltips show how many example reports support each link.")
-        st.dataframe([
-            {"Company": name,
-             "Sector": next(r.sector for r in all_rows if r.company == name),
-             "Positive": sum(r.company == name and r.sentiment == "Positive" for r in all_rows),
-             "Neutral": sum(r.company == name and r.sentiment == "Neutral" for r in all_rows),
-             "Negative": sum(r.company == name and r.sentiment == "Negative" for r in all_rows)}
-            for name in sorted({r.company for r in all_rows})], hide_index=True, width="stretch")
-    else:
-        a, b, c, d = st.columns(4)
-        a.metric("Fictional reports", len(rows))
-        groups = candidate_groups(rows)
-        b.metric("Unverified topic groups", len(groups))
-        c.metric("Illustrative sources", len({r.source for r in rows}))
-        d.metric("Positive / Negative", f'{sum(r.sentiment == "Positive" for r in rows)} / '
-                                      f'{sum(r.sentiment == "Negative" for r in rows)}')
-        st.subheader("Industry → Company → Articles")
-        include_sources = st.checkbox("Show fictional sources", value=False, key="graph_company_sources")
-        render_relationship_graph(graph(all_rows, company), include_sources=include_sources)
-        st.caption("Headlines describe each fictional report. Sentiment is written in text as well as colour. "
-                   "Dashed links show shared topics only; they do not confirm the same event.")
-        st.subheader("Potentially related reports")
-        if groups:
-            st.dataframe([{"Topic": g["label"], "Reports": len(g["article_ids"]),
-                           "Headlines": " / ".join(g["headlines"]),
-                           "Status": "Unverified candidate", "Relationship basis": g["basis"]}
-                          for g in groups], hide_index=True, width="stretch")
+    groups = candidate_groups(rows)
+    with st.container(key="fs_kpis"):
+        columns = st.columns(4 if perspective == "Company focus" else 3)
+        if perspective == "Company focus":
+            for col, label, value in zip(columns, ("Fictional reports", "Unverified topic groups", "Illustrative sources", "Positive / Negative"),
+                    (len(rows), len(groups), len({r.source for r in rows}),
+                     f'{sum(r.sentiment == "Positive" for r in rows)} / {sum(r.sentiment == "Negative" for r in rows)}')):
+                col.metric(label, value)
         else:
-            st.info("These fictional reports remain separate. No multi-report candidate topic is shown.")
-        story(article_selector("Inspect an illustrative article", rows, "graph_article"), details=True)
+            for col, label, value in zip(columns, ("Fictional companies", "Illustrated sectors", "Illustrative source reports"),
+                                         (len({r.company for r in all_rows}), len(SECTORS), len(all_rows))):
+                col.metric(label, value)
+    with st.container(key="fs_map"):
+        title, options = st.columns([3, 1])
+        title.subheader("Industry → Company → Articles" if perspective == "Company focus" else "Industry → Company → Source")
+        with options:
+            with st.popover("Map options", icon=":material/tune:"):
+                include_sources = st.checkbox("Show fictional sources", value=False,
+                    key="graph_company_sources" if perspective == "Company focus" else "graph_network_sources")
+                zoom = st.slider("Mobile map zoom", min_value=1.0, max_value=1.5, value=1.0, step=.25, key="graph_mobile_zoom")
+                st.caption("Desktop fits the panel. On small screens, pan the map or enlarge its text.")
+        data = graph(all_rows, company) if perspective == "Company focus" else graph_overview(all_rows)
+        render_relationship_graph(data, include_sources=include_sources, mobile_zoom=zoom)
+        st.caption("Dashed links are unverified topic candidates, not confirmed shared events. On mobile, pan left for company context or right for related coverage.")
+    if perspective == "Company focus":
+        with st.container(key="fs_graph_detail"):
+            st.markdown(eyebrow("ARTICLE INSPECTION"), unsafe_allow_html=True)
+            picker, detail = st.columns([1, 2])
+            with picker:
+                chosen = article_selector("Inspect an illustrative article", rows, "graph_article")
+                st.caption(f"{len(rows)} original fictional reports · {company}")
+            with detail:
+                story(chosen, details=True)
+        with st.expander("Potentially related reports", expanded=False):
+            if groups:
+                st.dataframe([{"Topic": g["label"], "Reports": len(g["article_ids"]),
+                               "Headlines": " / ".join(g["headlines"]), "Status": "Unverified candidate",
+                               "Relationship basis": g["basis"]} for g in groups], hide_index=True, width="stretch")
+            else:
+                st.info("These fictional reports remain separate. No multi-report candidate topic is shown.")
+    else:
+        with st.expander("Industry coverage details", expanded=False):
+            st.dataframe([{"Company": name, "Sector": next(r.sector for r in all_rows if r.company == name),
+                           **{tone: sum(r.company == name and r.sentiment == tone for r in all_rows) for tone in SENTIMENTS}}
+                          for name in sorted({r.company for r in all_rows})], hide_index=True, width="stretch")
+    with st.container(key="fs_cloud"):
+        st.subheader("Headline word cloud")
+        scope = st.radio("Text scope", ("All fictional headlines", "Selected company"), horizontal=True, key="graph_cloud_scope")
+        cloud_rows = all_rows if scope == "All fictional headlines" else rows
+        st.caption(f"{len(cloud_rows)} authored fictional headlines · Each word counts once per headline. Generic words and company names excluded.")
+        headline_cloud(cloud_rows)
 
-    st.divider()
-    st.subheader("Headline word cloud")
-    scope = st.radio("Text scope", ("All fictional headlines", "Selected company"),
-                     horizontal=True, key="graph_cloud_scope")
-    cloud_rows = all_rows if scope == "All fictional headlines" else rows
-    st.caption(f"{len(cloud_rows)} authored fictional headlines · Size reflects how many titles "
-               "contain each word, not model importance or real-world frequency. "
-               "Generic words and fictional company names are excluded.")
-    headline_cloud(cloud_rows)
-    st.caption(DEMO_LABEL + " · No news collection or model analysis occurs here.")
 
 def explorer():
     heading("Stay close to the original", "Browse fictional headlines to see the intended news-exploration experience. Real source links belong to the local product.")
@@ -337,8 +308,7 @@ def explorer():
 
 
 def get_finscope():
-    st.title("Make FinScope your local workspace")
-    st.write("The complete application runs on your computer at http://localhost:8501. This public website remains an illustrative showcase.")
+    heading("Make FinScope your local workspace", "Run the complete application on your computer. Explore the interface here.")
     st.link_button("Get the source on GitHub ↗", REPOSITORY, type="primary")
     st.subheader("Install and start")
     st.caption("Python 3.11+ · allow disk space for explicitly prepared model assets · noncommercial model use")
@@ -363,16 +333,23 @@ def get_finscope():
 def main():
     st.set_page_config(page_title="FinScope | Product Showcase", page_icon="◈", layout="wide")
     st.markdown(STYLE, unsafe_allow_html=True)
+    page = st.session_state.get("showcase_page", "Home")
     with st.sidebar:
-        st.markdown("## ◈ FinScope")
-        st.caption("News. Sentiment. Context.")
-        page = st.radio("Explore FinScope", PAGES, key="showcase_page", label_visibility="collapsed")
+        st.markdown(brand(), unsafe_allow_html=True)
+        st.markdown(eyebrow("PRODUCT TOUR"), unsafe_allow_html=True)
+        with st.container(key="fs_nav"):
+            for name, _, icon in NAV_ITEMS:
+                st.button(name, key=NAV_KEYS[name], icon=":material/" + icon + ":", width="stretch",
+                          type="primary" if page == name else "secondary", on_click=go, args=(name,),
+                          help="Current page" if page == name else "Open " + name)
+        st.caption("Viewing: " + page)
         st.divider()
-        st.caption("Public showcase\n\nThe full product runs locally.")
-        st.link_button("GitHub ↗", REPOSITORY, width="stretch")
+        st.markdown(badge("Fictional examples"), unsafe_allow_html=True)
+        st.caption("The complete product runs locally.")
+        st.link_button("Source on GitHub", REPOSITORY, icon=":material/open_in_new:", width="stretch")
     {"Home": home, "User Guide": guide, "Dashboard Preview": dashboard,
      "Knowledge Graph": knowledge_graph, "News Explorer": explorer, "Get FinScope": get_finscope}[page]()
-    st.divider()
+    st.markdown('<div class="fs-footer"><span>FinScope · Financial news in context</span><span>Authored examples · Local-first product</span></div>', unsafe_allow_html=True)
     with st.expander("About FinScope"):
         st.write("A noncommercial financial-text research product. This showcase uses authored fictional data and preset labels; it performs no news collection or AI inference. Local sentiment is text tone, not a price forecast. Similarity suggests candidates, not verified event deduplication or contradiction detection.")
         st.caption("Local model weights: ProsusAI FinBERT, CC BY-NC-SA 4.0; sentence-transformers MiniLM, Apache-2.0. Publisher-content permissions are separate. Software and detailed evidence are available in the repository.")

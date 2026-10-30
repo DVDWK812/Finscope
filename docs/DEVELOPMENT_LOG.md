@@ -1,5 +1,24 @@
 # Development log
 
+## Premium showcase milestone A — 31 October 2026 Sydney
+
+Inspected status/README/API evaluation/tests, fetched and safely fast-forwarded
+main (already current at 7f8c049). Preserved five unrelated edits and 23 frozen
+files; local was not checked out, modified or pushed. Added reusable theme and
+presentation tokens, a 232 px icon-button sidebar, consistent headers and dark
+native controls. Replaced fixed graph geometry with responsive card nodes,
+one key and integrated article inspection; IDs/relationships/counts are unchanged.
+Mobile opens on readable headlines with panning/zoom options. Browser QA caught
+the need for a fresh preview process after imported modules changed; checks use
+that fresh runtime. Native Enter navigation, four requested layouts, no desktop
+graph scrolling, no page overflow, node text bounds and targeted contrast checks
+pass. Existing tests adapted to the real native menu controls with coverage
+retained; two additional contrast/geometry tests bring the full isolated suite
+to 233, all passing (11.470 s). Syntax and seven offline previews pass. Final
+exact CI and public browser acceptance follow this commit and are saved in ignored
+reports/showcase_premium_20261031. Codex implemented/tested the changes. No news,
+model, product database, private-label publication, Moodle or submission action.
+
 ## Readable-headline search follow-up — 31 October 2026 Sydney
 
 The final inspection found that shortened display labels with reordered wording

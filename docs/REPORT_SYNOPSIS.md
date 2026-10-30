@@ -2,6 +2,11 @@
 
 Evidence current: **31 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
+**Visual-design milestone A:** shared dark tokens, compact accessible menu and
+responsive fictional graph/inspector; 233 tests pass before release. Local browser
+checks cover two desktop widths, tablet and mobile. This changes presentation,
+not model methods, sample data or frozen results ([evidence](SHOWCASE_REDESIGN.md)).
+
 **31 October public update:** 24 readable headline labels now connect graph, word lookup and Explorer. Only three reviewed multi-report fictional topic groups appear, explicitly unverified; two misleading company-only pairings were removed and singleton nodes suppressed. Original article IDs/titles and every word-frequency result are unchanged. The isolated main candidate passes 231 tests, syntax checks and seven offline previews; exact CI and hosted checks follow push ([scope/evidence](PUBLIC_SHOWCASE.md)). Frozen metrics and human-provenance qualifications below remain unchanged.
 
 **30 October public update:** main maintains the synthetic-only showcase; local maintains the full product. Company/industry relationship views and a headline-derived frequency cloud retain fictional article-level evidence and scope/word drill-down. The public candidate passes 227 tests, including unchanged isolation guards; phone-width cloud words no longer overlap. Exact CI and actual deployment are verified separately ([evidence](PUBLIC_SHOWCASE.md)). No local-branch change, model inference, provider call or frozen-result change follows from this preview work.

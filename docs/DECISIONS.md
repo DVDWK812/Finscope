@@ -1,5 +1,12 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**31 October — showcase design milestone A:** Adopt a shared institutional dark
+theme, native icon-button navigation and responsive evidence-card graph. Fit
+desktop width; preserve readable mobile panning and inspection. Keep actual
+fictional records, memberships, frequency meaning and local/evaluation boundaries
+unchanged. 233 offline tests, syntax and seven previews pass; deployed acceptance
+is checked after exact-main CI. [Visual evidence](SHOWCASE_REDESIGN.md).
+
 **31 October — human-readable synthetic graph:** Use the same concise headline labels for article nodes, selectors, word matches and Explorer. Keep technical IDs internal/collapsed; preserve original titles and exact headline-document frequencies. Retain only three reviewed multi-report topic links (laboratory expansion, research updates, supply agreements), always unverified. Remove the Harbor meeting/savings and Maple launch/calendar pairings; suppress all singleton candidate nodes. Source nodes default off in Company Focus. These are authored showcase corrections, not model/rule changes or event-identity validation. 231 offline tests, syntax and seven previews pass before release; exact CI/deployed acceptance is verified after push. [Fixture review and evidence](PUBLIC_SHOWCASE.md).
 
 **30 October — main-only graph/cloud quality and deployment verification:** Confirmed exact-commit regression/isolation success for 52696eb, while observing that the actual public URL still served an older graph. Retained that distinction. Improved fictional graph relationships/details and mobile label readability; replaced overlapping fixed-column headline terms with a wrapping frequency cloud and exact word-to-article lookup. Existing edge aliases/tests and public isolation remain intact. Main's public watcher is enabled; full-product local branch and unrelated changes are untouched. [Verified methods and limitations](PUBLIC_SHOWCASE.md). Frozen evaluation metrics/evidence remain unchanged; no new accuracy or real-world relationship claim.

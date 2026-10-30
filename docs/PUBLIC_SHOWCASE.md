@@ -1,5 +1,11 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**31 October visual redesign:** Milestone A introduces shared dark tokens,
+compact native-button navigation, consistent headers and a responsive graph with
+integrated inspection. Existing fictional evidence and counting remain unchanged.
+233 tests pass before release; see [design and responsive checks](SHOWCASE_REDESIGN.md).
+Exact CI and actual hosted acceptance are verified separately after push.
+
 ## Human-readable relationship preview — 31 October 2026 Sydney
 
 Article nodes, selectors, word-match lists and News Explorer now share 24 concise

@@ -11,7 +11,17 @@ from finscope.showcase_data import (END, START, article_label, candidate_groups,
                                    examples, graph, graph_overview, select, word_cloud_terms)
 
 
+from finscope.showcase_theme import NAV_KEYS
+
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def navigate(app, page):
+    return app.button(key=NAV_KEYS[page]).click().run()
+
+
+def article_widget(app, key):
+    return next(widget for widget in app.selectbox if (widget.key or "").startswith(key + "__"))
 
 
 class ShowcaseTests(unittest.TestCase):
@@ -41,10 +51,12 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_every_page_runs_without_providers_database_or_models(self):
         app = self.app()
-        pages = list(app.radio(key="showcase_page").options)
+        pages = list(NAV_KEYS)
+        self.assertEqual({b.key for b in app.button if b.key in NAV_KEYS.values()}, set(NAV_KEYS.values()))
+        self.assertFalse(any(r.key == "showcase_page" for r in app.radio))
         self.assertEqual(len(pages), 6)
         for page in pages:
-            app.radio(key="showcase_page").set_value(page).run()
+            navigate(app, page)
             self.assertFalse(app.exception, page)
             self.assertFalse(app.get("file_uploader"))
             self.assertFalse(any("API key" in item.label for item in app.text_input))
@@ -54,9 +66,9 @@ class ShowcaseTests(unittest.TestCase):
     def test_landing_calls_to_action_and_local_installation(self):
         app = self.app()
         next(b for b in app.button if b.label == "How it works").click().run()
-        self.assertEqual(app.radio(key="showcase_page").value, "User Guide")
+        self.assertEqual(app.session_state["showcase_page"], "User Guide")
         self.assertEqual(len(app.subheader), 4)
-        app.radio(key="showcase_page").set_value("Get FinScope").run()
+        navigate(app, "Get FinScope")
         content = "\n".join(code.value for code in app.code)
         self.assertIn("requirements-local.txt", content)
         self.assertIn("streamlit run streamlit_app.py", content)
@@ -65,7 +77,7 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_dashboard_filters_raw_counts_and_reset(self):
         app = self.app()
-        app.radio(key="showcase_page").set_value("Dashboard Preview").run()
+        navigate(app, "Dashboard Preview")
         self.assertEqual(app.metric[0].value, "24")
         self.assertTrue(any("Demo Data / Illustrative Preview" in m.value for m in app.markdown))
         app.multiselect(key="preview_sectors").set_value(["Technology"]).run()
@@ -78,14 +90,14 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_explorer_and_graph_resolve_only_fictional_records(self):
         app = self.app()
-        app.radio(key="showcase_page").set_value("News Explorer").run()
+        navigate(app, "News Explorer")
         app.text_input[0].set_value("no such fictional company").run()
         self.assertTrue(any("No fictional examples" in info.value for info in app.info))
-        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        navigate(app, "Knowledge Graph")
         for company in ("Aster Circuits", "Maple Commerce"):
             app.selectbox(key="graph_company").set_value(company).run()
             self.assertFalse(app.exception)
-            chosen = app.selectbox(key="graph_article").value
+            chosen = article_widget(app, "graph_article").value
             self.assertIn(chosen, {r.article_id for r in examples() if r.company == company})
             self.assertTrue(any("No publisher URL" in c.value for c in app.caption))
 
@@ -101,7 +113,7 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_cloud_drilldown_survives_scope_company_and_network_changes(self):
         app = self.app()
-        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        navigate(app, "Knowledge Graph")
         app.selectbox(key="graph_cloud_word").set_value("research").run()
         self.assertFalse(app.exception)
         table = next(frame.value for frame in app.dataframe if "Article ID" in frame.value.columns)
@@ -111,7 +123,7 @@ class ShowcaseTests(unittest.TestCase):
         app.selectbox(key="graph_company").set_value("Maple Commerce").run()
         self.assertFalse(app.exception)
         valid = {r.article_id for r in examples() if r.company == "Maple Commerce"}
-        self.assertIn(app.selectbox(key="graph_cloud_article").value, valid)
+        self.assertIn(article_widget(app, "graph_cloud_article").value, valid)
         app.radio(key="graph_perspective").set_value("Industry network").run()
         app.checkbox(key="graph_network_sources").set_value(True).run()
         self.assertFalse(app.exception)
@@ -121,11 +133,11 @@ class ShowcaseTests(unittest.TestCase):
     def test_human_article_selection_resolves_stable_id_and_shared_display_label(self):
         rows = [r for r in examples() if r.company == "Cedar Therapeutics"]
         app = self.app()
-        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        navigate(app, "Knowledge Graph")
         self.assertFalse(app.checkbox(key="graph_company_sources").value)
         app.selectbox(key="graph_company").set_value("Cedar Therapeutics").run()
-        self.assertEqual(set(app.selectbox(key="graph_article").options), {article_label(r) for r in rows})
-        app.selectbox(key="graph_article").set_value("SYN-007").run()
+        self.assertEqual(set(article_widget(app, "graph_article").options), {article_label(r) for r in rows})
+        article_widget(app, "graph_article").set_value("SYN-007").run()
         chosen = next(r for r in rows if r.article_id == "SYN-007")
         content = "\n".join(m.value for m in app.markdown)
         self.assertIn(article_label(chosen), content)
@@ -134,12 +146,12 @@ class ShowcaseTests(unittest.TestCase):
         self.assertTrue(app.expander)
         self.assertTrue(all(not e.proto.expanded for e in app.expander))
         app.selectbox(key="graph_cloud_word").set_value("research").run()
-        self.assertNotIn("SYN-", " ".join(app.selectbox(key="graph_cloud_article").options))
-        app.selectbox(key="graph_cloud_article").set_value("SYN-005").run()
+        self.assertNotIn("SYN-", " ".join(article_widget(app, "graph_cloud_article").options))
+        article_widget(app, "graph_cloud_article").set_value("SYN-005").run()
         matches = next(d.value for d in app.dataframe if "Complete headline" in d.value.columns)
         self.assertEqual(set(matches["Headline"]), {article_label(r) for r in examples()
                                                   if r.article_id in ("SYN-002", "SYN-005", "SYN-006")})
-        app.radio(key="showcase_page").set_value("News Explorer").run()
+        navigate(app, "News Explorer")
         app.text_input[0].set_value("Cedar Therapeutics").run()
         content = "\n".join(m.value for m in app.markdown)
         self.assertTrue(all(article_label(r) in content and r.title in content for r in rows))
@@ -150,7 +162,7 @@ class ShowcaseTests(unittest.TestCase):
 
     def test_unrelated_company_reports_do_not_gain_candidate_clutter(self):
         app = self.app()
-        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        navigate(app, "Knowledge Graph")
         for company in ("Harbor Ledger Bank", "Maple Commerce", "Copperleaf Minerals"):
             app.selectbox(key="graph_company").set_value(company).run()
             self.assertEqual(app.metric[1].value, "0")
@@ -159,6 +171,40 @@ class ShowcaseTests(unittest.TestCase):
 
 
 class FictionalDataTests(unittest.TestCase):
+    def test_public_text_tokens_meet_normal_text_contrast(self):
+        from finscope.showcase_theme import TOKENS
+
+        def luminance(color):
+            channels = [int(color[n:n+2], 16) / 255 for n in (1, 3, 5)]
+            linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
+            return sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
+
+        for foreground in ("text", "muted", "accent", "positive", "neutral", "negative"):
+            for background in ("background", "surface", "raised"):
+                a, b = sorted((luminance(TOKENS[foreground]), luminance(TOKENS[background])))
+                self.assertGreaterEqual((b + .05) / (a + .05), 4.5, (foreground, background))
+        a, b = sorted((luminance(TOKENS["text"]), luminance(TOKENS["button"])))
+        self.assertGreaterEqual((b + .05) / (a + .05), 4.5)
+
+    def test_responsive_graph_layout_retains_all_evidence_without_node_collisions(self):
+        from finscope.showcase_visuals import graph_layout, visible_graph
+        rows = examples()
+        for company in {r.company for r in rows}:
+            for sources in (True, False):
+                data = visible_graph(graph(rows, company), sources)
+                width, height, positions, sizes = graph_layout(data)
+                self.assertEqual(set(positions), {n["id"] for n in data["nodes"]})
+                boxes = []
+                for ident, (x, y) in positions.items():
+                    w, h = sizes[ident]
+                    box = (x - w/2, y - h/2, x + w/2, y + h/2)
+                    self.assertTrue(0 <= box[0] < box[2] <= width, ident)
+                    self.assertTrue(0 <= box[1] < box[3] <= height, ident)
+                    for other in boxes:
+                        self.assertFalse(min(box[2], other[2]) > max(box[0], other[0])
+                                         and min(box[3], other[3]) > max(box[1], other[1]))
+                    boxes.append(box)
+
     def test_readable_labels_and_complete_tooltips_never_expose_technical_codes(self):
         from html.parser import HTMLParser
         from finscope.showcase_visuals import relationship_markup, visible_graph
@@ -313,7 +359,7 @@ class FictionalDataTests(unittest.TestCase):
     def test_graph_word_cloud_and_perspective_controls_render(self):
         # This method runs as a data test but exercises the public AppTest entrypoint.
         app = AppTest.from_file(str(ROOT / "deploy/streamlit_app.py"), default_timeout=15).run()
-        app.radio(key="showcase_page").set_value("Knowledge Graph").run()
+        navigate(app, "Knowledge Graph")
         self.assertFalse(app.exception)
         self.assertTrue(any("Headline word cloud" in h.value for h in app.subheader))
         app.radio(key="graph_perspective").set_value("Industry network").run()
