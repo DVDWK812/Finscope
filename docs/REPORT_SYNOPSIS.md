@@ -171,3 +171,11 @@ offline tests pass on Streamlit 1.50 and 1.66.1, plus dry run. Protected news,
 history, jobs and frozen evidence are unchanged. A test initially wrote a dummy
 Marketaux vault entry; it was removed and tests isolated. The .env is unchanged;
 any previously different vault value cannot be reconstructed (development log).
+
+31 October 21:33 Sydney: DeepSeek's actual `deepseek-flash` alias passed three
+explicitly confirmed authored-text HTTP/schema/usage/SQLite-history checks (584
+tokens; no retries). Browser details, model filtering and refresh persistence
+worked; 42 real originals remain excluded from these tests. No fixed weight
+revision or accuracy claim follows. Prior rows and 171 frozen hashes are intact;
+443 offline tests and dry run pass after isolating credential diagnostics from
+the user's vault. Earlier no-key status above describes the preparation checkpoint.

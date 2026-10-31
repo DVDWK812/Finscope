@@ -572,3 +572,18 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   Console observations include expected WebSocket/disconnected-rerun messages
   during deliberate UI restarts and the previously evidenced Codex-preload
   MutationObserver exception; browser acceptance does not claim a clean console.
+
+- 31 October 21:33 Sydney DeepSeek real acceptance: user-configured vault key and
+  explicit consent; reused the prior successful model-list GET and sent exactly
+  three fixed authored texts serially to deepseek-flash. Three HTTP-200, valid
+  structured results (Positive/Negative/Neutral), 584 total tokens, 1.03–1.22s each;
+  no retry or real-news transmission. Three separate development records/results
+  persist in SQLite; details/model filters/refresh checked through actual browser
+  controls, without replay. Default dashboard remains 42 real originals/Gemma;
+  all prior rows, pipeline/preferences, jobs and 171 frozen hashes preserved.
+- Full local regression exposed three diagnostic tests reading the machine's
+  newly configured OpenAI vault credential rather than their fake .env alone.
+  Added lifetime vault mocking and a provider-specific precedence/redaction test;
+  retained every original assertion and made no credential writes. All 443 offline
+  tests and benchmark dry run now pass. This fixes test isolation, not an API
+  outage, and does not imply any new real OpenAI request.

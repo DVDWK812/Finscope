@@ -21,6 +21,8 @@ class DiagnosticTests(unittest.TestCase):
         self.env=self.root/'.env';self.env.write_text('MARKETAUX_API_KEY=UNIT-PRIVATE-KEY\nFINNHUB_API_KEY=UNIT-FINNHUB-KEY\nNEWSDATA_API_KEY=UNIT-NEWS-KEY\n')
         for target in ('finscope.api_sources.project_env_path','finscope.connection_diagnostics.project_env_path'):
             p=patch(target,return_value=self.env);p.start();self.addCleanup(p.stop)
+        vault=patch('finscope.local_credentials.vault_key',return_value='')
+        self.vault=vault.start();self.addCleanup(vault.stop)
         self.now=datetime(2026,10,30,13,tzinfo=timezone.utc)
         self.service=LocalIngestionService(self.store,clock=lambda:self.now,cooldown_path=self.root/'cooldowns.json',study_path=self.root/'study.sqlite3')
 
@@ -41,6 +43,14 @@ class DiagnosticTests(unittest.TestCase):
             self.assertFalse(credential_report('openai')['present'])
         report=self.report();self.assertNotIn('UNIT-PRIVATE-KEY',json.dumps(report))
         self.assertNotIn(b'UNIT-PRIVATE-KEY',self.store.path.read_bytes())
+
+    def test_vault_presence_is_mocked_and_overrides_only_the_matching_provider(self):
+        self.vault.side_effect=lambda provider:'AUTHORED-VAULT-ONLY' if provider=='openai' else ''
+        self.assertEqual(credential_report('openai')['source'],'Windows Credential Manager')
+        self.assertTrue(credential_report('openai')['present'])
+        self.assertEqual(credential_report('finnhub')['source'],str(self.env))
+        self.assertFalse(credential_report('openai',use_env=False)['present'])
+        self.assertNotIn('AUTHORED-VAULT-ONLY',json.dumps(self.report('openai')))
 
     def test_expired_failure_has_exact_utc_sydney_expiry_and_does_not_imply_outage(self):
         self.row();before=self.store.path.read_bytes();report=self.report()

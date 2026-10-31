@@ -77,8 +77,10 @@ texts to be sent serially. No existing news is sent and the automatic worker
 retains its local model. Strict JSON validation, usage and requested/response IDs
 are saved as separate history; aliases are not fixed weight versions. An error or
 unknown outcome stops the test without retry. This is interface verification,
-not an accuracy evaluation; real DeepSeek acceptance is pending local key setup
-and this-run consent.
+not an accuracy evaluation. On 31 October, explicit browser acceptance succeeded
+on three authored samples using actual request/response ID `deepseek-flash`:
+strict JSON, usage and SQLite history passed; refresh made no repeat requests.
+The response did not supply a fixed weight revision. See the dated provider log.
 
 Shared date, sector, source, sentiment, model and search filters drive **Overview,
 Sector sentiment, Trends, Heatmap, Evidence graph and News Explorer**. The heatmap

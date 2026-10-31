@@ -1,5 +1,22 @@
 # API evaluation protocol — Phase 1
 
+> **Real DeepSeek interface acceptance, 31 October 2026 Sydney:** After local
+> Windows Credential Manager setup and explicit user confirmation, reused the
+> user's existing HTTP-200 `/models` result from 10:30:36 UTC (no repeated GET).
+> Actual serial `/chat/completions` requests ran at 10:33:46–49 UTC, with request
+> and response ID `deepseek-flash`, thinking disabled and 512 output-token cap.
+> All three returned HTTP 200 and strict schema-valid sentiment/rationale:
+> Positive (1,217 ms, 198 tokens), Negative (1,134 ms, 195), Neutral (1,029 ms, 191).
+> Total usage: 456 input + 128 output = 584 tokens. No fixed weight revision was
+> supplied; the user-facing V4.1 Flash name is not independently pinned by this
+> response. Three authored records/results were saved as synthetic development
+> history, excluded from the unchanged 42-real-news dashboard. Model filtering,
+> all three details, refresh persistence and zero replay were observed in-browser.
+> Total rehearsal ledger: one model GET (user initiated), three inference POSTs,
+> zero retries/news requests. This verifies the interface, not accuracy or news
+> processing permission. Ignored local ledger/acceptance/screenshot evidence stays
+> local; no credentials, real article text or private account details are committed.
+
 > **Controlled DeepSeek test, 31 October 2026 Sydney:** Separate from news-provider
 > evaluation and historical gates below. The official [model-list API](https://api-docs.deepseek.com/api/list-models/),
 > [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/),
@@ -9,7 +26,7 @@
 > Output and validates locally. Actual model IDs/usage are preserved without
 > invented revisions/probabilities. A separate ledger caps this rehearsal at one
 > list request and three serial authored-text inferences; failure/unknown stops
-> it without retry. No local key was detected: real DeepSeek requests **0**,
+> it without retry. At that preparation checkpoint no local key was detected: real DeepSeek requests **0**,
 > adapter/output/error tests are mocks; real acceptance awaits local key setup
 > and per-action confirmation. Existing real news and provider holds are untouched.
 
