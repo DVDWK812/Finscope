@@ -609,3 +609,9 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   remains: its removed fixture does not establish recovery of any previous
   different vault value. Only the user may re-save a different key locally; no
   credential recovery, overwrite, deletion or export was attempted this round.
+- Linux CI then exposed directory-descriptor-relative temporary cleanup being
+  resolved against the project CWD. Resolve `dir_fd` before applying the same
+  path guard; add a cleanup/production-path regression. Windows-specific SQLite
+  URI handling and all native credential guards remain intact.
+  Final local regression is 466 tests plus isolated dry run, all passing; data
+  hashes still match. Keep Linux matrix jobs independent for failure diagnosis.

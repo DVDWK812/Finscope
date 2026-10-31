@@ -73,10 +73,21 @@ def fake_credentials():
     return _memory
 
 
-def _check_path(path):
+def _directory_fd_path(descriptor):
+    for prefix in ('/proc/self/fd', '/dev/fd'):
+        try:
+            return os.readlink(prefix + '/' + str(descriptor))
+        except OSError:
+            pass
+    raise TestIsolationError('Test isolation could not resolve a directory descriptor safely')
+
+
+def _check_path(path, dir_fd=None):
     if not isinstance(path, (str, bytes, os.PathLike)) or path == ':memory:':
         return
     name = os.fsdecode(path)
+    if dir_fd not in (None, -1) and not os.path.isabs(name):
+        name = os.path.join(_directory_fd_path(dir_fd), name)
     if name.startswith('file:'):
         from urllib.parse import unquote, urlsplit
         parts = urlsplit(name)
@@ -98,10 +109,16 @@ def _audit(event, args):
         return
     _checking.busy = True
     try:
-        if event in ('open', 'sqlite3.connect', 'os.remove', 'os.rmdir', 'os.mkdir', 'os.listdir', 'os.scandir', 'shutil.rmtree'):
+        if event in ('open', 'sqlite3.connect', 'os.listdir', 'os.scandir', 'shutil.rmtree'):
             _check_path(args[0])
-        elif event in ('os.rename', 'os.link', 'os.symlink'):
-            _check_path(args[0]); _check_path(args[1])
+        elif event in ('os.remove', 'os.rmdir'):
+            _check_path(args[0],args[1])
+        elif event == 'os.mkdir':
+            _check_path(args[0],args[2])
+        elif event in ('os.rename', 'os.link'):
+            _check_path(args[0],args[2]); _check_path(args[1],args[3])
+        elif event == 'os.symlink':
+            _check_path(args[0]); _check_path(args[1],args[2])
         elif event == 'ctypes.dlopen' and 'advapi32' in str(args[0]).lower():
             raise TestIsolationError('Test isolation blocked the Windows credential DLL before loading')
         elif event.startswith('ctypes.dlsym') and str(args[-1]).startswith(('CredRead', 'CredWrite', 'CredDelete', 'CredEnumerate')):

@@ -11,6 +11,7 @@ jobs:
     env:
       FINSCOPE_TESTING: '1'
     strategy:
+      fail-fast: false
       matrix:
         streamlit: ["streamlit==1.50.0", "streamlit>=1.50,<2"]
     steps:

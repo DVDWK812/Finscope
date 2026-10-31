@@ -86,6 +86,19 @@ class CredentialIsolationTests(unittest.TestCase):
             with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
                 self.assertEqual(db.execute('SELECT count(*) FROM authored').fetchone()[0],0)
 
+    def test_directory_relative_cleanup_resolves_temporary_path_and_still_blocks_production(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target=Path(directory)/'.env';target.write_text('AUTHORED_ONLY=YES')
+            if os.name=='posix':
+                descriptor=os.open(directory,os.O_RDONLY)
+                try:os.unlink('.env',dir_fd=descriptor)
+                finally:os.close(descriptor)
+                self.assertFalse(target.exists())
+            with patch('finscope.test_safety._directory_fd_path',return_value=directory):
+                safety._audit('os.remove',('.env',123))
+                with self.assertRaises(safety.TestIsolationError):
+                    safety._audit('os.remove',(str(safety.PROJECT/'.env'),123))
+
     def test_provider_fake_keys_and_literal_env_do_not_override_each_other(self):
         project_env_path().write_text('OPENAI_API_KEY=AUTHORED-ENV-OPENAI\nFINNHUB_API_KEY=AUTHORED-ENV-FINNHUB\n', encoding='utf-8')
         for provider in PROVIDERS: save_credential(provider, 'AUTHORED-VAULT-' + provider)
