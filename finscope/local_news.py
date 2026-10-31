@@ -118,6 +118,8 @@ class Analysis:
 class LocalNewsStore:
     """Single-user local SQLite. Records survive browser and app restarts."""
     def __init__(self, path):
+        from .test_safety import require_test_path
+        require_test_path(path)
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as db:

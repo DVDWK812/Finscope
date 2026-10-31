@@ -1,37 +1,57 @@
-"""Project .env plus optional Windows per-user Credential Manager. No SQLite keys."""
-import os
+"""Shared credential facade: per-user store first, literal project .env second."""
+from pathlib import Path
+from .credential_store import PROVIDERS, validate_provider
+from . import test_safety
 
-PROVIDERS=('marketaux','newsdata','finnhub','openai','deepseek')
+ENV_KEYS = dict(zip(PROVIDERS, ('MARKETAUX_API_KEY', 'NEWSDATA_API_KEY', 'FINNHUB_API_KEY', 'OPENAI_API_KEY', 'DEEPSEEK_API_KEY')))
 
 
-def vault_key(provider,value=None):
-    if provider not in PROVIDERS:raise ValueError('Unsupported credential provider')
-    if os.name!='nt':return ''
-    import ctypes as c
-    from ctypes import wintypes as w
-    class Credential(c.Structure):
-        _fields_=[('Flags',w.DWORD),('Type',w.DWORD),('TargetName',w.LPWSTR),('Comment',w.LPWSTR),
-                  ('LastWritten',w.FILETIME),('CredentialBlobSize',w.DWORD),('CredentialBlob',c.POINTER(c.c_ubyte)),
-                  ('Persist',w.DWORD),('AttributeCount',w.DWORD),('Attributes',c.c_void_p),('TargetAlias',w.LPWSTR),('UserName',w.LPWSTR)]
-    api=c.WinDLL('Advapi32',use_last_error=True);target='FinScope local / '+provider
-    api.CredReadW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,c.POINTER(c.POINTER(Credential))];api.CredReadW.restype=w.BOOL
-    api.CredWriteW.argtypes=[c.POINTER(Credential),w.DWORD];api.CredWriteW.restype=w.BOOL
-    api.CredFree.argtypes=[c.c_void_p]
+def credential_store():
+    fake = test_safety.fake_credentials()
+    if fake is not None:
+        return fake
+    from .windows_credentials import WindowsCredentialStore
+    return WindowsCredentialStore()
+
+
+def project_env_path():
+    return (test_safety.case_directory() or Path(__file__).resolve().parents[1]) / '.env'
+
+
+def environment_credentials(path=None, *, reader=None):
+    path = project_env_path() if path is None else Path(path)
+    test_safety.require_test_path(path)
+    if reader is None:
+        from dotenv import dotenv_values
+        reader = dotenv_values
+    return reader(path, interpolate=False)
+
+
+def vault_key(provider, value=None):
+    """Compatibility facade; no native system APIs are called here."""
+    validate_provider(provider)
+    store = credential_store()
     if value is not None:
-        if not isinstance(value,str) or not value.strip() or len(value)>500:raise ValueError('Invalid credential')
-        blob=(c.c_ubyte*len(value.encode('utf-16-le'))).from_buffer_copy(value.encode('utf-16-le'))
-        entry=Credential();entry.Type=1;entry.TargetName=target;entry.UserName=provider;entry.Persist=2
-        entry.CredentialBlobSize=len(blob);entry.CredentialBlob=c.cast(blob,c.POINTER(c.c_ubyte))
-        if not api.CredWriteW(c.byref(entry),0):raise ValueError('Windows credential storage failed; existing .env remains usable')
+        store.write(provider, value)
         return ''
-    pointer=c.POINTER(Credential)()
-    if not api.CredReadW(target,1,0,c.byref(pointer)):return ''
-    try:return c.string_at(pointer.contents.CredentialBlob,pointer.contents.CredentialBlobSize).decode('utf-16-le')
-    finally:api.CredFree(pointer)
+    return store.read(provider)
+
+
+def save_credential(provider, value):
+    vault_key(provider, value)
 
 
 def credential(provider):
-    from .api_sources import local_credentials,ENV_KEYS
-    if provider not in PROVIDERS:raise ValueError('Unsupported credential provider')
-    env={'openai':'OPENAI_API_KEY','deepseek':'DEEPSEEK_API_KEY'}.get(provider) or ENV_KEYS[provider]
-    return vault_key(provider) or local_credentials().get(env,'')
+    from .api_sources import local_credentials
+    validate_provider(provider)
+    return vault_key(provider) or local_credentials().get(ENV_KEYS[provider], '')
+
+
+def credential_state(provider, *, ui_key_present=False, use_env=True, read_env=None, env_path=None):
+    validate_provider(provider)
+    vault = bool(use_env and vault_key(provider))
+    present = ui_key_present or vault or bool(use_env and (read_env or environment_credentials)().get(ENV_KEYS[provider]))
+    return {'present': bool(present), 'variable': ENV_KEYS[provider],
+            'source': 'Masked UI field (session only)' if ui_key_present else
+            'Windows Credential Manager' if vault else
+            str(env_path or project_env_path()) if present else 'Not configured in selected credential sources'}

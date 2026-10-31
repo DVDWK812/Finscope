@@ -167,3 +167,13 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   three serial inferences preserve provider identity/history and stop on errors.
   Saving credentials is not transmission consent. No live DeepSeek claim exists
   without a local key, explicit action and observed validated response.
+
+- 31 October credential incident closure: native Credential Manager access lives
+  only in `windows_credentials.py`; UI/business/diagnostics use the shared facade.
+  Unittest/AppTest default to temporary files and per-case memory stores, with
+  process-lifetime fail-closed native/path guards and inherited Python-child
+  isolation. [CPython audit events](https://docs.python.org/3.11/library/audit_events.html)
+  supplement entry-point checks against omitted mocks; they are not a hostile-code
+  security sandbox. Windows CI exercises mocked Win32 marshalling, not real vault
+  reads/writes. Preserve the incident and unverified prior-value qualification;
+  recovery of any different Marketaux key belongs to the user in the local editor.

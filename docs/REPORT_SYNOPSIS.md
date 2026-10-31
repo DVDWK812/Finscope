@@ -179,3 +179,12 @@ worked; 42 real originals remain excluded from these tests. No fixed weight
 revision or accuracy claim follows. Prior rows and 171 frozen hashes are intact;
 443 offline tests and dry run pass after isolating credential diagnostics from
 the user's vault. Earlier no-key status above describes the preparation checkpoint.
+
+31 October credential incident closure: centralized native adapter and shared
+facade; mandatory temporary credentials/data for unittest/AppTest and Python
+children. Missing mocks fail before native credential calls; Windows marshalling
+is checked with mocks and a Windows CI job retains both Linux compatibility jobs.
+465 offline tests and isolated dry run pass locally. Production credential access,
+news/model requests: zero; 16 data tables and 171 frozen files remain unchanged.
+No claim of restoring a previously different Marketaux vault key is made; only
+the user can re-save it through the local masked editor if needed.

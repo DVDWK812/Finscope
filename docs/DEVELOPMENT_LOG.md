@@ -587,3 +587,25 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   retained every original assertion and made no credential writes. All 443 offline
   tests and benchmark dry run now pass. This fixes test isolation, not an API
   outage, and does not imply any new real OpenAI request.
+
+- 31 October credential incident closure: extracted the sole Windows adapter and
+  shared provider-scoped facade. Test discovery/runner/AppTest automatically use
+  memory credentials and temporary .env/data; captured UI callbacks resolve this
+  boundary at action time. Native adapter entry rejects test processes before
+  loading any DLL, with additional audit guards for accidental raw native/file/
+  network access. Python children inherit the bootstrap; losing it or bypassing
+  site initialization is refused. Production defaults/credential targets and
+  vault-first literal-.env fallback remain unchanged; no delete/enumeration API.
+- Regressions cover omitted mocks (native loader/read/write/delete calls zero),
+  unpatched UI save/change, fake-provider isolation, diagnostic/error redaction,
+  per-case cleanup, child inheritance, production paths/junctions and Windows file
+  URIs. Corrected Windows URI normalization and test SQLite handle cleanup without
+  weakening production guards or existing assertions. Native Windows local
+  verification: 465 offline tests plus isolated benchmark dry run; Windows CI
+  added while retaining both Linux/Streamlit compatibility jobs.
+- No news/model request, production credential read/write or real-key inventory
+  was performed. Read-only hashes preserve all 16 existing data tables (excluding
+  worker heartbeat) and 171 frozen files. The prior Marketaux dummy-write incident
+  remains: its removed fixture does not establish recovery of any previous
+  different vault value. Only the user may re-save a different key locally; no
+  credential recovery, overwrite, deletion or export was attempted this round.

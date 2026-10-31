@@ -145,7 +145,8 @@ def run(argv: list[str] | None = None) -> int:
         ],
         "results": rows,
     }
-    output = Path(args.output) if args.output else Path("reports") / (
+    from .test_safety import case_directory
+    output = Path(args.output) if args.output else ((case_directory() / 'reports') if case_directory() else Path('reports')) / (
         f"api_benchmark_{document['experiment_type']}_{now.strftime('%Y%m%dT%H%M%S%fZ')}.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

@@ -25,7 +25,8 @@ SOURCE = rss.SOURCE
 TERMS_URL = rss.TERMS_URL
 LICENSE_URL = rss.LICENSE_URL
 USER_AGENT = "FinScope-RBA-HTML-Prototype/0.1"
-DATA_DIR = Path(__file__).resolve().parents[1] / "reports" / "html"
+from .test_safety import data_path
+DATA_DIR = data_path('reports', 'html')
 MAX_BYTES = 1_000_000
 MAX_STORED = 100
 MAX_STORE_BYTES = 5_000_000

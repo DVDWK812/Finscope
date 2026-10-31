@@ -25,7 +25,8 @@ SOURCE = "Reserve Bank of Australia"
 USER_AGENT = "FinScope-RSS-Prototype/0.1"
 TERMS_URL = "https://www.rba.gov.au/copyright/"
 LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
-DATA_DIR = Path(__file__).resolve().parents[1] / "reports" / "rss"
+from .test_safety import data_path
+DATA_DIR = data_path('reports', 'rss')
 MAX_BYTES = 1_000_000
 MAX_STORED = 100
 MAX_STORE_BYTES = 5_000_000

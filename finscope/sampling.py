@@ -22,7 +22,8 @@ from .rate_limits import COOLDOWN_PATH, load_cooldowns, retry_deadline
 STUDY_ID = "marketaux-phase15-v1"
 ROUND_DATES = (date(2026, 10, 26), date(2026, 10, 28), date(2026, 10, 31))
 SECTORS = ("healthcare", "technology", "materials")
-LEDGER_PATH = Path(__file__).resolve().parents[1] / "reports" / "marketaux_phase15.sqlite3"
+from .test_safety import data_path
+LEDGER_PATH = data_path('reports', 'marketaux_phase15.sqlite3')
 MIN_SPACING = timedelta(seconds=60)
 
 

@@ -101,4 +101,20 @@ Raw originals remain the default. Cosine ≥0.80 within 72 hours creates unverif
 
 Offline tests use mocks/authored text; actual provider/model/browser checks are recorded separately in [local redesign evidence](docs/LOCAL_REDESIGN.md). The [provider evaluation](docs/API_EVALUATION.md), [decisions](docs/DECISIONS.md), [RSS](docs/RSS_PROTOTYPE.md), [HTML](docs/HTML_PROTOTYPE.md), and [historical overview](docs/PRE_REDESIGN_OVERVIEW.md) preserve prior evidence. Existing deployment files are retained for compatibility; cloud deployment is not a product requirement or acceptance target.
 
+Test discovery, programmatic unittest runs and AppTest use a temporary `.env`,
+per-case in-memory credentials and temporary data by default. Python child
+processes inherit the guards; a child that drops them is refused. Real Windows
+credential adapter calls fail before DLL loading, and production data/`.env`
+access is blocked even when an individual test omits its mock. Windows CI tests
+the adapter with mocked native calls alongside both Linux/Streamlit jobs. These
+are accidental-I/O regression guards, not a sandbox for hostile Python code.
+For a standalone benchmark dry run, set `FINSCOPE_TESTING=1` only in that child
+process (CI already does this) to avoid reading production credentials. Keep test
+logs in ignored `.test-results/`, separate from the news database directory.
+
+The earlier Marketaux vault-test incident remains recorded in the development
+log. No previously different vault value is claimed restored. Only the user can
+restore a different key through the local masked editor; no key enumeration,
+guessing, deletion or credential export is part of verification.
+
 This local-product task uses the explicitly requested `local` branch and isolated worktree; the concurrent web task keeps its original `main` checkout. No PR or merge is opened. No GDELT retry/task recreation, challenge tuning/rescoring, Moodle access or coursework submission. Internal target: 31 October; the official deadline remains user-confirmed, with the historical conflicting values preserved in [assessment notes](docs/ASSESSMENT_VERIFICATION.md).

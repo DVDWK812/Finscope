@@ -19,7 +19,7 @@ def field(kind,label,key,default,*,after_change=None,**kwargs):
 
 
 def credential_editor(provider):
-    from .local_credentials import credential,vault_key
+    from .local_credentials import credential,save_credential
     configured=bool(credential(provider));key='settings_secret_'+provider;flag=key+'_editing'
     st.caption('Key configured' if configured else 'Key not configured')
     if st.button('Change API key' if configured else 'Configure API key',key=key+'_edit'):
@@ -28,7 +28,7 @@ def credential_editor(provider):
     st.text_input('API key',type='password',key=key,max_chars=500)
     def persist():
         secret=st.session_state.get(key,'')
-        try:vault_key(provider,secret)
+        try:save_credential(provider,secret)
         except ValueError:
             st.session_state[key+'_error']='Credential save failed; existing credentials are unchanged.';return
         for k in (key,key+'__en',key+'__zh-CN'):

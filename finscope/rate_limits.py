@@ -9,7 +9,8 @@ import re
 import tempfile
 
 
-COOLDOWN_PATH = Path(__file__).resolve().parents[1] / "reports" / "provider_cooldowns.json"
+from .test_safety import data_path
+COOLDOWN_PATH = data_path('reports', 'provider_cooldowns.json')
 
 
 def safe_retry_after(value: str) -> str | None:

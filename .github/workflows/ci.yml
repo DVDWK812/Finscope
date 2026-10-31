@@ -8,6 +8,8 @@ jobs:
   unit-tests:
     name: Python 3.11 / ${{ matrix.streamlit }}
     runs-on: ubuntu-latest
+    env:
+      FINSCOPE_TESTING: '1'
     strategy:
       matrix:
         streamlit: ["streamlit==1.50.0", "streamlit>=1.50,<2"]
@@ -17,10 +19,14 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
+        env:
+          FINSCOPE_TESTING: '0'
         run: pip install -r requirements.txt "${{ matrix.streamlit }}"
       - name: Unit tests (no API keys or live external calls)
         run: python -m unittest discover -s tests -v
       - name: Benchmark dry run (no provider requests)
+        env:
+          FINSCOPE_TESTING: '1'
         run: python -m finscope.benchmark --dry-run
       - name: Optional RSS preview (no network or collection)
         run: python -m finscope.rss_collector --dry-run
@@ -34,3 +40,23 @@ jobs:
         run: python -m finscope.marketaux_runner --dry-run
       - name: Local FinBERT preview (no weights, downloads or inference)
         run: python -m finscope.finbert_backend --dry-run
+  windows-tests:
+    name: Windows Python 3.11 / mocked credential APIs
+    runs-on: windows-latest
+    env:
+      FINSCOPE_TESTING: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        env:
+          FINSCOPE_TESTING: '0'
+        run: pip install -r requirements.txt
+      - name: Unit tests (isolated credentials, data and mocked Windows calls)
+        run: python -m unittest discover -v
+      - name: Isolated benchmark dry run
+        env:
+          FINSCOPE_TESTING: '1'
+        run: python -m finscope.benchmark --dry-run

@@ -13,7 +13,8 @@ def manifest(kind):
 
 
 def model_directory(kind):
-    return ROOT/"models"/kind/manifest(kind)["revision"]
+    from .test_safety import case_directory
+    return (case_directory() or ROOT)/"models"/kind/manifest(kind)["revision"]
 
 
 def assets_present(kind):

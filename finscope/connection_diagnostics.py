@@ -11,14 +11,9 @@ from .rate_limits import load_cooldowns
 
 
 def credential_report(provider, *, ui_key_present=False, use_env=True):
-    from .local_credentials import vault_key
-    variable = 'OPENAI_API_KEY' if provider == 'openai' else ENV_KEYS[provider]
-    vault=bool(use_env and vault_key(provider))
-    present = ui_key_present or vault or bool(use_env and local_credentials().get(variable))
-    return {'present': bool(present), 'variable': variable,
-            'source': 'Masked UI field (session only)' if ui_key_present else
-            'Windows Credential Manager' if vault else
-            str(project_env_path()) if present else 'Not configured in selected credential sources'}
+    from .local_credentials import credential_state
+    return credential_state(provider,ui_key_present=ui_key_present,use_env=use_env,
+                            read_env=local_credentials,env_path=project_env_path())
 
 
 def api_diagnostic(store, provider, *, ui_key_present=False, use_env=True, service=None):
