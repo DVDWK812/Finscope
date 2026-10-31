@@ -7,10 +7,12 @@ from .i18n import t,tr,display,Verbatim
 from .settings_state import editable,save,issues,saved
 
 
-def field(kind,label,key,default,**kwargs):
+def field(kind,label,key,default,*,after_change=None,**kwargs):
     values=st.session_state.setdefault('_settings_values',{})
     if key not in st.session_state:st.session_state[key]=values.get(key,default)
-    def remember():values[key]=st.session_state[key]
+    def remember():
+        values[key]=st.session_state[key]
+        if after_change:after_change()
     value=getattr(st,kind)(label,key=key,on_change=remember,**kwargs)
     values[key]=value
     return value
@@ -34,6 +36,9 @@ def credential_editor(provider):
         st.session_state.get('_ui_mirrors',{}).pop(key,None)
         st.session_state[flag]=False
         st.session_state.pop(key+'_error',None)
+        if provider=='deepseek':
+            from .external_ui import clear_confirmation
+            clear_confirmation()
     st.button('Save key securely',key=key+'_save',on_click=persist,disabled=not st.session_state.get(key))
     if st.session_state.get(key+'_error'):st.error(st.session_state[key+'_error'])
 
@@ -86,6 +91,9 @@ def model_editor(store,c):
     options=controls('pipeline',store=store,configuration=True,saved_model=c.get('model_id',''))
     for key in ('pipeline_model','pipeline_lmstudio_model','pipeline_ollama_model'):
         if key in st.session_state:values[key]=st.session_state[key]
+    if options.mode=='External API':
+        st.caption(t('Automatic updates still use {model}; external API tests do not change the worker model.',model=str(display(c['model']))))
+        return
     c['model']=options.mode;c['model_id']=options.model or ''
     if options.mode=='Local FinBERT':c['model_id']=''
     c.pop('result_model_key',None)
@@ -108,6 +116,13 @@ def diagnostics(store,q):
         if rows:
             import pandas as pd
             st.dataframe(pd.DataFrame(rows,columns=['Status','Stage','Counts','Reason','Created UTC']),hide_index=True,width='stretch')
+        with closing(store.connect()) as db:
+            present=db.execute("SELECT 1 FROM sqlite_master WHERE name='deepseek_requests'").fetchone()
+            requests=db.execute('SELECT kind,status,http_status,error_kind,reserved_at,hold_until FROM deepseek_requests ORDER BY reserved_at').fetchall() if present else []
+        if present:
+            st.caption('Independent DeepSeek ledger; unresolved outcomes and holds are retained. No automatic retry.')
+            import pandas as pd
+            st.dataframe(pd.DataFrame(requests,columns=['Operation','Status','HTTP','Reason','Created UTC','Hold until UTC']),hide_index=True,width='stretch')
         st.caption('Language and theme do not submit tasks. Models and source permissions are checked before fetching.')
         if st.button('Open advanced manual workspace'):
             st.session_state['advanced_manual_ui']=True;st.session_state['workspace_page']='Add news';st.rerun()
@@ -126,6 +141,9 @@ def render(store,q):
     if st.button('Save settings',key='settings_save',type='primary'):
         try:
             pending=save(q,c)
+            if st.session_state.get('_external_api_edit'):
+                from .external_ui import save_external
+                save_external(store,st.session_state['_external_api_edit'])
             st.session_state['settings_save_message']='Draft saved; complete the items below before running.' if pending else 'Settings saved. Connection checks happen separately.'
         except ValueError as error:st.error(str(error))
     if st.session_state.get('settings_save_message'):st.success(st.session_state['settings_save_message'])

@@ -45,8 +45,11 @@ and API-exposed states. Refresh never infers or downloads. Explicit Load checks
 80% GPU for downloads up to 8 GiB, otherwise 50%);
 unload another model explicitly before switching. Chat Completions uses JSON Schema
 structured sentiment and saves actual IDs/quantization, rationale and history,
-without invented probabilities or external fallback. Start the installed server
-with `lms server start --port 1234 --bind 127.0.0.1`; keep LAN/CORS disabled.
+without invented probabilities or external fallback. In Settings → Analysis
+models, use **Start service and refresh models** to start the installed runtime
+on `127.0.0.1:1234`. Bounded API checks verify readiness; repeat clicks reuse a
+running service. Starting/refreshing never loads or downloads models. Existing
+authentication is preserved and port conflicts do not terminate other programs.
 
 **Local Ollama** lists installed local GGUF models only after an explicit action,
 then connects to `127.0.0.1:11434`. Cloud/remote tags, arbitrary endpoints and model
@@ -59,6 +62,23 @@ labels, rationale and model revision stay separate from FinBERT; no calibrated
 probabilities are invented. External 429/Retry-After and unknown requests are
 tracked locally, with no automatic retry. Both model options are optional; their
 live availability depends on your local service/account.
+
+Settings has three tabs: General, News sources and Analysis models, with retained
+manual actions and logs under Advanced & diagnostics. Configuration can be saved
+offline. Incomplete drafts preserve the last complete pipeline but block new jobs
+until completed; saving settings never fetches news or calls a model.
+
+**DeepSeek** is a separate, controlled interface test under Analysis models →
+External API. Configure `DEEPSEEK_API_KEY` in the ignored project `.env` or its
+masked Windows Credential Manager editor. Saving a key/configuration makes no
+request. An explicit connection check reads the official model list once; a
+separate per-action confirmation permits at most three fixed fictional financial
+texts to be sent serially. No existing news is sent and the automatic worker
+retains its local model. Strict JSON validation, usage and requested/response IDs
+are saved as separate history; aliases are not fixed weight versions. An error or
+unknown outcome stops the test without retry. This is interface verification,
+not an accuracy evaluation; real DeepSeek acceptance is pending local key setup
+and this-run consent.
 
 Shared date, sector, source, sentiment, model and search filters drive **Overview,
 Sector sentiment, Trends, Heatmap, Evidence graph and News Explorer**. The heatmap

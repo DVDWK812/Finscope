@@ -156,3 +156,14 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   outputs. Language-specific widget presentations synchronize canonical values;
   durable article selections survive widget cleanup. Keep framework calendar and
   auxiliary labels as a disclosed limitation rather than injecting DOM mutations.
+
+- 31 October settings/runtime refinement: keep one persistent source/key/model
+  editor; separate offline drafts from worker submission readiness. A single
+  explicit LM Studio action starts the installed runtime on loopback and checks
+  both catalogs under a process lock; no weights or inference are started.
+- DeepSeek remains a distinct authored-text interface test, outside automatic
+  news processing. Fixed official endpoints, cached actual model IDs, JSON Output
+  plus strict local schema validation, separate durable reservations and at most
+  three serial inferences preserve provider identity/history and stop on errors.
+  Saving credentials is not transmission consent. No live DeepSeek claim exists
+  without a local key, explicit action and observed validated response.

@@ -15,6 +15,7 @@ from .rate_limits import retry_deadline, safe_retry_after
 OPENAI_MODELS = ("gpt-5.4-mini-2026-03-17",)
 OLLAMA_ORIGIN = "http://127.0.0.1:11434"
 LMSTUDIO_ORIGIN = "http://127.0.0.1:1234"
+DEEPSEEK_ORIGIN = 'https://api.deepseek.com'
 SENTIMENT_SCHEMA = {"type":"object", "properties": {
     "sentiment":{"type":"string","enum":["Positive","Neutral","Negative"]},
     "rationale":{"type":"string"}}, "required":["sentiment","rationale"], "additionalProperties":False}
@@ -36,7 +37,8 @@ def model_request(method, endpoint, payload=None, headers=None, timeout=60):
     allowed = {"https://api.openai.com/v1/responses", OLLAMA_ORIGIN+"/api/tags",
                OLLAMA_ORIGIN+"/api/show", OLLAMA_ORIGIN+"/api/chat",
                LMSTUDIO_ORIGIN+"/v1/models", LMSTUDIO_ORIGIN+"/api/v1/models",
-               LMSTUDIO_ORIGIN+"/api/v1/models/unload", LMSTUDIO_ORIGIN+"/v1/chat/completions"}
+               LMSTUDIO_ORIGIN+"/api/v1/models/unload", LMSTUDIO_ORIGIN+"/v1/chat/completions",
+               DEEPSEEK_ORIGIN+'/models',DEEPSEEK_ORIGIN+'/chat/completions'}
     if endpoint not in allowed:
         raise ModelError("Unsupported model endpoint")
     try:
@@ -59,7 +61,7 @@ def model_request(method, endpoint, payload=None, headers=None, timeout=60):
     except requests.ConnectionError as error:
         refused=bool(re.search(r"10061|ECONNREFUSED|Errno (?:111|61)|connection refused",str(error),re.I))
         origin=("127.0.0.1:11434" if endpoint.startswith(OLLAMA_ORIGIN) else
-                "127.0.0.1:1234 (verify the configured local port)" if endpoint.startswith(LMSTUDIO_ORIGIN) else "OpenAI API")
+                "127.0.0.1:1234 (verify the configured local port)" if endpoint.startswith(LMSTUDIO_ORIGIN) else 'DeepSeek API' if endpoint.startswith(DEEPSEEK_ORIGIN) else "OpenAI API")
         reason=("Connection refused at "+origin+"; no service accepted the connection" if refused else "Could not connect to "+origin)
         raise ModelError(reason+"; no retry was made",kind="connection_refused" if refused else "connection_error") from None
     except requests.RequestException:
@@ -335,4 +337,124 @@ class LMStudioProvider:
                         'context_length':context,'text_basis':'headline_and_supplied_summary' if item.summary else 'headline_only',
                         'http_status':200,'response_id':response.get('id'),'usage':response.get('usage',{})})
         store.save_analysis(analysis)
+        return analysis
+
+
+class DeepSeekProvider:
+    """Official Chat Completions, restricted to this authored interface rehearsal."""
+    def __init__(self,transport=model_request):self.transport=transport
+
+    @staticmethod
+    def key(api_key):
+        if not isinstance(api_key,str) or not 8<=len(api_key)<=500 or any(c.isspace() for c in api_key):
+            raise ModelError('Waiting for a locally configured DeepSeek key.',kind='not_configured')
+
+    @staticmethod
+    def identifier(value):
+        return isinstance(value,str) and bool(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}',value))
+
+    def request(self,method,path,payload,api_key):
+        try:
+            data=self.transport(method,DEEPSEEK_ORIGIN+path,payload,{'Authorization':'Bearer '+api_key},45)
+            if not isinstance(data,dict):raise ModelError('Invalid DeepSeek response.',kind='invalid_output')
+            if api_key in json.dumps(data):raise ModelError('DeepSeek returned unsafe content; no valid result was saved.',kind='unsafe_output')
+            return data
+        except ModelError as error:
+            kind={400:'invalid_request',422:'invalid_request',401:'authentication',403:'authentication',402:'insufficient_balance',429:'rate_limit'}.get(error.status,error.kind)
+            if error.status is not None and 500<=error.status<600:kind='provider_error'
+            message={'invalid_request':'DeepSeek rejected the request parameters; the test has stopped.',
+                'authentication':'DeepSeek authentication failed; check the locally saved key.',
+                'insufficient_balance':'DeepSeek balance is insufficient; the test has stopped.',
+                'rate_limit':'DeepSeek rate limit reached; the test has stopped without retry.',
+                'provider_error':'DeepSeek service failed; the test has stopped without retry.',
+                'timeout':'DeepSeek request timed out; its outcome needs review before any further request.',
+                'connection_error':'DeepSeek connection failed; its outcome needs review before any further request.',
+                'connection_refused':'DeepSeek connection failed; its outcome needs review before any further request.',
+                'transport_error':'DeepSeek transport failed; its outcome needs review before any further request.'}.get(kind,'DeepSeek response failed validation; no valid result was saved.')
+            raise ModelError(message,status=error.status,retry_after=error.retry_after,kind=kind) from None
+        except Exception:
+            raise ModelError('DeepSeek request outcome is unknown; no retry was made.',kind='unknown_outcome') from None
+
+    @staticmethod
+    def record_failure(ledger,identity,error):
+        ledger.failure(identity,error,unknown=error.kind in ('timeout','connection_error','connection_refused','transport_error','unknown_outcome'))
+
+    def models(self,store,*,api_key=None,explicit=False):
+        from .external_tests import DeepSeekLedger
+        self.key(api_key)
+        if explicit is not True:raise ModelError('Checking DeepSeek connection requires an explicit action.',kind='consent_required')
+        ledger=DeepSeekLedger(store);cached=ledger.checked_models()
+        if cached is not None:return cached
+        identity=ledger.reserve('models','catalog')
+        try:
+            response=self.request('GET','/models',None,api_key)
+            rows=response.get('data')
+            if not isinstance(rows,list) or len(rows)>100:raise ModelError('Invalid DeepSeek model list.',kind='invalid_registry')
+            models=[]
+            for row in rows:
+                if not isinstance(row,dict) or not self.identifier(row.get('id')):raise ModelError('Invalid DeepSeek model list.',kind='invalid_registry')
+                safe={'id':row['id']}
+                for name in ('context_window','max_output_tokens'):
+                    if name in row:
+                        if type(row[name]) is not int or not 1<=row[name]<=10**8:raise ModelError('Invalid DeepSeek model list.',kind='invalid_registry')
+                        safe[name]=row[name]
+                if safe['id'] in [m['id'] for m in models]:raise ModelError('Invalid DeepSeek model list.',kind='invalid_registry')
+                models.append(safe)
+            ledger.save_models(identity,models);return models
+        except ModelError as error:self.record_failure(ledger,identity,error);raise
+        except Exception:
+            error=ModelError('DeepSeek request outcome is unknown; no retry was made.',kind='unknown_outcome')
+            self.record_failure(ledger,identity,error);raise error from None
+
+    def analyze(self,item,store,*,api_key=None,model=None,consent=False,budget=3,**options):
+        from .external_tests import DeepSeekLedger,authored_samples,SCOPE
+        self.key(api_key)
+        try:validate_input(item);item.rights.require('external')
+        except ValueError:raise ModelError('DeepSeek test text permissions are incomplete; nothing was sent.',kind='permission_required') from None
+        if consent is not True or type(budget) is not int or not 1<=budget<=3:
+            raise ModelError('Confirm this test action and a budget of at most three inferences.',kind='consent_required')
+        approved={n.article_id:n for n in authored_samples()}
+        original=approved.get(item.article_id)
+        if (not original or item.provider!='authored_synthetic' or item.analysis_text!=original.analysis_text
+                or item.content_version!=original.content_version or item.url):
+            raise ModelError('DeepSeek test accepts only the three fixed authored texts; real news is never sent.',kind='unapproved_input')
+        ledger=DeepSeekLedger(store);models=ledger.checked_models()
+        if not models or model not in [m['id'] for m in models]:
+            raise ModelError('Explicitly check the DeepSeek model list and select an actual model ID first.',kind='not_configured')
+        cached=ledger.cached_analysis(item,model)
+        if cached:return cached
+        identity=ledger.reserve('inference',item.article_id,model,budget=budget,consent=True)
+        payload={'model':model,'messages':[{'role':'system','content':INSTRUCTIONS+' Return JSON only. Example JSON: {"sentiment":"Neutral","rationale":"The text reports a scheduled briefing."}'},
+            {'role':'user','content':item.analysis_text}], 'thinking':{'type':'disabled'},'response_format':{'type':'json_object'},'max_tokens':512,'stream':False}
+        started=time.perf_counter()
+        try:
+            store.save_news(item)
+            response=self.request('POST','/chat/completions',payload,api_key)
+            choices=response.get('choices')
+            if (not self.identifier(response.get('model')) or not isinstance(choices,list) or len(choices)!=1
+                    or not isinstance(choices[0],dict) or choices[0].get('finish_reason')!='stop'
+                    or not isinstance(choices[0].get('message'),dict) or choices[0]['message'].get('tool_calls')
+                    or choices[0]['message'].get('refusal')):
+                raise ModelError('DeepSeek output is incomplete or unsupported; no valid result was saved.',kind='invalid_output')
+            data=structured_sentiment(choices[0]['message'].get('content'))
+            usage=response.get('usage')
+            if (not isinstance(usage,dict) or any(type(usage.get(k)) is not int or usage[k]<0 for k in ('prompt_tokens','completion_tokens','total_tokens'))):
+                raise ModelError('DeepSeek usage metadata is invalid; no valid result was saved.',kind='invalid_output')
+            safe_usage={k:v for k,v in usage.items() if isinstance(k,str) and re.fullmatch(r'[a-z_]{1,60}',k) and type(v) is int and v>=0}
+            version={}
+            for name in ('model_version','system_fingerprint'):
+                value=response.get(name)
+                if isinstance(value,str) and re.fullmatch(r'[A-Za-z0-9._:/@+-]{1,160}',value):version[name]=value
+            revision=version.get('model_version','')
+            analysis=Analysis(uuid4().hex,item.article_id,data['sentiment'],'DeepSeek API',response['model'],revision,
+                utcnow().isoformat(),rationale=data['rationale'],elapsed_ms=round((time.perf_counter()-started)*1000,2),
+                provenance={'provider':'DeepSeek Chat Completions','requested_model':model,'response_model':response['model'],
+                    'version_information':version,'fixed_weight_version_verified':False,'usage':safe_usage,'http_status':200,
+                    'text_version':item.content_version,'text_basis':'authored_test','test_scope':SCOPE,'explicit_send_consent':True,
+                    'schema':'sentiment-v1','output_kind':'model_generated_structured_sentiment'})
+            ledger.success(identity,item,model,analysis)
+        except ModelError as error:self.record_failure(ledger,identity,error);raise
+        except Exception:
+            error=ModelError('DeepSeek request outcome is unknown; no retry was made.',kind='unknown_outcome')
+            self.record_failure(ledger,identity,error);raise error from None
         return analysis

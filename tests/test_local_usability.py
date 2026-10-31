@@ -125,13 +125,18 @@ class FlowUITests(unittest.TestCase):
 
     def test_finnhub_fields_and_provider_keys_are_separate(self):
         app=self.app('Add news')
-        app.text_input(key='key_marketaux').set_value('PRIVATE-MARKETAUX-UNIT').run()
         app.selectbox(key='api_provider').set_value('Finnhub').run()
-        self.assertEqual(app.text_input(key='key_finnhub').value,'')
+        self.assertFalse(any(t.proto.type==1 for t in app.text_input))
         self.assertTrue(any(t.label=='Company ticker' for t in app.text_input))
         self.assertFalse(any(s.label=='News topic' for s in app.selectbox))
         app.selectbox(key='api_provider').set_value('Local Collector').run()
         self.assertFalse(any(t.label.endswith('API key') for t in app.text_input))
+        app.selectbox(key='api_provider').set_value('Marketaux').run()
+        from test_product_ui import edit_api_key
+        edit_api_key(app,'marketaux')
+        app.text_input(key='settings_secret_marketaux').set_value('PRIVATE-MARKETAUX-UNIT').run()
+        edit_api_key(app,'finnhub')
+        self.assertEqual(app.text_input(key='settings_secret_finnhub').value,'')
         self.assertNotIn('PRIVATE-MARKETAUX-UNIT',self.db.read_bytes().decode(errors='ignore'))
 
     def test_single_default_model_and_unknown_publication_dates(self):

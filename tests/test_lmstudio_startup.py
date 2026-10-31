@@ -116,6 +116,13 @@ class StartupTests(unittest.TestCase):
     def test_explicit_action_is_required(self):
         with self.assertRaises(ModelError):start_service(self.store,runner=self.runner,transport=self.transport)
         self.assertEqual(self.commands,[]);self.assertEqual(self.http.calls,[])
+    def test_unexpected_cli_failure_is_not_misreported_as_a_busy_mutex(self):
+        with self.assertRaises(ModelError) as caught:
+            start_service(self.store,explicit=True,runner=Mock(side_effect=RuntimeError('PRIVATE-UNIT-ONLY')),transport=self.transport,occupied=lambda:False)
+        self.assertEqual(caught.exception.kind,'startup_failed');self.assertNotIn('PRIVATE-UNIT-ONLY',str(caught.exception))
+    def test_unexpected_model_action_is_unknown_instead_of_falsely_unperformed(self):
+        with self.assertRaises(ModelError) as caught:model_operation(self.store,Mock(side_effect=RuntimeError('PRIVATE-UNIT-ONLY')))
+        self.assertEqual(caught.exception.kind,'unknown_outcome');self.assertNotIn('PRIVATE-UNIT-ONLY',str(caught.exception))
 
 
 if __name__=='__main__':unittest.main()

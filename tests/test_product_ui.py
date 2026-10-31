@@ -11,6 +11,14 @@ from test_local_news import item, pipeline
 APP = Path(__file__).resolve().parents[1]/"streamlit_app.py"
 
 
+def edit_api_key(app,provider):
+    if any(b.key=='manual_source_settings' for b in app.button):app.button(key='manual_source_settings').click().run()
+    app.multiselect(key='settings_sources').set_value([provider]).run()
+    app.button(key='settings_edit_'+provider).click().run()
+    app.button(key='settings_secret_'+provider+'_edit').click().run()
+    return app
+
+
 def render_import_outcome():
     import streamlit as st
     from finscope.product_ui import preview_news
@@ -59,9 +67,14 @@ class ProductUITests(unittest.TestCase):
             app.selectbox(key="api_provider").set_value(provider).run()
             self.assertFalse(app.exception)
             key = {"Marketaux":"marketaux", "Finnhub":"finnhub", "NewsData.io":"newsdata"}[provider]
-            self.assertEqual(app.text_input(key="key_"+key).proto.type, TextInput.PASSWORD)
+            self.assertFalse(any(t.proto.type==TextInput.PASSWORD for t in app.text_input))
+            self.assertTrue(any(b.key=='manual_source_settings' for b in app.button))
             fetch = next(b for b in app.button if b.label == "Fetch news")
             self.assertEqual(fetch.disabled, provider == "NewsData.io")
+        editor=self.app('Add news')
+        for provider in ('marketaux','finnhub','newsdata'):
+            edit_api_key(editor,provider)
+            self.assertEqual(editor.text_input(key='settings_secret_'+provider).proto.type,TextInput.PASSWORD)
 
     def test_default_finbert_pipeline_save_and_returning_library(self):
         store = LocalNewsStore(self.db)
@@ -78,9 +91,11 @@ class ProductUITests(unittest.TestCase):
 
     def test_no_credentials_in_local_export_and_separate_browser_widgets(self):
         first = self.app("Add news")
-        first.text_input(key="key_marketaux").set_value("PRIVATE-UNIT-SECRET").run()
+        edit_api_key(first,'marketaux')
+        first.text_input(key="settings_secret_marketaux").set_value("PRIVATE-UNIT-SECRET").run()
         second = self.app("Add news")
-        self.assertEqual(second.text_input(key="key_marketaux").value, "")
+        edit_api_key(second,'marketaux')
+        self.assertEqual(second.text_input(key="settings_secret_marketaux").value, "")
         self.assertNotIn("PRIVATE-UNIT-SECRET", str(LocalNewsStore(self.db).export()))
 
     def test_shared_filters_heatmap_graph_and_drilldown_render_together(self):
@@ -109,7 +124,8 @@ class ProductUITests(unittest.TestCase):
         self.assertTrue(next(b for b in app.button if b.label=="Run real AI analysis").disabled)
         app.selectbox(key="analysis_model").set_value("OpenAI API").run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.text_input(key="analysis_openai_key").proto.type,TextInput.PASSWORD)
+        self.assertFalse(any(t.proto.type==TextInput.PASSWORD for t in app.text_input))
+        self.assertTrue(any(b.key=='analysis_openai_settings' for b in app.button))
         self.assertFalse(app.checkbox(key="analysis_send_consent").value)
         self.assertTrue(next(b for b in app.button if b.label=="Run real AI analysis").disabled)
 

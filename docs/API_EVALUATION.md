@@ -1,5 +1,18 @@
 # API evaluation protocol — Phase 1
 
+> **Controlled DeepSeek test, 31 October 2026 Sydney:** Separate from news-provider
+> evaluation and historical gates below. The official [model-list API](https://api-docs.deepseek.com/api/list-models/),
+> [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/),
+> [JSON Output guide](https://api-docs.deepseek.com/guides/json_mode/) and
+> [error codes](https://api-docs.deepseek.com/quick_start/error_codes/) were checked.
+> The independent provider fixes the official host, requests non-thinking JSON
+> Output and validates locally. Actual model IDs/usage are preserved without
+> invented revisions/probabilities. A separate ledger caps this rehearsal at one
+> list request and three serial authored-text inferences; failure/unknown stops
+> it without retry. No local key was detected: real DeepSeek requests **0**,
+> adapter/output/error tests are mocks; real acceptance awaits local key setup
+> and per-action confirmation. Existing real news and provider holds are untouched.
+
 > **Optional HTML fallback repair, 29 October 2026 Sydney:** The RBA index collector's
 > custom `_pending` collided with Python 3.11's `HTMLParser` buffer; renamed it and
 > added regressions without weakening the original tests. One bounded local attempt

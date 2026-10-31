@@ -73,18 +73,19 @@ def api_source(store):
     if provider == "local":
         collector_ui(store)
         return
-    env_key = local_credentials().get(ENV_KEYS[provider])
-    status = LocalIngestionService(store).source_status(provider, configured=bool(st.session_state.get("key_"+provider) or
-                (env_key if st.session_state.get('env_'+provider,True) else None)))
+    from .local_credentials import credential
+    configured=bool(credential(provider))
+    status = LocalIngestionService(store).source_status(provider, configured=configured)
     st.caption(Verbatim(f"{tr(status.state)} · {tr(status.reason)}"))
+    st.caption('Key configured' if configured else 'Key not configured')
+    if st.button('Open product settings',key='manual_source_settings'):
+        st.session_state['advanced_manual_ui']=False;st.session_state['product_page']='Settings';st.rerun()
     if status.last_attempt:
         with st.expander("Last source attempt"):
             st.caption(f"{status.last_attempt} · {status.last_outcome} · holds use UTC days")
     with st.form("fetch_news_"+provider):
         left, right = st.columns(2)
         with left:
-            key = st.text_input(f"{label} API key", type="password", key="key_"+provider, max_chars=500)
-            use_env = st.checkbox("Use project .env when the key field is empty", value=True, key="env_"+provider)
             topic = st.selectbox("News topic", list(TOPICS), key="topic_"+provider) if provider != "finnhub" else "technology"
         with right:
             symbol = st.text_input("Company ticker", value="NVDA", max_chars=15, key="ticker_finnhub").strip().upper() if provider == "finnhub" else None
@@ -100,9 +101,8 @@ def api_source(store):
         try:
             if not preview or not quota:
                 raise FetchBlocked("Confirm local preview permission and current quota before Fetch")
-            credential = key or (local_credentials().get(ENV_KEYS[provider]) if use_env else None)
             rights = ContentRights(preview=True, reference=f"Personal account preview attestation; {label} terms; downstream uses unverified")
-            result, items = LocalIngestionService(store).fetch(provider, topic, api_key=credential,
+            result, items = LocalIngestionService(store).fetch(provider, topic, api_key=credential(provider),
                             rights=rights, remaining=int(remaining), days=int(days), symbol=symbol, explicit=True)
             st.session_state["news_preview"] = items
             st.session_state["preview_saved"] = False

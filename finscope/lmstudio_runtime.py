@@ -120,8 +120,10 @@ def start_service(store,*,explicit=False,runner=run_lms,transport=None,occupied=
                     last=error.kind
                 if checks<max_checks:sleep(min(.5,remaining(.5)))
             raise ModelError('LM Studio service startup timed out; no model was loaded.',kind='startup_timeout')
-    except RuntimeError:
-        raise ModelError('LM Studio startup is already in progress in another tab; refresh shortly.',kind='startup_busy') from None
+    except RuntimeError as error:
+        if str(error)=='Another local worker or schema migration is active':
+            raise ModelError('LM Studio startup is already in progress in another tab; refresh shortly.',kind='startup_busy') from None
+        raise ModelError('LM Studio startup outcome needs local review; no additional launch was attempted.',kind='startup_failed') from None
 
 
 def model_operation(store,action,*,editing=True):
@@ -133,8 +135,10 @@ def model_operation(store,action,*,editing=True):
                 if task and task['status'] in ACTIVE:
                     raise ModelError('Worker is using the model; loading, unloading and switching are paused.',kind='worker_owns_model')
             return action()
-    except RuntimeError:
-        raise ModelError('Another local model operation is active; no conflicting action was performed.',kind='model_busy') from None
+    except RuntimeError as error:
+        if str(error)=='Another local worker or schema migration is active':
+            raise ModelError('Another local model operation is active; no conflicting action was performed.',kind='model_busy') from None
+        raise ModelError('Local model action outcome needs review; no retry was made.',kind='unknown_outcome') from None
 
 
 def system_resources():

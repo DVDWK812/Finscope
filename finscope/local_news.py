@@ -188,12 +188,15 @@ class LocalNewsStore:
             db.execute("UPDATE local_news SET payload=? WHERE id=?",(json.dumps(data),article_id))
             db.commit()
 
-    def save_analysis(self, analysis):
+    def save_analysis(self, analysis, *, transaction=None):
+        if transaction is not None:
+            if not transaction.execute('SELECT 1 FROM local_news WHERE id=?',(analysis.article_id,)).fetchone():
+                raise ValueError('Save the permitted original before analysis')
+            transaction.execute('INSERT INTO local_analyses VALUES (?,?,?,?)',(analysis.analysis_id,
+                analysis.article_id,analysis.analyzed_at,json.dumps(asdict(analysis))))
+            return
         with closing(self.connect()) as db:
-            if not db.execute("SELECT 1 FROM local_news WHERE id=?", (analysis.article_id,)).fetchone():
-                raise ValueError("Save the permitted original before analysis")
-            db.execute("INSERT INTO local_analyses VALUES (?,?,?,?)", (analysis.analysis_id,
-                       analysis.article_id, analysis.analyzed_at, json.dumps(asdict(analysis))))
+            self.save_analysis(analysis,transaction=db)
             db.commit()
 
     def list_analyses(self):

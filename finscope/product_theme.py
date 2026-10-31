@@ -100,6 +100,9 @@ def css():
     [data-testid="stMarkdownContainer"] p,[data-testid="stCaptionContainer"] p{color:var(--fs-muted)}
     [data-testid="stCaptionContainer"]{opacity:1!important}
     [data-testid="stWidgetLabel"] p{color:var(--fs-text);font-size:.82rem}a{color:var(--fs-accent)}
+    [role="tab"]{color:var(--fs-muted)!important;background:transparent!important}
+    [role="tab"]:hover{background:var(--fs-hover)!important}
+    [role="tab"][aria-selected="true"],[role="tab"][aria-selected="true"] [data-testid="stMarkdownContainer"] p{color:var(--fs-accent)!important;font-weight:650}
     .fs-brand{display:flex;align-items:center;gap:11px;margin:.3rem 0 2rem}.fs-brand>span{display:grid;place-items:center;width:35px;height:38px;border-radius:9px;border:1px solid var(--fs-accent);background:var(--fs-accent-surface);color:var(--fs-accent);font-size:23px;font-weight:700}
     .fs-brand strong{display:block;font-size:1.2rem;letter-spacing:-.04em;color:var(--fs-text)}.fs-brand small{font-size:.52rem;letter-spacing:.13em;color:var(--fs-muted)}
     [class*="st-key-product_page"] [role="radiogroup"]{gap:5px;width:100%}[class*="st-key-product_page"] label{display:flex!important;flex-direction:row!important;align-items:center;padding:.65rem .7rem;border:1px solid transparent;border-radius:9px;min-height:44px;gap:.6rem!important;width:100%}

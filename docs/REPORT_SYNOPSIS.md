@@ -160,3 +160,14 @@ and model outputs. 400 offline tests and dry run pass; browser assertions cover
 60 page/mode/viewport combinations. Native framework English calendar/auxiliary
 labels and Codex-preload MutationObserver exceptions qualify browser acceptance.
 No new news collection, model inference or evaluation was performed.
+
+31 October settings/runtime refinement: three settings tabs, conditional source
+and key editors, offline drafts and separate run checks reduce duplicate controls.
+Actual browser startup restored installed LM Studio on 127.0.0.1:1234; refresh
+reused the process and showed both downloaded models unloaded. DeepSeek has a
+separate capped authored-text test with strict JSON/history validation, but no
+local key or live request; mock success is not real inference evidence. All 442
+offline tests pass on Streamlit 1.50 and 1.66.1, plus dry run. Protected news,
+history, jobs and frozen evidence are unchanged. A test initially wrote a dummy
+Marketaux vault entry; it was removed and tests isolated. The .env is unchanged;
+any previously different vault value cannot be reconstructed (development log).

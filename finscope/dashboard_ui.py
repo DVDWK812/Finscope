@@ -229,7 +229,7 @@ def related_articles(news, results, store, *, context,background=False):
     article_details(by_id[key],results.get(key),store,context=context,background=background)
 
 
-def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None):
+def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None,allow_reanalysis=True):
     st.subheader(Verbatim(item.title))
     st.caption(Verbatim(f"{item.source} · {publication_label(item)}"))
     if item.provider=='authored_synthetic':
@@ -255,6 +255,7 @@ def article_details(item, result, store, *, context="explorer",background=False,
     with st.expander("Provenance, permissions and analysis history"):
         if result:
             st.caption(f"{result.model_id} · Revision: {result.revision} · Analyzed: {result.analyzed_at}")
+            if result.family=='DeepSeek API' and not result.revision:st.caption('Model alias only; a fixed weight version was not supplied.')
             if result.probabilities is not None:
                 st.dataframe(pd.DataFrame([result.probabilities]),hide_index=True,width='stretch')
             if result.rationale:
@@ -281,12 +282,13 @@ def article_details(item, result, store, *, context="explorer",background=False,
                 st.rerun()
             except ValueError as error:
                 st.error(str(error))
-    with st.expander("Reanalyze this original",expanded=False):
-        if background:
-            from .pipeline_ui import reanalyze
-            reanalyze(item,store,prefix)
-        else:
-            manual_reanalysis(item,store,prefix)
+    if allow_reanalysis:
+        with st.expander("Reanalyze this original",expanded=False):
+            if background:
+                from .pipeline_ui import reanalyze
+                reanalyze(item,store,prefix)
+            else:
+                manual_reanalysis(item,store,prefix)
     if result and result.candidate_id:
         show_candidate(item,result,store)
 

@@ -1,7 +1,7 @@
 """Project .env plus optional Windows per-user Credential Manager. No SQLite keys."""
 import os
 
-PROVIDERS=('marketaux','newsdata','finnhub','openai')
+PROVIDERS=('marketaux','newsdata','finnhub','openai','deepseek')
 
 
 def vault_key(provider,value=None):
@@ -32,5 +32,6 @@ def vault_key(provider,value=None):
 
 def credential(provider):
     from .api_sources import local_credentials,ENV_KEYS
-    env='OPENAI_API_KEY' if provider=='openai' else ENV_KEYS[provider]
+    if provider not in PROVIDERS:raise ValueError('Unsupported credential provider')
+    env={'openai':'OPENAI_API_KEY','deepseek':'DEEPSEEK_API_KEY'}.get(provider) or ENV_KEYS[provider]
     return vault_key(provider) or local_credentials().get(env,'')

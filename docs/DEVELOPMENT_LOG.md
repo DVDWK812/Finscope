@@ -548,3 +548,27 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   downloaded/loaded and no inference/task resume. Initial empty-port timeout was
   reproduced and repaired without treating a CLI exit as readiness. Desktop and
   390px settings checks passed; 421 offline tests and benchmark dry run pass.
+
+- 31 October DeepSeek controlled test: distinct provider identity, fixed official
+  endpoints, actual model-list caching, non-thinking JSON Output and strict
+  sentiment/rationale validation. Independent durable requests/cache cap the
+  rehearsal at one list request and three serial fictional authored inputs;
+  errors/unknown outcomes stop without retry. Usage, text version and requested/
+  response model IDs are retained; aliases never claim a fixed weight revision.
+  Credentials use the central masked vault/.env editor and never enter jobs or
+  SQLite. Removed duplicate manual news/OpenAI credential inputs; retained their
+  per-action rights/budget/consent checks. No locally configured DeepSeek key:
+  real requests/inference are zero and live acceptance remains pending consent.
+- Final offline suite: 442 tests pass both native Streamlit 1.66.1 and isolated
+  1.50.0, plus benchmark dry run. Browser navigation checks cover all five pages,
+  desktop and 390px Settings, light/dark tabs, conditional credential controls and
+  disabled DeepSeek test without a key. Actual LM Studio cold-start and same-PID
+  refresh are distinguished from mocked failure tests; no model load/inference.
+  Exact comparison preserves eleven existing SQLite tables (44 originals, 80
+  analysis versions, four jobs), pipeline/preferences and 171 frozen hashes.
+  Secret-byte scan of source, task evidence and SQLite found no configured keys.
+  The earlier vault-test incident remains qualified above; this is not a claim
+  that a previously different Marketaux vault value has been restored.
+  Console observations include expected WebSocket/disconnected-rerun messages
+  during deliberate UI restarts and the previously evidenced Codex-preload
+  MutationObserver exception; browser acceptance does not claim a clean console.

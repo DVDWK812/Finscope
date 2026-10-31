@@ -55,7 +55,9 @@ def external_status(store):
 def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''):
     default=st.session_state.get("default_analysis_mode",MODES[0])
     key="analysis_model" if prefix=="analysis" else prefix+"_model"
-    mode=st.selectbox("Analysis model",MODES,index=MODES.index(default) if default in MODES else 0,key=key)
+    modes=[*MODES[:-1],'External API'] if configuration else MODES
+    if configuration and st.session_state.get(key)=='OpenAI API':st.session_state[key]='External API'
+    mode=st.selectbox('Model settings' if configuration else "Analysis model",modes,index=modes.index(default) if default in modes else 0,key=key)
     if prefix=="analysis":
         st.session_state["default_analysis_mode"]=mode
     options=RunSettings(mode)
@@ -92,23 +94,24 @@ def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''
         if not installed:
             st.info("Ollama requires its own running service and compatible weights. LM Studio models are separate; FinBERT remains available independently.")
     else:
-        options.model=st.selectbox("Supported OpenAI model",OPENAI_MODELS,key=prefix+"_openai_model")
         if configuration:
-            from .settings_ui import credential_editor
-            credential_editor('openai')
-            st.info('External API is manual only; automatic updates require a local model.')
+            from .external_ui import render
+            render(store)
             return options
-        options.api_key=st.text_input("OpenAI API key",type="password",max_chars=500,key=prefix+"_openai_key")
-        options.use_env=st.checkbox("Use local .env OPENAI_API_KEY when empty",value=True,key=prefix+"_openai_env")
+        options.model=st.selectbox("Supported OpenAI model",OPENAI_MODELS,key=prefix+"_openai_model")
+        from .local_credentials import credential
+        configured=bool(credential('openai'))
+        st.caption('Key configured' if configured else 'Key not configured')
+        if st.button('Open product settings',key=prefix+'_openai_settings'):
+            st.session_state['advanced_manual_ui']=False;st.session_state['product_page']='Settings';st.rerun()
         with st.expander("External transmission permission",expanded=False):
             options.permission_reference=st.text_input("Permission reference covering local use and external transmission",max_chars=300,key=prefix+"_external_ref")
             options.external_rights=st.checkbox("My permission covers sending these selected texts to OpenAI",key=prefix+"_external_rights")
         options.consent=st.checkbox("Send the selected permitted headline/summary text to OpenAI when I click Run",key=prefix+"_send_consent")
-        credential=options.api_key or (local_credentials().get("OPENAI_API_KEY") if options.use_env else None)
         status,blocked=external_status(store) if store else ('Untested · No successful connection check',False)
-        st.caption(status if credential else 'Not configured · OpenAI API key required')
+        st.caption(status if configured else 'Not configured · OpenAI API key required')
         st.caption("Optional paid transmission: one headline/summary request per article, at most 10/run; store=false requested, provider retention policies apply.")
-        options.ready=bool(credential) and options.consent and not blocked
+        options.ready=configured and options.consent and not blocked
     return options
 
 
@@ -224,7 +227,8 @@ def execute(item,store,settings):
         return LMStudioProvider().analyze(item,store,model=settings.model)
     if settings.mode!="OpenAI API":
         raise ModelError("Choose a supported analysis mode")
-    credential=settings.api_key or (local_credentials().get("OPENAI_API_KEY") if settings.use_env else None)
+    from .local_credentials import credential as stored_credential
+    credential=settings.api_key or (stored_credential('openai') if settings.use_env else None)
     if settings.external_rights and settings.permission_reference.strip():
         if credential and credential in settings.permission_reference:
             raise ModelError("A permission reference must not contain credentials")
