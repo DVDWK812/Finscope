@@ -82,6 +82,25 @@ def _directory_fd_path(descriptor):
     raise TestIsolationError('Test isolation could not resolve a directory descriptor safely')
 
 
+def _install_directory_open_boundary():
+    # The CPython ``open`` audit event omits os.open's dir_fd. Normalize at
+    # this public API boundary so the audit hook checks the actual target,
+    # including when tempfile/shutil removes a nested directory named reports.
+    original = os.open
+    if getattr(original, '_finscope_isolated', False):
+        return
+    @functools.wraps(original)
+    def isolated_open(path, flags, mode=0o777, *, dir_fd=None):
+        if dir_fd not in (None, -1) and isinstance(path, (str, bytes, os.PathLike)) and not os.path.isabs(path):
+            path = os.path.join(_directory_fd_path(dir_fd), os.fsdecode(path))
+        _check_path(path)
+        return original(path, flags, mode, dir_fd=dir_fd)
+    isolated_open._finscope_isolated = True
+    if original in os.supports_dir_fd:
+        os.supports_dir_fd.add(isolated_open)
+    os.open = isolated_open
+
+
 def _check_path(path, dir_fd=None):
     if not isinstance(path, (str, bytes, os.PathLike)) or path == ':memory:':
         return
@@ -187,6 +206,7 @@ def activate_if_requested(*, force=False):
     tempfile.tempdir = str(_root)
     inherited_case = os.environ.get('FINSCOPE_TEST_CASE')
     _set_case(Path(inherited_case) if inherited_case and _within(_normal(inherited_case), _normal(_root)) else _root / 'session')
+    _install_directory_open_boundary()
     sys.addaudithook(_audit)
     install_unittest_boundary()
 

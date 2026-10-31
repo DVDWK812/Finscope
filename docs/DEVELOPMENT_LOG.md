@@ -640,3 +640,10 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   (worker heartbeat excluded) and all 171 frozen files. Production `8511` was not
   restarted or modified; only the isolated acceptance process used the new UI.
   The earlier credential incident's unverified prior-value limitation remains.
+- Exact-commit CI log review found a Linux dry-run shutdown traceback despite
+  green job status: CPython's `open` audit event omits `os.open(dir_fd=...)`, so a
+  temporary nested `reports` directory was mistaken for the production path.
+  Normalize descriptor-relative opens before the same audit/path checks, with a
+  mocked cross-platform boundary test and an actual POSIX nested-cleanup test.
+  Final local suite: 496 tests, one POSIX-only skip on Windows; dry run passes.
+  Real production path and native credential blocks remain mandatory.

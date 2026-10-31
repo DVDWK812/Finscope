@@ -117,6 +117,32 @@ class CredentialIsolationTests(unittest.TestCase):
                 with self.assertRaises(safety.TestIsolationError):
                     safety._audit('os.remove',(str(safety.PROJECT/'.env'),123))
 
+    def test_directory_relative_open_normalizes_before_native_call_on_all_platforms(self):
+        calls=[]
+        def native(path,flags,mode,*,dir_fd):
+            calls.append((path,dir_fd));return 17
+        with tempfile.TemporaryDirectory() as directory,patch('os.open',native):
+            safety._install_directory_open_boundary()
+            with patch('finscope.test_safety._directory_fd_path',return_value=directory):
+                self.assertEqual(os.open('reports',os.O_RDONLY,dir_fd=123),17)
+                self.assertEqual(calls,[(str(Path(directory)/'reports'),123)])
+                with self.assertRaises(safety.TestIsolationError):os.open(str(safety.PROJECT/'.env'),os.O_RDONLY,dir_fd=123)
+            with patch('finscope.test_safety._directory_fd_path',return_value=str(safety.PROJECT)):
+                with self.assertRaises(safety.TestIsolationError):os.open('.env',os.O_RDONLY,dir_fd=123)
+            self.assertEqual(len(calls),1)
+
+    @unittest.skipUnless(os.name=='posix','POSIX directory-descriptor cleanup; Windows has the mocked boundary regression')
+    def test_nested_report_and_env_cleanup_has_no_false_production_path_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            nested=Path(directory)/'session'/'reports';nested.mkdir(parents=True)
+            (nested/'.env').write_text('AUTHORED_ONLY=YES')
+            descriptor=os.open(str(nested.parent),os.O_RDONLY)
+            try:
+                child=os.open('reports',os.O_RDONLY,dir_fd=descriptor)
+                os.close(child)
+            finally:os.close(descriptor)
+        self.assertFalse(Path(directory).exists())
+
     def test_provider_fake_keys_and_literal_env_do_not_override_each_other(self):
         project_env_path().write_text('OPENAI_API_KEY=AUTHORED-ENV-OPENAI\nFINNHUB_API_KEY=AUTHORED-ENV-FINNHUB\n', encoding='utf-8')
         for provider in PROVIDERS: save_credential(provider, 'AUTHORED-VAULT-' + provider)
