@@ -52,7 +52,7 @@ def external_status(store):
     return 'Untested · No successful connection check',False
 
 
-def controls(prefix="analysis", *, store=None):
+def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''):
     default=st.session_state.get("default_analysis_mode",MODES[0])
     key="analysis_model" if prefix=="analysis" else prefix+"_model"
     mode=st.selectbox("Analysis model",MODES,index=MODES.index(default) if default in MODES else 0,key=key)
@@ -66,7 +66,7 @@ def controls(prefix="analysis", *, store=None):
         if not options.ready:
             st.info("Prepare the pinned models from Analyze before running FinBERT.")
     elif mode=='Local LM Studio':
-        lmstudio_controls(prefix,options)
+        lmstudio_controls(prefix,options,store=store,saved_model=saved_model if configuration else '')
     elif mode=="Local Ollama":
         state = st.session_state.get("ollama_status", "Untested · List models to check localhost:11434")
         st.caption(state)
@@ -84,14 +84,20 @@ def controls(prefix="analysis", *, store=None):
                 st.session_state["ollama_status"] = "Failed · " + str(error)
                 st.rerun()
         installed=st.session_state.get("installed_ollama_models",{})
-        if st.session_state.get(prefix+'_ollama_model') not in installed:
-            st.session_state.pop(prefix+'_ollama_model',None)
-        options.model=st.selectbox("Installed local model",list(installed),index=None,key=prefix+"_ollama_model")
-        options.ready=bool(options.model)
+        choices=list(installed)
+        previous=st.session_state.get(prefix+'_ollama_model') or (saved_model if configuration else None)
+        if previous and previous not in choices:choices.append(previous)
+        options.model=st.selectbox("Installed local model",choices,index=None,key=prefix+"_ollama_model")
+        options.ready=bool(options.model in installed)
         if not installed:
             st.info("Ollama requires its own running service and compatible weights. LM Studio models are separate; FinBERT remains available independently.")
     else:
         options.model=st.selectbox("Supported OpenAI model",OPENAI_MODELS,key=prefix+"_openai_model")
+        if configuration:
+            from .settings_ui import credential_editor
+            credential_editor('openai')
+            st.info('External API is manual only; automatic updates require a local model.')
+            return options
         options.api_key=st.text_input("OpenAI API key",type="password",max_chars=500,key=prefix+"_openai_key")
         options.use_env=st.checkbox("Use local .env OPENAI_API_KEY when empty",value=True,key=prefix+"_openai_env")
         with st.expander("External transmission permission",expanded=False):
@@ -106,7 +112,7 @@ def controls(prefix="analysis", *, store=None):
     return options
 
 
-def lmstudio_controls(prefix,options):
+def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
     st.caption(st.session_state.get('lmstudio_status','Untested · Refresh models to check 127.0.0.1:1234'))
     if st.session_state.get('lmstudio_operation_error'):
         st.error('Last model action: '+st.session_state['lmstudio_operation_error'])
@@ -114,36 +120,40 @@ def lmstudio_controls(prefix,options):
         try:
             refresh_lmstudio()
         except ModelError as error:
-            st.session_state['lmstudio_models']={}
+            st.session_state['lmstudio_connected']=False
             st.session_state['lmstudio_status']='Failed · '+str(error)
         st.rerun()
     models=st.session_state.get('lmstudio_models',{})
     key=prefix+'_lmstudio_model'
-    if st.session_state.get(key) not in models:st.session_state.pop(key,None)
-    options.model=st.selectbox('Downloaded LM Studio model',list(models),index=None,key=key,
-        format_func=lambda k:k+' · '+models[k]['quantization'],help='Actual local model keys from LM Studio; selecting never loads or infers.')
+    previous=st.session_state.get(key) or saved_model
+    choices=list(models)
+    if previous and previous not in choices:choices.append(previous)
+    if previous and key not in st.session_state:st.session_state[key]=previous
+    options.model=st.selectbox('Downloaded LM Studio model',choices,index=None,key=key,
+        help='Actual local model keys from LM Studio; selecting never loads or infers.')
     options.ready=False
     selected=models.get(options.model)
     if not selected:
-        st.info('Choose a downloaded model above; selection never loads or infers.' if models else
-                'Start the installed LM Studio server on 127.0.0.1:1234, then refresh. No model download is performed.')
+        st.info('Saved model selection retained; service and model readiness are unverified.' if options.model else 'Choose a downloaded model above; selection never loads or infers.')
         return
-    st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB · "+
-               tr('Loaded · API exposed; inference requires Run' if selected['callable'] else 'Loaded · not exposed by /v1/models' if selected['loaded'] else 'Not loaded · cannot infer'))
+    connected=st.session_state.get('lmstudio_connected',True)
+    st.caption('Loaded · API exposed; inference requires Run' if connected and selected['callable'] else 'Not loaded · cannot infer' if connected else 'Saved model selection retained; service and model readiness are unverified.')
+    with st.expander('Model details'):
+        st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB")
+        from .lmstudio_runtime import gpu_ratio
+        st.caption(f"Safe load: context 2048, one prediction, {float(gpu_ratio(selected)):.0%} GPU offload; estimate and free RAM/VRAM checked first.")
     others=[m for k,m in models.items() if k!=options.model and m['loaded']]
     for other in others:
         st.info('Another model is loaded: '+other['key']+'. Unload it explicitly before loading the selection.')
-        if st.button('Unload '+other['key'],key=prefix+'_lmstudio_unload_'+other['key']):
+        if st.button('Unload '+other['key'],key=prefix+'_lmstudio_unload_'+other['key'],disabled=model_busy(store)):
             lmstudio_action(lambda:LMStudioProvider().unload(other['key'],explicit=True))
     if selected['loaded']:
-        if st.button('Unload selected LM Studio model',key=prefix+'_lmstudio_unload'):
+        if st.button('Unload selected LM Studio model',key=prefix+'_lmstudio_unload',disabled=model_busy(store)):
             lmstudio_action(lambda:LMStudioProvider().unload(options.model,explicit=True))
     else:
-        from .lmstudio_runtime import gpu_ratio
-        st.caption(f"Safe load: context 2048, one prediction, {float(gpu_ratio(selected)):.0%} GPU offload; estimate and free RAM/VRAM checked first.")
-        if st.button('Load selected LM Studio model',disabled=bool(others),key=prefix+'_lmstudio_load'):
+        if st.button('Load selected LM Studio model',disabled=bool(others) or model_busy(store) or not connected,key=prefix+'_lmstudio_load'):
             lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True))
-    options.ready=bool(selected['callable'])
+    options.ready=bool(connected and selected['callable'])
     report=st.session_state.get('lmstudio_last_load',{})
     if isinstance(report,dict) and report.get('model_key')==selected['key'] and report.get('estimate'):
         with st.expander('LM Studio load resources'):
@@ -156,8 +166,16 @@ def refresh_lmstudio():
     from .local_news import utcnow
     models=LMStudioProvider().inventory()
     st.session_state['lmstudio_models']=models
+    st.session_state['lmstudio_connected']=True
     st.session_state.pop('lmstudio_operation_error',None)
     st.session_state['lmstudio_status']=f"Available local service · {len(models)} downloaded local LLMs · checked {utcnow().strftime('%H:%M:%S UTC')}"
+
+
+def model_busy(store):
+    if not store:return False
+    from .task_queue import TaskQueue,ACTIVE
+    task=TaskQueue(store).get()
+    return bool(task and task['status'] in ACTIVE)
 
 
 def lmstudio_action(action):

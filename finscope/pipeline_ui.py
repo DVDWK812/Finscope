@@ -50,8 +50,11 @@ def task_progress(store):
 
 
 def update_button(q):
-    c=q.config();task=q.get()
-    st.button('Update & Analyze',type='primary',disabled=not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
+    from .settings_state import saved
+    draft=saved(q)
+    c=draft or q.config();task=q.get()
+    if draft:st.warning('Saved settings are a draft. Complete and save them in Settings before starting a task.')
+    st.button('Update & Analyze',type='primary',disabled=bool(draft) or not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
     if c:st.caption(t('Update scope',sources=', '.join(c['sources']),model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else ''),limit=c['limit']))
     else:st.info('Complete source and local model setup in Settings once, then use 更新并分析.')
     if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
@@ -66,81 +69,8 @@ def update_button(q):
 
 
 def settings(store,q):
-    from .ui_preferences import language_settings
-    language_settings(store)
-    from .local_collectors import SOURCES
-    from .local_news import ContentRights
-    from .model_ui import controls
-    from .local_credentials import vault_key,credential
-    from .api_sources import project_env_path
-    from .product_ui import about
-    c=q.config() or {'sources':['nist_rss','abs_html'],'model':'Local FinBERT','model_id':'','taxonomy':'US-BUSINESS-1','limit':6,'budgets':{},'source_permissions':{},'classifier_llm':False}
-    st.subheader('Automatic processing')
-    choices=[k for k,v in SOURCES.items() if v.get('enabled',True)]+['marketaux','newsdata','finnhub']
-    sources=st.multiselect('Enabled sources',choices,default=c['sources'],format_func=lambda k:SOURCES.get(k,{}).get('label',k))
-    limit=st.number_input('Maximum parsed records per source',min_value=1,max_value=20,value=c['limit'])
-    budgets={};permissions={}
-    for source in sources:
-        with st.expander('Source · '+source):
-            if source in SOURCES:
-                s=SOURCES[source];st.caption(s['scope']);st.write(s.get('license','RBA official information: source-level local text permission, third-party exceptions apply'))
-                from .local_news import LocalIngestionService
-                status=LocalIngestionService(store).source_status(s.get('bucket','rba'),configured=True)
-                st.caption(str(tr(status.state))+' · '+str(tr(status.reason)))
-                st.caption(s.get('attribution','Source: Reserve Bank of Australia')+' · '+s.get('exclusions','No third-party material, media or separately restricted content'))
-                st.caption(f"HTTP/action ≤{s.get('body_http_budget',s.get('http_budget',2))}; body pages ≤{s.get('body_limit',0)}; no retries/pagination. Existing 60-second spacing / 3 actions per UTC day remain.")
-                if s.get('terms_url'):st.link_button('Source use policy',s['terms_url'])
-            else:
-                if source=='newsdata':st.warning('NewsData is manually paused in code; enabling it cannot remove that pause.')
-                st.caption('Worker credentials: Windows Credential Manager, then project .env. Never part of a job snapshot.')
-                st.text(str(project_env_path()))
-                st.caption('Credential read: '+('yes' if credential(source) else 'no'))
-                secret=st.text_input(source+' API key',type='password',key='product_secret_'+source,max_chars=500)
-                if st.button('Save '+source+' key to Windows Credential Manager',disabled=not secret,key='vault_'+source):
-                    vault_key(source,secret);st.success('Saved in Windows Credential Manager; existing .env unchanged.')
-                old=c.get('source_permissions',{}).get(source,{})
-                reference=st.text_input('Storage/NLP permission reference',value=old.get('reference',''),max_chars=500,key='permission_ref_'+source)
-                preview=st.checkbox('Permission includes local preview',value=old.get('preview',False),key='permission_preview_'+source)
-                retain=st.checkbox('Permission includes local storage',value=old.get('retain',False),key='permission_retain_'+source)
-                nlp=st.checkbox('Permission includes local NLP',value=old.get('analyze',False),key='permission_nlp_'+source)
-                permissions[source]=dict(preview=preview,retain=retain,analyze=nlp,external=False,reference=reference)
-                b=c.get('budgets',{}).get(source,{})
-                day=st.date_input('Quota verification UTC date',value=date.fromisoformat(b.get('utc_day',datetime.now(timezone.utc).date().isoformat())),key='budget_day_'+source)
-                remaining=st.number_input('Verified request allowance for this UTC day (existing attempts count against it)',0,10000,b.get('remaining',0),key='budget_'+source)
-                topic=st.selectbox('API topic',['technology','healthcare','materials'],index=['technology','healthcare','materials'].index(b.get('topic','technology')),key='topic_'+source)
-                symbol=st.text_input('Finnhub ticker',value=b.get('symbol',''),max_chars=15,key='symbol_'+source) if source=='finnhub' else ''
-                budgets[source]=dict(utc_day=day.isoformat(),remaining=int(remaining),topic=topic,symbol=symbol)
-    st.session_state.setdefault('pipeline_model',c['model'])
-    if c['model']=='Local LM Studio' and c.get('model_id') in st.session_state.get('lmstudio_models',{}):
-        if not st.session_state.get('pipeline_lmstudio_model'):st.session_state['pipeline_lmstudio_model']=c['model_id']
-    if c['model']=='Local Ollama' and c.get('model_id') in st.session_state.get('installed_ollama_models',{}):
-        st.session_state.setdefault('pipeline_ollama_model',c['model_id'])
-    options=controls('pipeline',store=store)
-    if options.mode=='OpenAI API':st.info('Paid transmission remains a separate explicit advanced action; automatic background runs accept local models only.')
-    taxonomy=st.selectbox('Classification mode',list(CATALOGS),index=list(CATALOGS).index(c['taxonomy']),format_func=lambda k:'US business · 11 / 56' if k=='US-BUSINESS-1' else 'CSRC JR/T 0020—2024 · 19 / 91')
-    enhanced=st.checkbox('Use selected local LM Studio model to verify classification candidates',value=c.get('classifier_llm',False),disabled=options.mode!='Local LM Studio')
-    st.caption('English sentiment is verified; other languages stay unsupported until a suitable selected model is explicitly verified. Text sentiment is not a stock-return forecast.')
-    if st.button('Save automatic configuration',disabled=not sources or not options.ready or options.mode=='OpenAI API'):
-        try:
-            q.configure(dict(sources=sources,model=options.mode,model_id=options.model or '',taxonomy=taxonomy,limit=int(limit),classifier_llm=enhanced,source_permissions=permissions,budgets=budgets,result_model_key=options.result_key()))
-            st.session_state['product_taxonomy']=taxonomy
-            family={'Local FinBERT':'FinBERT','Local LM Studio':'Local LM Studio','Local Ollama':'Local Ollama'}[options.mode]
-            matching=[a for a in store.list_analyses() if a.family==family and (not options.model or a.model_id==options.model)]
-            selected_key=model_key(matching[-1]) if matching else options.result_key()
-            st.session_state['local_result_model']=selected_key
-            st.session_state.setdefault('filter_preferences',{})['local_result_model']=selected_key
-            st.session_state['product_preferred_model']=selected_key
-            st.success('Configuration saved. Use 更新并分析 on any results page.')
-        except ValueError as error:st.error(str(error))
-    with st.expander('Help / methods / diagnostics'):
-        about()
-        with closing(store.connect()) as db:
-            history=db.execute('SELECT status,stage,counts,error,created FROM product_tasks ORDER BY rowid DESC LIMIT 20').fetchall()
-        if history:st.dataframe(pd.DataFrame(history,columns=['Status','Stage','Counts','Reason','Created UTC']),hide_index=True,width='stretch')
-    with st.expander('Advanced approved text and manual provider preview'):
-        st.caption('Retained manual preview, approved text and explicit external-model actions.')
-        if st.button('Open advanced manual workspace'):
-            st.session_state['advanced_manual_ui']=True;st.session_state['workspace_page']='Add news';st.rerun()
+    from .settings_ui import render
+    render(store,q)
 
 
 def reanalyze(item,store,prefix='product'):

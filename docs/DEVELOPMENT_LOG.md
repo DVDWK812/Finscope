@@ -531,3 +531,12 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   still use framework English. Browser console acceptance is qualified: captured
   MutationObserver exceptions originate in Codex browser-page-preload.js, with
   debugger source/stack evidence retained locally; no host-script patch or suppression.
+- 31 October settings refinement: three tabs replace the nested Settings/Help
+  page, selected-source editors and masked-key changes are conditional, and model
+  resources share a details fold. Offline complete settings save without probes;
+  incomplete allowlisted drafts block worker submission while preserving the last
+  complete pipeline. 407 offline tests and benchmark dry run pass.
+  A new callback test initially reached Windows Credential Manager before its
+  late mock; its Marketaux fixture entry was immediately removed and all new
+  credential tests now isolate the vault for their entire lifetime. Project .env
+  was unchanged/readable. A prior different vault value cannot be reconstructed.

@@ -387,9 +387,9 @@ def dashboard(store):
 
 
 def about():
-    from .ui_preferences import language_settings
-    language_settings(local_store(),prefix="advanced_ui")
     st.title("Settings / Help")
+    if st.button('Open product settings'):
+        st.session_state['advanced_manual_ui']=False;st.session_state['product_page']='Settings';st.rerun()
     with st.expander("Models and limitations"):
         st.write("Pinned local ProsusAI FinBERT supplies Positive / Neutral / Negative probabilities. "
                  "MiniLM cosine ≥0.80 within 72 hours produces unverified candidate groups. "

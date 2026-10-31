@@ -132,8 +132,11 @@ class TaskQueue:
     def configure(self,config):
         c=validate_config(config)
         with closing(self.store.connect()) as db:
-            db.execute("INSERT OR REPLACE INTO product_settings VALUES ('pipeline',?)",(json.dumps(c),));db.commit()
+            db.execute("INSERT OR REPLACE INTO product_settings VALUES ('pipeline',?)",(json.dumps(c),))
+            db.execute("DELETE FROM product_settings WHERE name='pipeline_draft'");db.commit()
     def submit(self,config=None):
+        from .settings_state import guard_submit
+        guard_submit(self)
         c=validate_config(config or self.config())
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
