@@ -113,5 +113,69 @@ class I18nTests(unittest.TestCase):
         self.assertEqual(calls[1]['labels']['Articles'],resources('zh-CN')['Articles'])
         self.assertNotEqual(calls[0]['labels']['Articles'],calls[1]['labels']['Articles'])
 
+    def test_advanced_forms_and_guides_in_all_four_modes_without_dispatch(self):
+        with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}),patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')):
+            for theme in ('dark','light'):
+                for locale in ('en','zh-CN'):
+                    save(self.store,'ui_theme',theme);save(self.store,'ui_language',locale)
+                    app=AppTest.from_file(str(APP),default_timeout=20)
+                    app.session_state['advanced_manual_ui']=True;app.session_state['workspace_page']='Add news';app.run()
+                    self.assertFalse(app.exception)
+                    labels=[b.label for b in app.button]
+                    self.assertIn(resources(locale)['Fetch news'],labels)
+                    self.assertIn(resources(locale)['Save approved text'],labels)
+                    for page in ('Analyze','Settings / Help'):
+                        next(r for r in app.radio if r.key.startswith('workspace_page')).set_value(page).run()
+                        self.assertFalse(app.exception)
+                    app.session_state['show_guide']=True;app.run()
+                    self.assertTrue(any(h.value==resources(locale)['Your news. A clearer financial picture.'] for h in app.title))
+            self.assertIsNone(TaskQueue(self.store).get())
+
+    def test_running_task_survives_rapid_preference_changes_without_model_load(self):
+        q=TaskQueue(self.store);identity,_=q.submit(C)
+        q.update(identity,status='running',stage='preflight',counts={'new':1,'analyzed':0})
+        before=q.get()
+        with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}),patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')),patch('finscope.finbert_backend.LocalFinBERTBackend.from_snapshot',side_effect=AssertionError('No model load')):
+            app=AppTest.from_file(str(APP),default_timeout=20).run()
+            for _ in range(4):app.button(key='ui_theme_toggle').click().run()
+            save(self.store,'ui_language','zh-CN');app.run()
+            self.assertFalse(app.exception);self.assertEqual(q.get(),before)
+            self.assertTrue(app.button(key='product_update').disabled)
+
+    def test_chart_tooltips_translate_display_fields_without_mutating_inputs(self):
+        from copy import deepcopy
+        from finscope.product_theme import plot
+        raw={'data':{'values':[{'Sentiment':'Positive','Articles':2}]},'mark':'bar','encoding':{
+            'x':{'field':'Articles','type':'quantitative'},'color':{'field':'Sentiment','type':'nominal'},
+            'tooltip':[{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]}}
+        original=deepcopy(raw);activate({'ui_theme':'light','ui_language':'zh-CN'})
+        with patch('streamlit.vega_lite_chart') as render:plot(raw)
+        output=render.call_args.args[0]
+        self.assertEqual(raw,original);self.assertEqual(output['data'],raw['data'])
+        self.assertEqual(output['encoding']['tooltip'][0]['field'],'__ui_Sentiment')
+        self.assertEqual(output['encoding']['tooltip'][0]['title'],'情绪')
+        self.assertEqual(output['background'],'#f7faf7');self.assertIn('正面',output['transform'][0]['calculate'])
+
+    def test_cleared_filter_does_not_return_from_previous_language_widget(self):
+        with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}),patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')):
+            app=AppTest.from_file(str(APP),default_timeout=20).run()
+            app.text_input(key='local_search').set_value('Energy').run()
+            for index,locale in enumerate(('zh-CN','en','zh-CN')):
+                page=next(r for r in app.radio if r.key.startswith('product_page'))
+                page.set_value('Settings').run()
+                app.selectbox(key='ui_language_choice').set_value(locale).run()
+                if index==1:
+                    # An unmounted English frontend control may send its old
+                    # value when it returns. It must not replace the cleared
+                    # value of the last active Chinese control.
+                    app.session_state['local_search']='Energy'
+                app.button(key='ui_language_save').click().run()
+                next(r for r in app.radio if r.key.startswith('product_page')).set_value('Dashboard').run()
+                key='local_search'+('' if locale=='en' else '__'+locale)
+                self.assertEqual(app.text_input(key=key).value,'Energy' if index==0 else '')
+                app.text_input(key=key).set_value('').run()
+                self.assertEqual(app.session_state['filter_preferences']['local_search'],'')
+                self.assertFalse(app.exception)
+
 
 if __name__=='__main__':unittest.main()

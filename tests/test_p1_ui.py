@@ -93,6 +93,23 @@ class LocalPresentationUITests(unittest.TestCase):
         self.assertTrue(any('awaiting classification' in x.value for x in app.info))
         app.selectbox(key='product_taxonomy').set_value('US-BUSINESS-1').run()
         self.assertFalse(app.exception);self.http.assert_not_called()
+    def test_language_settings_navigation_preserves_nonfirst_article_selection(self):
+        from finscope.ui_preferences import load as ui_load
+        app=self.app();app.radio(key='product_page').set_value('News Explorer').run()
+        first=app.selectbox(key='explorer_article').value
+        target=next(n for n in self.items if n.article_id!=first)
+        app.selectbox(key='explorer_article').set_value(target.article_id).run()
+        dates=app.date_input(key='local_dates').value
+        app.radio(key='product_page').set_value('Settings').run()
+        app.selectbox(key='ui_language_choice').set_value('zh-CN').run()
+        app.button(key='ui_language_save').click().run()
+        app.radio(key='product_page__zh-CN').set_value('News Explorer').run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key='explorer_article__zh-CN').value,target.article_id)
+        self.assertEqual(app.date_input(key='local_dates__zh-CN').value,dates)
+        self.assertEqual(app.session_state['selected_articles']['explorer'],target.article_id)
+        self.assertEqual(load(self.store)['selected_articles']['explorer'],target.article_id)
+        self.assertEqual(ui_load(self.store)['ui_language'],'zh-CN');self.http.assert_not_called()
     def test_hard_refresh_restores_page_dates_and_catalog_without_jobs(self):
         app=self.app();dates=(date(2026,10,29),date(2026,10,30))
         app.date_input(key='local_dates').set_value(dates).run()

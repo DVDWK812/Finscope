@@ -10,7 +10,7 @@ from .i18n import tr,display,Verbatim
 from .ui_preferences import theme,language
 
 INPUTS={'selectbox','multiselect','radio','checkbox','date_input','number_input','text_input','text_area','file_uploader'}
-LABELS=INPUTS|{'button','link_button','download_button','expander','title','header','subheader','caption','info','warning','error','success','spinner','metric'}
+LABELS=INPUTS|{'button','form_submit_button','link_button','download_button','expander','title','header','subheader','caption','info','warning','error','success','spinner','metric'}
 _key_counts=ContextVar('ui_key_counts',default=None)
 _in_form=ContextVar('ui_in_form',default=False)
 
@@ -46,26 +46,29 @@ class LocalizedUI:
             args=list(args)
             if name in INPUTS|{'button','download_button'} and args and not kwargs.get('key'):
                 kwargs['key']=widget_key(name,args[0])
-            canonical=kwargs.get('key') if name in INPUTS else None
+            canonical=kwargs.get('key') if name in INPUTS-{'file_uploader'} else None
             if canonical:
                 # React controls retain their previous formatted text with an
                 # unchanged widget ID. Remount the translated presentation only;
                 # routing, callbacks and persisted filter values use canonical IDs.
                 mirrors=native.session_state.setdefault('_ui_mirrors',{})
                 prior=mirrors.get(canonical)
-                if canonical not in native.session_state and prior:
+                locale=language()
+                presentation=canonical if locale=='en' else canonical+'__'+locale
+                if prior and prior[0]!=locale:
+                    # A returning frontend widget can revive its old value.
+                    # The last active presentation (updated by callbacks) wins.
                     native.session_state[canonical]=deepcopy(prior[1])
-                presentation=canonical if language()=='en' else canonical+'__'+language()
-                if canonical in native.session_state and presentation!=canonical:
+                    if presentation!=canonical:native.session_state[presentation]=deepcopy(prior[1])
+                elif canonical in native.session_state and presentation!=canonical:
                     current=native.session_state[canonical]
-                    if presentation not in native.session_state or not prior or prior[0]!=language() or prior[1]!=current:
+                    if presentation not in native.session_state or not prior or prior[1]!=current:
                         native.session_state[presentation]=deepcopy(current)
-                elif canonical in native.session_state and prior and prior[0]!=language():
-                    native.session_state[presentation]=deepcopy(native.session_state[canonical])
                 kwargs['key']=presentation
                 callback=kwargs.get('on_change');callback_args=kwargs.pop('args',());callback_kwargs=kwargs.pop('kwargs',{})
                 def changed():
                     if presentation!=canonical:native.session_state[canonical]=native.session_state[presentation]
+                    mirrors[canonical]=(locale,deepcopy(native.session_state[presentation]))
                     if callback:callback(*callback_args,**callback_kwargs)
                 if callback or not _in_form.get():kwargs['on_change']=changed
             if name in INPUTS and kwargs.get('key') in native.session_state:

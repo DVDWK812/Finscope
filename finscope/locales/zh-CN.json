@@ -1,4 +1,11 @@
 {
+  "monetary-policy": "货币政策",
+  "Current results: {v0}": "当前结果模型：{v0}",
+  "No local records": "无本地记录",
+  "No analysis": "未分析",
+  "Low sample (n<3)": "低样本（n<3）",
+  "n≥3 (not statistical validation)": "n≥3（不代表统计验证）",
+  "Data table": "数据表",
   "**{v0} · {v1}**": "**{v0} · {v1}**",
   "**{v0}** · {v1}{extra}": "**{v0}** · {v1}{extra}",
   "<div class=\"fs-news-copy\">{extra}</div>": "<div class=\"fs-news-copy\">{extra}</div>",

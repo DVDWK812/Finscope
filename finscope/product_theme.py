@@ -98,6 +98,7 @@ def css():
     [data-testid="stAppDeployButton"]{display:none}
     h1,h2,h3{color:var(--fs-text)!important;letter-spacing:-.035em}h1{font-size:clamp(1.8rem,3vw,2.65rem)!important;line-height:1.15!important}h3{font-size:1.1rem!important}
     [data-testid="stMarkdownContainer"] p,[data-testid="stCaptionContainer"] p{color:var(--fs-muted)}
+    [data-testid="stCaptionContainer"]{opacity:1!important}
     [data-testid="stWidgetLabel"] p{color:var(--fs-text);font-size:.82rem}a{color:var(--fs-accent)}
     .fs-brand{display:flex;align-items:center;gap:11px;margin:.3rem 0 2rem}.fs-brand>span{display:grid;place-items:center;width:35px;height:38px;border-radius:9px;border:1px solid var(--fs-accent);background:var(--fs-accent-surface);color:var(--fs-accent);font-size:23px;font-weight:700}
     .fs-brand strong{display:block;font-size:1.2rem;letter-spacing:-.04em;color:var(--fs-text)}.fs-brand small{font-size:.52rem;letter-spacing:.13em;color:var(--fs-muted)}
@@ -140,5 +141,14 @@ def css():
     [role="dialog"] button,[role="gridcell"],[role="columnheader"],[role="rowheader"],[data-rac][role="grid"]{color:var(--fs-text)!important;background:var(--fs-surface)!important}
     [role="gridcell"][aria-selected="true"],[role="gridcell"][data-selected]{background:var(--fs-accent-surface)!important;color:var(--fs-accent)!important}
     [data-testid="stCheckbox"] input{accent-color:var(--fs-accent)}
+    [data-testid="stCheckbox"] label>div:first-of-type{background:var(--fs-raised)!important;border:1px solid var(--fs-border)!important}
+    [data-testid="stCheckbox"] label:has(input:checked)>div:first-of-type{background:var(--fs-button-bg)!important;border-color:var(--fs-button-bg)!important;color:var(--fs-button-text)!important}
+    [data-testid="stDateInputField"],[data-testid="stDateInputFieldsScroller"]{background:var(--fs-raised)!important;color:var(--fs-text)!important;border-color:var(--fs-border)!important}
+    [data-testid="stDateInput"] [role="group"],[data-testid="stDateInput"] [data-type],[data-testid="stDateInput"] button{color:var(--fs-text)!important;background:transparent!important}
+    [data-testid="stTooltipIcon"] button{color:var(--fs-muted)!important}
+    [data-testid="stAlertContainer"]{background:var(--fs-accent-surface)!important;color:var(--fs-text)!important}
+    [data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]){background:var(--fs-warning-bg)!important}
+    [data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]){background:color-mix(in srgb,var(--fs-negative) 15%,var(--fs-surface))!important}
+    [data-testid^="stAlertContent"]{background:transparent!important;color:var(--fs-text)!important;border-color:var(--fs-border)!important}
     input::placeholder,textarea::placeholder{color:var(--fs-muted)!important;opacity:.8}
     </style>'''

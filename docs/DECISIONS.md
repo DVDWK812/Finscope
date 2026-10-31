@@ -150,3 +150,9 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   row; free text/credentials/endpoints and pipeline configuration are excluded.
   Catalog switching reads saved classification versions and never triggers a
   reclassification or fetch. An unclassified catalog retains the original list.
+- 31 October P1.1: persist only allowlisted ui_theme and ui_language in separate
+  SQLite settings rows. Translate presentation labels and chart tooltip fields;
+  preserve raw taxonomy/article/model IDs, source attribution, evidence and model
+  outputs. Language-specific widget presentations synchronize canonical values;
+  durable article selections survive widget cleanup. Keep framework calendar and
+  auxiliary labels as a disclosed limitation rather than injecting DOM mutations.

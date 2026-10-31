@@ -153,3 +153,10 @@ jobs. Missing CSRC classifications are explicitly pending, not evidence of no
 relevant news. Desktop, 820px tablet and 390px mobile checks use the existing real
 library; no new collection, inference or accuracy evaluation. 384 offline tests
 and benchmark dry run pass; all protected data and frozen evidence are unchanged.
+
+31 October P1.1: persistent dark/light and English/Chinese presentation covers
+five local pages, advanced controls and chart iframes, preserving original news
+and model outputs. 400 offline tests and dry run pass; browser assertions cover
+60 page/mode/viewport combinations. Native framework English calendar/auxiliary
+labels and Codex-preload MutationObserver exceptions qualify browser acceptance.
+No new news collection, model inference or evaluation was performed.

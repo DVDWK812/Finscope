@@ -1,4 +1,11 @@
 {
+  "monetary-policy": "Monetary policy",
+  "Current results: {v0}": "Current results: {v0}",
+  "No local records": "No local records",
+  "No analysis": "No analysis",
+  "Low sample (n<3)": "Low sample (n<3)",
+  "n≥3 (not statistical validation)": "n≥3 (not statistical validation)",
+  "Data table": "Data table",
   "**{v0} · {v1}**": "**{v0} · {v1}**",
   "**{v0}** · {v1}{extra}": "**{v0}** · {v1}{extra}",
   "<div class=\"fs-news-copy\">{extra}</div>": "<div class=\"fs-news-copy\">{extra}</div>",

@@ -176,12 +176,15 @@ def article_list(news,results,store,classes,catalog,context,keyword=None):
     with st.container(key='story_layout_'+context):
         left,right=st.columns([1.1,1.4],gap='large')
         ids=[n.article_id for n in ordered];key=context+'_article'
-        current=article_selection(ids,st.session_state.get(key))
+        # Widget cleanup on another page must not discard the logical choice.
+        selections=st.session_state.setdefault('selected_articles',{})
+        current=article_selection(ids,st.session_state.get(key,selections.get(context)))
         with left:
             clicked=interactive_chart('articles',{'rows':article_rows(ordered,results)},key=context+'_rows',selected=current)
             st.session_state[key]=article_selection(ids,current,clicked)
             with st.expander('Accessible article picker'):
                 identity=st.selectbox('Select original article',ids,format_func=lambda k:Verbatim(next(n.title for n in ordered if n.article_id==k)),key=key)
+                selections[context]=identity
         with right:
             with st.container(key='story_detail_'+context):
                 details(next(n for n in ordered if n.article_id==identity),results.get(identity),store,classes,catalog,context,keyword)

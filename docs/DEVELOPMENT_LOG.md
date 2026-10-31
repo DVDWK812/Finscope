@@ -517,3 +517,17 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   Themeable read-only table components retain numeric values; chart tooltips use
   display-only calculated labels. 395 offline tests and dry run pass, including
   twenty page/mode subcases, strict preferences and zero-HTTP checks.
+- 31 October P1.1 browser acceptance: 20 five-page/theme/language combinations
+  at each of 1280, 820 and 390px (60 layout assertions); visible iframe palettes,
+  translated headers and document widths checked. Rapid toggles, reload/restart,
+  nonfirst article selection, model/industry/date filters, CSRC missing assignments,
+  graph node and heatmap cell clicks and literal manufacturing highlights checked.
+  Fixed stale language-widget values and page-cleanup loss of article selection;
+  retained the original 1.50 compatibility tests and repaired uploader/selection
+  regressions. Final offline suite has 400 tests; both installed 1.66.1 and an
+  isolated 1.50.0 run pass, plus benchmark dry run. Protected SQLite rows, pipeline
+  configuration and 171 frozen hashes remain unchanged; no news/body/model calls.
+  Product strings are bilingual; native Streamlit calendar/auxiliary action labels
+  still use framework English. Browser console acceptance is qualified: captured
+  MutationObserver exceptions originate in Codex browser-page-preload.js, with
+  debugger source/stack evidence retained locally; no host-script patch or suppression.

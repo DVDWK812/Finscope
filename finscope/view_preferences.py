@@ -65,6 +65,7 @@ def restore_ui(store,state):
     if exists:
         for k,v in prefs.items():
             if k=='selected_articles':
+                state.setdefault('selected_articles',dict(v))
                 for context,identity in v.items():state.setdefault(context+'_article',identity)
             else:state.setdefault(k,tuple(date.fromisoformat(x) for x in v) if k=='local_dates' else v)
     state['_product_preferences_loaded']=True
