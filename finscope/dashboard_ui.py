@@ -146,7 +146,7 @@ def sector_chart(news, results):
     st.vega_lite_chart({'data':{'values':rows},'mark':'bar','encoding':{
         'x':{'field':'Sector','type':'ordinal','sort':list(SECTORS)},
         'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]}},
-        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':list(COLORS)}},
         'tooltip':[{'field':'Sector'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':300},width='stretch')
     st.caption("Multi-sector articles count once per assigned sector; sector totals can exceed the raw article total.")
 
@@ -176,7 +176,7 @@ def timeline_chart(news, results, start, end):
     plot({'data':{'values':rows},'mark':{'type':'line','point':True},'encoding':{
         'x':{'field':'Date','type':'ordinal','scale':{'domain':days},'title':'Publication date (UTC)','axis':{'values':ticks,'labelExpr':'substring(datum.label,5)' if start.year==end.year else 'datum.label','labelOverlap':'greedy','labelAngle':0}},
         'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]},'axis':{'tickMinStep':1}},
-        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':list(COLORS)}},
         'tooltip':[{'field':'Date'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':320},width='stretch')
 
 

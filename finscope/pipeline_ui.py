@@ -23,6 +23,8 @@ PAGES=['Dashboard','Industries','Knowledge Graph','News Explorer','Settings']
 
 @st.fragment(run_every=2)
 def task_progress(store):
+    from .ui_preferences import bootstrap
+    bootstrap(store)
     q=TaskQueue(store);task=q.get()
     if not task:return
     counts=task['counts'];signature=json.dumps([task['id'],task['status'],counts],sort_keys=True)
@@ -243,15 +245,17 @@ def sector_plot(rows):
     upper=max(1,max(sum(r[s] for s in ('Positive','Neutral','Negative','Not analyzed')) for r in rows))
     plot({'data':{'values':values},'mark':{'type':'bar','cornerRadiusEnd':3},'encoding':{
         'y':{'field':'Industry','type':'nominal','title':None},'x':{'field':'Articles','type':'quantitative','title':'Distinct local originals','scale':{'domain':[0,upper]},'axis':{'tickMinStep':1}},
-        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':['Positive','Neutral','Negative','Not analyzed'],'range':COLORS}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':['Positive','Neutral','Negative','Not analyzed'],'range':list(COLORS)}},
         'tooltip':[{'field':'Industry'},{'field':'Sentiment'},{'field':'Articles'}]},'height':max(230,len(rows)*30)},width='stretch')
 
 
 def main():
     from .product_ui import local_store
     from .product_theme import css
-    st.set_page_config(page_title='FinScope | Local News Intelligence',page_icon='📈',layout='wide');st.markdown(css(),unsafe_allow_html=True)
+    st.set_page_config(page_title='FinScope | Local News Intelligence',page_icon='📈',layout='wide')
     store=local_store();q=TaskQueue(store);data=ProductStorage(store)
+    from .ui_preferences import bootstrap,toolbar
+    bootstrap(store);st.markdown(css(),unsafe_allow_html=True);toolbar(store)
     restore_ui(store,st.session_state)
     if not store.setting('guide_completed',False):
         st.title('Welcome to FinScope')

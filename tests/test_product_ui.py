@@ -44,9 +44,9 @@ class ProductUITests(unittest.TestCase):
 
     def test_first_visit_guide_and_persistent_returning_user(self):
         app = self.app()
-        self.assertEqual(app.button[0].label, "Get Started")
+        self.assertEqual(len([b for b in app.button if b.label=="Get Started"]),1)
         self.assertEqual(len(app.subheader), 4)
-        app.button[0].click().run()
+        next(b for b in app.button if b.label=="Get Started").click().run()
         self.assertFalse(app.exception)
         self.assertTrue(LocalNewsStore(self.db).setting("guide_completed"))
         returning = self.app()

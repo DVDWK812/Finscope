@@ -427,15 +427,10 @@ def about():
 
 def main():
     st.set_page_config(page_title="FinScope | Local News Intelligence", page_icon="📈", layout="wide")
-    st.markdown("""<style>
-    .block-container {max-width:1400px; padding-top:2rem;}
-    [data-testid="stAppDeployButton"] {display:none;}
-    [data-testid="stMetric"] {background:#f4f8f7; border:1px solid #dce7e3; border-radius:12px; padding:1rem;}
-    [data-testid="stSidebar"] {border-right:1px solid #e2e8e6;}
-    h1 {letter-spacing:-.035em;}
-    @media(max-width:768px){.block-container{padding-left:1rem;padding-right:1rem;}}
-    </style>""", unsafe_allow_html=True)
     store = local_store()
+    from .ui_preferences import bootstrap,toolbar
+    from .product_theme import css
+    bootstrap(store);st.markdown(css(),unsafe_allow_html=True);toolbar(store)
     if st.session_state.get("show_guide", not store.setting("guide_completed", False)):
         welcome(store)
         return

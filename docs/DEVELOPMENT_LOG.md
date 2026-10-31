@@ -509,3 +509,5 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   all 171 frozen hashes unchanged. Only allowlisted view preferences were saved.
   New HTTP/provider/model dispatches: zero. Browser tests are engineering evidence,
   not independent human usability/accuracy evidence. Screenshots stay ignored.
+
+- 31 October P1.1 theme foundation: independent allowlisted ui_theme/ui_language preferences, two token sets, immediate theme control and explicit iframe palette/color-scheme parameters. Default remains dark; no config.toml mutation or browser-menu automation. 388 offline tests and benchmark dry run pass; actual cross-mode browser acceptance follows in the final milestone.

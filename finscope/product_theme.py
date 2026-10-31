@@ -2,12 +2,33 @@
 from html import escape
 
 # Canonical showcase palette, shared by local UI, plots and component arguments.
-TOKENS={'background':'#0b1220','surface':'#111d2e','raised':'#17263a','border':'#2c3b50',
+DARK={'background':'#0b1220','surface':'#111d2e','raised':'#17263a','border':'#2c3b50',
         'text':'#e7edf6','muted':'#adbbce','accent':'#70d6c0','accent_surface':'#183d3b','button':'#27685e',
         'positive':'#70d6b4','neutral':'#bcc9db','negative':'#f5a09a','industry':'#dfc38b',
         'candidate':'#c8b5ed','source':'#e6b0a9','radius':'14px','space':'16px',
         'font':'Inter, ui-sans-serif, system-ui, sans-serif'}
-COLORS=[TOKENS[k] for k in ('positive','neutral','negative','industry')]
+DARK.update(hover='#20354a',focus='#70d6c0',button_bg='#70d6c0',button_text='#0b1220',warning_bg='#514326',neutral_bg='#526079')
+LIGHT={**DARK,'background':'#edf2ef','surface':'#f7faf7','raised':'#e1eae5','border':'#b9cbc2',
+       'text':'#253a37','muted':'#536b65','accent':'#27685e','accent_surface':'#d6eae1',
+       'positive':'#26745e','neutral':'#61718a','negative':'#a83f45','industry':'#85611d',
+       'candidate':'#785598','source':'#97564f','hover':'#d3e2d9','focus':'#26745e',
+       'button_bg':'#27685e','button_text':'#f7faf7','warning_bg':'#f3e7c9','neutral_bg':'#d1dbe4'}
+TOKENS=DARK  # Compatibility default; renderers resolve palette() per session/run.
+
+
+def palette():
+    from .ui_preferences import theme
+    return dict(LIGHT if theme()=='light' else DARK)
+
+
+def colors():return [palette()[k] for k in ('positive','neutral','negative','industry')]
+
+
+class _Colors:
+    def __getitem__(self,key):return colors()[key]
+    def __iter__(self):return iter(colors())
+    def __len__(self):return 4
+COLORS=_Colors()
 
 
 def brand():
@@ -17,15 +38,17 @@ def brand():
 
 def plot(spec,**options):
     import streamlit as st
-    st.vega_lite_chart({**spec,'background':TOKENS['surface'],'config':{
+    tokens=palette()
+    st.vega_lite_chart({**spec,'background':tokens['surface'],'config':{
         'font':'system-ui','view':{'stroke':None},
-        'axis':{'labelColor':TOKENS['muted'],'titleColor':TOKENS['muted'],'labelFontSize':11,
-                'gridColor':TOKENS['border'],'gridOpacity':.45,'domain':False,'ticks':False,'labelPadding':8},
-        'legend':{'labelColor':TOKENS['muted'],'titleColor':TOKENS['muted'],'orient':'bottom',
+        'axis':{'labelColor':tokens['muted'],'titleColor':tokens['muted'],'labelFontSize':11,
+                'gridColor':tokens['border'],'gridOpacity':.45,'domain':False,'ticks':False,'labelPadding':8},
+        'legend':{'labelColor':tokens['muted'],'titleColor':tokens['muted'],'orient':'bottom',
                   'direction':'horizontal','labelFontSize':11,'symbolType':'circle'}}},theme=None,**options)
 
 
 def status_markup(status,stage,counts):
+    TOKENS=palette()
     labels={'queued':'Queued','running':'In progress','completed':'Completed','partial_failed':'Completed with issues',
             'blocked':'Action needed','cancelled':'Stopped','interrupted':'Interrupted'}
     stages={'finished':'Finished','preflight':'Checking configuration','cancelled':'Stopped'}
@@ -37,7 +60,9 @@ def status_markup(status,stage,counts):
 
 
 def css():
-    variables=';'.join('--fs-'+k.replace('_','-')+':'+v for k,v in TOKENS.items())
+    from .ui_preferences import theme
+    variables=';'.join('--fs-'+k.replace('_','-')+':'+v for k,v in palette().items())
+    variables+=';color-scheme:'+theme()
     return '<style>:root{'+variables+'''}
     [data-testid="stAppViewContainer"],[data-testid="stHeader"]{background:var(--fs-background);color:var(--fs-text)}
     [data-testid="stAppViewContainer"],[data-testid="stAppViewContainer"] p,button,input,label{font-family:var(--fs-font)!important}
@@ -55,7 +80,7 @@ def css():
     .st-key-product_page label:has(input:checked) p{color:var(--fs-accent)!important;font-weight:600}
     .st-key-product_page label>div:first-child:not(:has([data-testid="stMarkdownContainer"])),.st-key-product_page label>div>div:not([data-testid="stMarkdownContainer"]){display:none}.st-key-product_page label:before{display:block;min-width:20px;color:var(--fs-accent);font-size:20px;line-height:1}
     .st-key-product_page label:has(input[value="0"]):before{content:'▦'}.st-key-product_page label:has(input[value="1"]):before{content:'▥'}.st-key-product_page label:has(input[value="2"]):before{content:'◎'}.st-key-product_page label:has(input[value="3"]):before{content:'▤'}.st-key-product_page label:has(input[value="4"]):before{content:'⚙'}
-    .stButton button[kind="primary"] p{color:var(--fs-background)!important;font-weight:650}
+    .stButton button[kind="primary"]{background:var(--fs-button-bg)!important;border-color:var(--fs-button-bg)!important}.stButton button[kind="primary"] p{color:var(--fs-button-text)!important;font-weight:650}
     [data-testid="stMetric"]{border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1rem 1.15rem;min-height:108px;background:var(--fs-surface)}
     [data-testid="stMetricLabel"] p{color:var(--fs-muted);font-size:.76rem}[data-testid="stMetricValue"]{color:var(--fs-text);font-size:1.8rem}
     .st-key-product_chart_sector,.st-key-product_chart_mix,.st-key-product_chart_time,.st-key-product_chart_heatmap,.st-key-product_map,.st-key-product_cloud,[class*="st-key-story_detail_"]{background:var(--fs-surface);border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1.1rem}
@@ -70,4 +95,16 @@ def css():
     @media(max-width:1050px){.st-key-product_dashboard_charts [data-testid="stHorizontalBlock"],[class*="st-key-story_layout_"] [data-testid="stHorizontalBlock"],.st-key-product_filters [data-testid="stHorizontalBlock"]{flex-direction:column}.st-key-product_dashboard_charts [data-testid="stColumn"],[class*="st-key-story_layout_"] [data-testid="stColumn"],.st-key-product_filters [data-testid="stColumn"]{width:100%;flex:1 1 100%}}
     @media(max-width:700px){[data-testid="stMainBlockContainer"]{padding:3.2rem .8rem 2rem}.st-key-product_kpis [data-testid="stHorizontalBlock"]{flex-wrap:wrap;gap:.6rem}.st-key-product_kpis [data-testid="stColumn"]{min-width:130px;flex:1 1 45%}[data-testid="stMetric"]{min-height:98px;padding:.8rem}.fs-task>div{margin-left:0}.st-key-product_map,.st-key-product_cloud{padding:.65rem}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+    .st-key-ui_topbar{position:sticky;top:3.2rem;align-self:flex-end;width:44px;z-index:50;margin-bottom:-2.8rem}.st-key-ui_topbar button{font-size:1.3rem;min-width:44px;min-height:44px}h1{padding-right:3.2rem!important}
+    .stButton button,.stLinkButton a,[data-testid="stFormSubmitButton"] button{background:var(--fs-raised);color:var(--fs-text);border-color:var(--fs-border)}
+    .stButton button:hover,.stLinkButton a:hover{background:var(--fs-hover);border-color:var(--fs-focus)}
+    input,textarea,[contenteditable="true"],[role="combobox"]{color:var(--fs-text)!important;caret-color:var(--fs-focus)!important}
+    [data-testid="stTextInput"]>div,[data-testid="stNumberInput"]>div,[data-testid="stTextArea"]>div,[data-testid="stSelectbox"]>div,[data-testid="stMultiSelect"]>div,[data-testid="stDateInput"]>div{background:var(--fs-raised)!important;color:var(--fs-text)!important;border-color:var(--fs-border)!important;border-radius:8px}
+    [data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,textarea,[role="combobox"]{background:var(--fs-raised)!important}
+    [role="listbox"],[role="dialog"],[data-baseweb="popover"],[data-testid="stTooltipContent"]{background:var(--fs-surface)!important;color:var(--fs-text)!important;border-color:var(--fs-border)!important}
+    [role="option"]{color:var(--fs-text)!important;background:var(--fs-surface)}[role="option"]:hover,[role="option"][aria-selected="true"]{background:var(--fs-accent-surface)!important}
+    [data-testid="stExpander"]{background:var(--fs-surface);border-color:var(--fs-border)}[data-testid="stExpander"] summary{background:var(--fs-surface)!important;color:var(--fs-text)!important}
+    [data-testid="stAlert"]{background:var(--fs-raised)!important;color:var(--fs-text)!important;border:1px solid var(--fs-border)}[data-testid="stAlert"] p{color:var(--fs-text)!important}
+    [data-testid="stForm"],[data-testid="stJson"],[data-testid="stCode"]{background:var(--fs-surface);color:var(--fs-text);border-color:var(--fs-border)}
+    [data-testid="stCheckbox"] label,[data-testid="stRadio"] label,[data-testid="stSelectbox"] label,[data-testid="stMultiSelect"] label{color:var(--fs-text)!important}
     </style>'''

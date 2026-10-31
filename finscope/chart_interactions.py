@@ -21,9 +21,10 @@ def selected_value(event, scope, valid_ids):
 
 
 def interactive_chart(kind, data, *, key, selected=None):
-    from .product_theme import TOKENS
+    from .product_theme import palette
+    from .ui_preferences import theme
     scope=chart_scope(kind,data)
-    event=_chart(kind=kind,data=data,scope=scope,selected=selected,palette=TOKENS,key=key,default=None)
+    event=_chart(kind=kind,data=data,scope=scope,selected=selected,palette=palette(),ui_theme=theme(),key=key,default=None)
     ids=({n['id'] for n in data['nodes']} if kind=='graph' else {c['id'] for c in data['rows']} if kind=='articles' else {c['term'] for c in data['terms']} if kind=='cloud' else {c['Date']+'|'+c['Sector'] for c in data['cells']})
     value=selected_value(event,scope,ids)
     marker=json.dumps(event,sort_keys=True)
