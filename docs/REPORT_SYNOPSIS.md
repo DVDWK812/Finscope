@@ -208,3 +208,6 @@ isolated one-response simulations with no replay. Real inspection used only nons
 no credential access or live news/model request. All 20 current production tables
 (heartbeat excluded) and 171 frozen hashes remain unchanged. Actual provider
 authentication for the new key slots remains untested.
+
+
+1 November 2026 Sydney follow-up: conditional Settings modules remove cross-page source warnings; updates require an explicit runnable-source/model review before submission. Formal localhost:8511 personal-preview checks used one authorized request each: Marketaux HTTP 200 (3 returned/3 previewed, 15:48:17 UTC), Finnhub NVDA HTTP 200 (250 returned/3 previewed, 15:49:00 UTC), both 31 October UTC. NewsData remained paused. No API article was retained or model-analyzed; downstream rights remain unconfirmed. 524 offline tests (one Windows skip), dry run, 12 Settings language/theme/module combinations and 390px source-layout checks passed. A URL-less browser MutationObserver exception was observed once and not reproduced in instrumented follow-up; no zero-console-error claim. All 47 originals, 83 analyses, old seven request rows, model-request tables and 171 frozen hashes were preserved; only two authorized requests and nonsecret configuration/evidence metadata were added.

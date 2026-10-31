@@ -406,3 +406,16 @@ Prepared [Marketaux runner wiring](MARKETAUX_RUNNER.md) using the unchanged guar
 An independent [local FinBERT backend](AI_PROTOTYPE.md#local-finbert-backend--26-october-2026-sydney) was tested on three authored synthetic sentences, in two actual CPU smoke runs, with pinned/hash-verified local weights and exact optional-runtime versions. Real class outputs/probabilities/token lengths and measured runtime are recorded separately from mocks in that document. The 702-token synthetic probe was blocked before model forward; no truncation was used. Model/runtime asset preparation was explicit setup, not an automatic inference download; no models/weights/runtime environments are committed.
 
 None of the synthetic text or output is news coverage, independent accuracy validation or clearance to process publisher inputs. Real API records remain disconnected from AI and Streamlit. GDELT stays provisional; Marketaux stays conditional pending multi-day reliability, useful permitted descriptions, timestamps, representative source/event coverage, free history/quota and public display/retention/team-review/inference/derived-output rights. Model-weight terms are separate. **Phase 2 production integration remains NO-GO.**
+
+
+## Local personal-preview acceptance — 1 November 2026 Sydney
+
+This updates local connectivity evidence only, not historical research approval or downstream publisher rights. The user checked both accounts and authorized one request each, personal localhost title/summary preview only, without storage or model analysis. Existing credentials were used through the protected resolver; no key was changed or retried.
+
+| Provider | Request UTC | HTTP | Response records / local preview | Requests |
+|---|---|---|---|---|
+| Marketaux, technology keyword | 2026-10-31 15:48:17.667827 | 200 | 3 / 3 | 1 |
+| Finnhub, NVDA company-news | 2026-10-31 15:49:00.190191 | 200 | 250 / 3 | 1 |
+| NewsData.io | Not requested | Not observed | Not observed | 0; existing manual pause |
+
+The declared local daily allowance was one per provider and is now consumed; no backup fallback, automatic retry, hold reset or additional quota was used. Personal-preview bases: [Marketaux terms](https://www.marketaux.com/tos), [Finnhub terms](https://finnhub.io/terms-of-service), combined with the user's confirmed intended use. These do not establish storage/NLP, redistribution, full-text or public-product rights. Finnhub is ticker-specific and is not comparable sector-wide coverage; a 250-record response is not 250 newly stored articles. Neither preview was persisted in the news tables or sent to a model. There was no successful storage/classification/sentiment acceptance on these API records in this scope. Exact-key receipts survive refresh without another request. Existing source-wide and Marketaux dual-ledger protections are unchanged.
