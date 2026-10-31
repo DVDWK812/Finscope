@@ -68,7 +68,7 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, s
         st.button('Include unknown publication dates',on_click=include_unknown)
     left, middle, right = st.columns([2, 2, 2])
     with left:
-        selected = st.date_input("Publication date range (UTC)", value=(start, end), key="local_dates",on_change=remember_filter,args=('local_dates',),
+        selected = st.date_input("Publication date range (UTC)", value=(start,end), key="local_dates",on_change=remember_filter,args=('local_dates',),
                                  help='Exact timestamps use UTC; date-only records keep their original calendar day. Unknown publication dates stay separate.')
     with middle:
         options=sector_options or SECTORS
@@ -168,9 +168,14 @@ def timeline_chart(news, results, start, end):
     table=daily_counts(news,results,start,end,date_basis='published')
     rows=[{'Date':r['Date'],'Sentiment':label,'Articles':r[label]} for r in table for label in (*SENTIMENTS,'Not analyzed')]
     upper=max(1,max((r['Articles'] for r in rows),default=0))
+    # Retain the existing date-only daily buckets and thin labels, not data.
+    # A discrete domain also stays finite during the host's empty-data render.
+    days=[r['Date'] for r in table]
+    ticks=days[::max(1,math.ceil(len(days)/6))]
+    if days and days[-1] not in ticks:ticks.append(days[-1])
     plot({'data':{'values':rows},'mark':{'type':'line','point':True},'encoding':{
-        'x':{'field':'Date','type':'ordinal','title':'Publication date','axis':{'labelAngle':-40}},
-        'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]}},
+        'x':{'field':'Date','type':'ordinal','scale':{'domain':days},'title':'Publication date (UTC)','axis':{'values':ticks,'labelExpr':'substring(datum.label,5)' if start.year==end.year else 'datum.label','labelOverlap':'greedy','labelAngle':0}},
+        'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]},'axis':{'tickMinStep':1}},
         'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},
         'tooltip':[{'field':'Date'},{'field':'Sentiment'},{'field':'Articles','type':'quantitative'}]},'height':320},width='stretch')
 
@@ -206,6 +211,13 @@ def heatmap(news, results, start, end, store, *, sectors_override=None,backgroun
 
 
 def related_articles(news, results, store, *, context,background=False):
+    if background:
+        from .pipeline_ui import article_list
+        from .product_storage import ProductStorage
+        from .taxonomy import load_taxonomy
+        catalog=load_taxonomy(st.session_state.get('product_taxonomy','US-BUSINESS-1'))
+        article_list(news,results,store,ProductStorage(store).classifications(catalog['id']),catalog,context)
+        return
     if not news:
         st.info("No local articles in this selection.")
         return
@@ -216,7 +228,7 @@ def related_articles(news, results, store, *, context,background=False):
     article_details(by_id[key],results.get(key),store,context=context,background=background)
 
 
-def article_details(item, result, store, *, context="explorer",background=False):
+def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None):
     st.subheader(item.title)
     st.caption(f"{item.source} · {publication_label(item)}")
     if item.provider=='authored_synthetic':
@@ -229,7 +241,9 @@ def article_details(item, result, store, *, context="explorer",background=False)
             st.caption(origin.get("attribution","Reserve Bank of Australia")+' · '+origin.get('derivative_attribution','AI analysis is derived; no RBA endorsement.'))
         except (ValueError,TypeError):
             pass
-    if item.summary:
+    if content_renderer:
+        content_renderer(item)
+    elif item.summary:
         st.text(item.summary)
     st.caption('Permitted body saved locally; analysis excerpt coverage is retained in result provenance.' if item.body else "Headline + supplied summary; not full article text." if item.summary else "Headline only; no summary or full article supplied.")
     if item.url:

@@ -142,3 +142,11 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   failure-day hold; no retry or alternate URL bypass. ABS body extraction and
   excerpt provenance succeeded. Actual coverage is three primary/four secondary
   topics, with 35/42 real originals unclassified; not broad market coverage.
+
+- 31 October P1: use main `f2fade9` presentation tokens without importing showcase
+  records. Local graph/table components retain actual click identities, scoped
+  events and keyboard alternatives; literal keyword highlights use only permitted
+  article text. Persist only allowlisted view preferences in a separate settings
+  row; free text/credentials/endpoints and pipeline configuration are excluded.
+  Catalog switching reads saved classification versions and never triggers a
+  reclassification or fetch. An unclassified catalog retains the original list.

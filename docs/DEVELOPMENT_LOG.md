@@ -485,3 +485,27 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   Earlier warnings are retained above, not erased from the acceptance record.
 
 - 31 October P1 theme milestone: adapt read-only main f2fade9 palette, icon navigation, chart cards and readable task summary to the five local pages. No source/model dispatch or statistical changes. Full 370 offline tests and benchmark dry run pass; navigation repeat 8 tests passes. Fixed a test's fixed-date assumption by explicitly selecting its fixture date; product date filters still do not widen automatically.
+
+- 31 October P1 interaction milestone: shared multiline article rows, keyboard
+  selection and synchronized accessible picker/details across five views. Actual
+  browser Energy row→detail and picker→CPI reverse synchronization passed; reload
+  retained the selected original. Manufacturing cloud click opened three real
+  NIST originals and highlighted the actual summary word, not model rationale.
+  Sector/article graph nodes, zoom/reset, expanded 30-article graph (39/51 nodes,
+  591px mobile iframe) and 30 October Consumer Staples heatmap cell worked.
+- CSRC switch showed 42/42 originals lacking saved classification while retaining
+  originals; US mode restored its evidence. FinBERT selection kept 42 originals
+  with two matching historical results, Gemma 40; narrowed dates showed explicit
+  excluded-record hints and pending analysis, never invented Neutral. Empty search
+  returned a normal zero-result state. No reclassification was run this round.
+- Responsive checks covered all five pages at desktop 1280×720, tablet 820×1180
+  and mobile 390×844. Fixed a collapsed-sidebar gutter and nested layout-wrapper
+  selectors found on tablet; final document widths match each viewport. Long NIST
+  title row click and graph/cloud clicks also passed on mobile. Timeline retains
+  all date-only daily buckets with sparse axis labels; numeric counts are unchanged.
+- 384 offline tests and benchmark dry run passed. Actual SQLite comparison shows
+  exact equality for eleven protected tables: 44 originals/80 analyses/7 action
+  requests/12 collector HTTP rows/zero external-model ledger rows/three prior tasks;
+  all 171 frozen hashes unchanged. Only allowlisted view preferences were saved.
+  New HTTP/provider/model dispatches: zero. Browser tests are engineering evidence,
+  not independent human usability/accuracy evidence. Screenshots stay ignored.

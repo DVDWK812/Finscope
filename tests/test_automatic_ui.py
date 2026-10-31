@@ -1,4 +1,5 @@
 from contextlib import closing
+import json
 from dataclasses import replace
 from pathlib import Path
 import tempfile
@@ -89,7 +90,7 @@ class AutomaticUITests(unittest.TestCase):
             found=[]
             for key,node in getattr(tree,'children',{}).items():
                 here=path+(key,)
-                if node.type=='component_instance':found.append(here)
+                if node.type=='component_instance' and json.loads(node.proto.json_args).get('kind')!='articles':found.append(here)
                 found.extend(paths(node,here))
             return found
         before=paths(app._tree)

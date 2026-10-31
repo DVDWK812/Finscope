@@ -10,6 +10,10 @@ button:hover{border-color:var(--accent)}button:focus-visible,[tabindex]:focus-vi
 svg{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;height:430px;touch-action:pan-y}
 .node{cursor:pointer}.node:hover circle,.node:focus circle{stroke:var(--accent);stroke-width:3}.label{font-size:11px;fill:var(--text);pointer-events:none}.edge{stroke:var(--border);stroke-width:1.5}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0 12px}.toolbar span{font-size:12px;color:var(--muted)}
 .cloud{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:10px;padding:16px}.cloud button{border-color:transparent;color:var(--accent);background:transparent;overflow-wrap:anywhere}.cloud button:hover,.cloud .chosen{background:var(--accent_surface);border-color:var(--accent)}
+
+.graph-scroll{height:460px;overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}svg{min-width:1000px;border:0;touch-action:pan-x pan-y}.edge{opacity:.65}.node:hover rect,.node:focus rect{stroke:var(--accent);stroke-width:2.5}
+.article-scroll{background:var(--surface);max-height:550px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--border);border-radius:12px}.articles{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;border-spacing:0;font-size:12px}.articles th,.articles th:first-child{position:sticky;top:0;left:auto;min-width:0;background:var(--surface);padding:12px;text-align:left;white-space:normal}.articles th:first-child{width:65%}.articles td{padding:14px 12px;border-top:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;white-space:normal}.articles td strong{font-size:13px;font-weight:550;line-height:1.6;display:block}.articles td small{display:block;color:var(--muted);margin-top:7px;line-height:1.5}.articles tr[tabindex]{cursor:pointer}.articles tr[tabindex]:hover{background:var(--raised)}.articles tr[aria-selected=true]{background:var(--accent_surface)}.articles [data-tone=Positive]{color:var(--positive)}.articles [data-tone=Negative]{color:var(--negative)}.articles [data-tone=Neutral]{color:var(--neutral)}.articles [data-tone="Not analyzed"]{color:var(--industry)}
+@media(max-width:500px){.articles th:first-child{width:66%}.articles td,.articles th{padding:11px 8px}.articles td strong{font-size:12px}.article-scroll{max-height:420px}}
 </style></head><body><main id="root"></main>
 <script>
 // Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
@@ -20,7 +24,7 @@ function post(type,extra={}){parent.postMessage({isStreamlitMessage:true,type,..
 function resize(){if(!hasRendered)return;const height=Math.ceil(root.getBoundingClientRect().height);if(height!==lastHeight){lastHeight=height;post('streamlit:setFrameHeight',{height})}}
 function el(tag,text,attrs={}){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
 function svgEl(tag,attrs={}){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
-function choose(id){root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}
+function choose(id){if(args.kind==='articles')root.querySelectorAll('[data-id]').forEach(n=>n.setAttribute('aria-selected',String(n.dataset.id===id)));root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}
 function heatmap(data){
 const dates=[...new Set(data.cells.map(c=>c.Date))],sectors=[...new Set(data.cells.map(c=>c.Sector))];
 const lookup=new Map(data.cells.map(c=>[c.Date+'|'+c.Sector,c]));const wrap=el('div',undefined,{class:'scroll'}),table=el('table',undefined,{'aria-label':'Sector by publication date heatmap'});
@@ -36,20 +40,36 @@ if(args.selected===id)b.classList.add('chosen');b.onclick=()=>choose(id);const t
 root.append(el('div','Grey: no local news · Amber: not analyzed · Blue-grey: neutral balance · n: analyzed sample; n<3 low sample',{class:'legend'}));
 }
 function graph(data){
-let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),svg=svgEl('svg',{viewBox:'0 0 1100 500','aria-label':'Interactive evidence graph',role:'group'}),group=svgEl('g');svg.append(group);
-for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',label,{'aria-label':label});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${550*(1-scale)},${250*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span','Click a node to see related articles; hover a link for its evidence.'));root.append(toolbar,svg);
-const colors={'Article':'#217c65','Sector':'#c08b28','Subindustry':'#9a679e','Text entity':'#5475ba','Keyword theme':'#9a679e','Company query':'#a88156','Source':'#88969c','Unverified candidate':'#b5715c'};
-const point=n=>[70+n.x*235,35+n.y*425];
-for(const edge of data.edges){const a=point({x:edge.x,y:edge.y}),b=point({x:edge.x2,y:edge.y2});const line=svgEl('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:'edge'});const title=svgEl('title');title.textContent=`${edge.relationship}: ${edge.evidence}`;line.append(title);group.append(line)}
-for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${n.kind}: ${n.label}`});const circle=svgEl('circle',{r:n.kind==='Article'?10:8,fill:colors[n.kind]||'#667',stroke:args.selected===n.id?'#193e33':'#fff','stroke-width':args.selected===n.id?4:2}),text=svgEl('text',{class:'label',y:-17,'text-anchor':'middle'});text.textContent=n.display_label;const title=svgEl('title');title.textContent=`${n.kind}: ${n.label}`;const hit=svgEl('rect',{x:-85,y:-31,width:170,height:48,fill:'transparent'});g.append(hit,circle,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
+const palette=args.palette||{},colors={'Article':palette.accent,'Sector':palette.industry,'Subindustry':palette.candidate,'Text entity':palette.accent,'Keyword theme':palette.candidate};
+const groups={};for(const n of data.nodes)groups[n.kind]=(groups[n.kind]||0)+1;
+const height=Math.max(500,Math.min(2200,Math.max(0,...Object.values(groups))*70+90)),width=1220;
+let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),wrap=el('div',undefined,{class:'graph-scroll',tabindex:'0','aria-label':'Scrollable evidence graph'}),svg=svgEl('svg',{viewBox:`0 0 ${width} ${height}`,'aria-label':'Interactive evidence graph',role:'group'}),group=svgEl('g');svg.style.height=height+'px';svg.append(group);wrap.append(svg);
+for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',label,{'aria-label':label});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${width/2*(1-scale)},${height/2*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span','Click a node for originals; hover a relation for evidence.'));root.append(toolbar,wrap);
+const relations={'news_business_topic':'News topic','taxonomy_parent':'Catalog hierarchy','literal_text_mention':'Text mention','evidence_backed_theme':'Theme evidence'};
+const relationColor=r=>r==='taxonomy_parent'?palette.industry:r==='evidence_backed_theme'?palette.candidate:palette.accent;
+const point=n=>[120+n.x*235,45+n.y*(height-90)];
+for(const edge of data.edges){const a=point({x:edge.x,y:edge.y}),b=point({x:edge.x2,y:edge.y2}),direction=b[0]>=a[0]?1:-1,start=a[0]+95*direction,end=b[0]-95*direction,mid=(start+end)/2;
+const line=svgEl('path',{d:`M${start},${a[1]} C${mid},${a[1]} ${mid},${b[1]} ${end},${b[1]}`,fill:'none',stroke:relationColor(edge.relationship),class:'edge','stroke-dasharray':edge.relationship==='taxonomy_parent'?'5 4':''});const title=svgEl('title');title.textContent=`${edge.relationship}: ${edge.evidence}`;line.append(title);group.append(line)}
+for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${n.kind}: ${n.label}`});
+const box=svgEl('rect',{x:-96,y:-27,width:192,height:54,rx:8,fill:palette.raised||'#17263a',stroke:colors[n.kind]||palette.muted,'stroke-width':args.selected===n.id?3:1});
+const text=svgEl('text',{class:'label','text-anchor':'middle'});let lines=[],line='',size=0;for(const c of n.label){const w=c.charCodeAt(0)>255?2:1;if(size+w>26){lines.push(line);line='';size=0}line+=c;size+=w}if(line)lines.push(line);lines=lines.slice(0,2);if(n.label.length>lines.join('').length)lines[lines.length-1]+='…';
+lines.forEach((value,i)=>{const t=svgEl('tspan',{x:0,y:(i-(lines.length-1)/2)*15+4});t.textContent=value;text.append(t)});
+const title=svgEl('title');title.textContent=`${n.kind}: ${n.label}`;g.append(box,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
 const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${kind}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
+const rel=el('div',undefined,{class:'legend'});for(const relation of [...new Set(data.edges.map(e=>e.relationship))]){const span=el('span',(relation==='taxonomy_parent'?'┄ ':'— ')+(relations[relation]||relation));span.style.color=relationColor(relation);rel.append(span)}root.append(rel);
+}
+function articles(data){
+const wrap=el('div',undefined,{class:'article-scroll'}),table=el('table',undefined,{'aria-label':'Original news articles',class:'articles'});
+const head=el('thead'),heading=el('tr');for(const name of ['Headline / source','Published / sentiment'])heading.append(el('th',name,{scope:'col'}));head.append(heading);table.append(head);const body=el('tbody');
+for(const n of data.rows){const row=el('tr',undefined,{'data-id':n.id,tabindex:'0','aria-label':n.title,'aria-selected':String(args.selected===n.id)});
+const title=el('td');title.append(el('strong',n.title),el('small',n.source));const meta=el('td');meta.append(el('span',n.published),el('small',n.tone,{'data-tone':n.tone}));row.append(title,meta);if(args.selected===n.id)row.classList.add('chosen');row.onclick=()=>choose(n.id);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};body.append(row)}table.append(body);wrap.append(table);root.append(wrap);
 }
 function cloud(data){
 const panel=el('div',undefined,{role:'list','aria-label':'Keywords by distinct article count',class:'cloud'});
 
 for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} articles`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;font-weight:${term.count>2?600:400}`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
 }
-addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;for(const[k,v]of Object.entries(args.palette||{})){if(document.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--'+k,v)}root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else heatmap(args.data);resize()});
+addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;for(const[k,v]of Object.entries(args.palette||{})){if(document.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--'+k,v)}root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else if(args.kind==='articles')articles(args.data);else heatmap(args.data);resize()});
 // A moving component may load before its host registers the iframe. Retry only
 // this local readiness handshake, at most eight times; never news/model calls.
 function announceReady(){if(hasRendered||readyAttempts++>=8)return;post('streamlit:componentReady',{apiVersion:1});setTimeout(announceReady,250)}

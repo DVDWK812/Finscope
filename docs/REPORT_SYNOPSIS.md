@@ -143,3 +143,13 @@ cloud iframe: a failing-before regression now verifies stable host positions.
 370 offline tests and benchmark dry run pass; no external calls occur from
 view/filter/refresh actions. Browser operation is engineering evidence, not
 three independent human usability participation.
+
+31 October P1 presentation acceptance: local pages adapt the read-only main
+`f2fade9` dark palette, icon navigation and chart cards. A shared accessible
+article-row picker/details component is used by Explorer, Industries, graph,
+cloud and heatmap; keyword snippets highlight literal body/summary matches.
+Date/model/catalog/page/article-focus preferences survive reload without new
+jobs. Missing CSRC classifications are explicitly pending, not evidence of no
+relevant news. Desktop, 820px tablet and 390px mobile checks use the existing real
+library; no new collection, inference or accuracy evaluation. 384 offline tests
+and benchmark dry run pass; all protected data and frozen evidence are unchanged.

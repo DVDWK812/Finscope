@@ -15,6 +15,8 @@ from .dashboard_ui import (shared_filters,distribution_chart,timeline_chart,heat
 from .chart_interactions import interactive_chart,chart_scope
 from .text_processing import keywords
 from .product_theme import TOKENS,COLORS,plot,brand,status_markup
+from .product_presentation import article_selection,article_rows,keyword_snippets
+from .view_preferences import restore_ui,save as save_view
 
 PAGES=['Dashboard','Industries','Knowledge Graph','News Explorer','Settings']
 
@@ -143,37 +145,50 @@ def reanalyze(item,store,prefix='product'):
         q.submit({**c,'sources':[],'source_permissions':{},'article_ids':[item.article_id],'force_reanalysis':True});st.rerun()
 
 
-def details(item,result,store,classifications,catalog,context='product'):
+def details(item,result,store,classifications,catalog,context='product',keyword=None):
+    from html import escape
     c=classifications.get(item.article_id,{})
     lookup={n['id']:n for n in catalog['nodes']}
     st.caption(' · '.join(node_label(lookup[v['id']]) for v in c.get('labels',[])) or 'Unclassified / 二级未知')
-    article_details(item,result,store,context=context,background=True)
-    if item.body:
-        with st.expander('Permitted locally saved article body'):st.text(item.body)
-    if result and result.provenance.get('span_end'):
-        p=result.provenance;st.caption(f"Analyzed {p.get('analysis_basis')} characters {p.get('span_start')}–{p.get('span_end')} / {p.get('source_characters')}; {p.get('aggregation')}")
+    def text(n):
+        if not n.rights.preview:st.warning('Local preview permission is unavailable.');return
+        if keyword:
+            for snippet in keyword_snippets(n,keyword):
+                st.caption(f"Keyword match · {snippet['field']}")
+                st.markdown('<p class="fs-match-excerpt">'+snippet['html']+'</p>',unsafe_allow_html=True)
+        content=n.body or n.summary
+        if content:
+            st.caption('Permitted article body' if n.body else 'Supplied summary')
+            st.markdown('<div class="fs-news-copy">'+escape(content)+'</div>',unsafe_allow_html=True)
+    article_details(item,result,store,context=context,background=True,content_renderer=text)
     with st.expander('Classification evidence'):
         st.json({'current':c,'history':ProductStorage(store).classification_history(item.article_id,catalog['id'])})
 
 
-def article_list(news,results,store,classes,catalog,context):
+def article_list(news,results,store,classes,catalog,context,keyword=None):
     if not news:st.info('No matching original articles.');return
     ordered=sorted(news,key=lambda n:(n.published_day,n.article_id),reverse=True)
-    left,right=st.columns([1,1.4])
-    with left:
-        ids=[n.article_id for n in ordered]
-        key=context+'_article'
-        if st.session_state.get(key) not in ids:st.session_state.pop(key,None)
-        identity=st.selectbox('Select original article',ids,format_func=lambda k:next(n.title for n in ordered if n.article_id==k),key=key)
-        st.dataframe(pd.DataFrame([{'Title':n.title,'Source':n.source,'Published':n.published_day or 'Unknown','Sentiment':results[n.article_id].label if n.article_id in results else 'Not analyzed'} for n in ordered]),hide_index=True,width='stretch')
-    with right:details(next(n for n in ordered if n.article_id==identity),results.get(identity),store,classes,catalog,context)
+    with st.container(key='story_layout_'+context):
+        left,right=st.columns([1.1,1.4],gap='large')
+        ids=[n.article_id for n in ordered];key=context+'_article'
+        current=article_selection(ids,st.session_state.get(key))
+        with left:
+            clicked=interactive_chart('articles',{'rows':article_rows(ordered,results)},key=context+'_rows',selected=current)
+            st.session_state[key]=article_selection(ids,current,clicked)
+            with st.expander('Accessible article picker'):
+                identity=st.selectbox('Select original article',ids,format_func=lambda k:next(n.title for n in ordered if n.article_id==k),key=key)
+        with right:
+            with st.container(key='story_detail_'+context):
+                details(next(n for n in ordered if n.article_id==identity),results.get(identity),store,classes,catalog,context,keyword)
 
 
 def cloud(news,results,store,classes,catalog,context='cloud'):
     terms=keywords(news)
     if not terms:st.info('No keywords in this selection.');return
-    clicked=interactive_chart('cloud',{'terms':terms},key=context,selected=st.session_state.get(context+'_selected'))
-    if clicked:st.session_state[context+'_selected']=clicked
+    clicked=interactive_chart('cloud',{'terms':terms},key=context,selected=st.session_state.get(context+'_fallback') or st.session_state.get(context+'_selected'))
+    if clicked:
+        st.session_state[context+'_selected']=clicked
+        st.session_state[context+'_fallback']=clicked
     words=[v['term'] for v in terms]
     if st.session_state.get(context+'_fallback') not in words:st.session_state.pop(context+'_fallback',None)
     selected=st.selectbox('Accessible keyword list',words,index=None,key=context+'_fallback')
@@ -182,7 +197,7 @@ def cloud(news,results,store,classes,catalog,context='cloud'):
     st.caption('Weights count distinct originals containing the term; article text only, never model rationales.')
     if term:
         st.subheader('Keyword: '+term['term'])
-        article_list([n for n in news if n.article_id in term['article_ids']],results,store,classes,catalog,context+'_matches')
+        article_list([n for n in news if n.article_id in term['article_ids']],results,store,classes,catalog,context+'_matches',keyword=term['term'])
 
 
 def network(news,results,store,classes,catalog):
@@ -200,7 +215,8 @@ def network(news,results,store,classes,catalog):
     st.caption(f"Showing {len(data['nodes'])}/{len(full['nodes'])} nodes; {sum(n['kind']=='Article' for n in data['nodes'])} displayed originals. Edges retain text/catalog evidence; no causal or supply-chain claims.")
     scope=chart_scope('graph',data)
     if st.session_state.get('product_graph_scope')!=scope:st.session_state['product_graph_selected']=None;st.session_state['product_graph_scope']=scope
-    clicked=interactive_chart('graph',data,key='product_graph',selected=st.session_state.get('product_graph_selected'))
+    with st.container(key='product_map'):
+        clicked=interactive_chart('graph',data,key='product_graph',selected=st.session_state.get('product_graph_selected'))
     if clicked:st.session_state['product_graph_selected']=clicked
     selection=st.session_state.get('product_graph_selected')
     # Keep later component delta paths stable when selected-node details expand.
@@ -215,7 +231,8 @@ def network(news,results,store,classes,catalog):
         accessible=st.selectbox('Graph node',data['nodes'],index=None,format_func=lambda n:n['kind']+' · '+n['label'])
         if accessible:
             ids=graph_members(full,accessible['id']);article_list([n for n in news if n.article_id in ids],results,store,classes,catalog,'graph_accessible')
-    st.subheader('News keywords');cloud(news,results,store,classes,catalog)
+    with st.container(key='product_cloud'):
+        st.subheader('News keywords');cloud(news,results,store,classes,catalog)
 
 
 def sector_plot(rows):
@@ -225,7 +242,7 @@ def sector_plot(rows):
     values=[{'Industry':r['Industry'],'Sentiment':s,'Articles':r[s]} for r in rows for s in ('Positive','Neutral','Negative','Not analyzed')]
     upper=max(1,max(sum(r[s] for s in ('Positive','Neutral','Negative','Not analyzed')) for r in rows))
     plot({'data':{'values':values},'mark':{'type':'bar','cornerRadiusEnd':3},'encoding':{
-        'y':{'field':'Industry','type':'nominal','title':None},'x':{'field':'Articles','type':'quantitative','title':'Distinct local originals','scale':{'domain':[0,upper]}},
+        'y':{'field':'Industry','type':'nominal','title':None},'x':{'field':'Articles','type':'quantitative','title':'Distinct local originals','scale':{'domain':[0,upper]},'axis':{'tickMinStep':1}},
         'color':{'field':'Sentiment','type':'nominal','scale':{'domain':['Positive','Neutral','Negative','Not analyzed'],'range':COLORS}},
         'tooltip':[{'field':'Industry'},{'field':'Sentiment'},{'field':'Articles'}]},'height':max(230,len(rows)*30)},width='stretch')
 
@@ -235,6 +252,7 @@ def main():
     from .product_theme import css
     st.set_page_config(page_title='FinScope | Local News Intelligence',page_icon='📈',layout='wide');st.markdown(css(),unsafe_allow_html=True)
     store=local_store();q=TaskQueue(store);data=ProductStorage(store)
+    restore_ui(store,st.session_state)
     if not store.setting('guide_completed',False):
         st.title('Welcome to FinScope')
         for column,title,text in zip(st.columns(4),['Configure once','Update and analyze','Explore industries','Inspect originals'],
@@ -252,15 +270,20 @@ def main():
         st.caption('Local SQLite · persistent originals and model history')
     st.title(page)
     task_progress(store)
-    if page=='Settings':settings(store,q);return
+    if page=='Settings':
+        save_view(store,dict(st.session_state));settings(store,q);return
     for key,value in st.session_state.get('product_view_preferences',{}).items():
         if key not in st.session_state:st.session_state[key]=value
     update_button(q)
+    kpis=st.container(key='product_kpis') if page=='Dashboard' else None
     c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
     catalog=load_taxonomy(mode);classes=data.classifications(mode)
     news=data.news()
     with st.expander('Development records',expanded=False):include_dev=st.checkbox('Include synthetic development records',value=False,key='product_include_dev')
     if not include_dev:news=[n for n in news if n.provider!='authored_synthetic']
+    missing=sum(n.article_id not in classes for n in news)
+    if missing:
+        st.info(f"{missing}/{len(news)} originals have no saved classification for {mode}; industry relevance is not yet determined.")
     news=project_news(news,classes,catalog)
     current={n.article_id:n for n in news}
     analyses=[a for a in store.list_analyses() if a.article_id in current and (not current[a.article_id].content_version or a.provenance.get('content_sha256')==current[a.article_id].content_version)]
@@ -273,7 +296,8 @@ def main():
         st.session_state['local_result_model']=preferred
     import hashlib
     widget_key='product_result_model_'+hashlib.sha256(c.get('result_model_key','default').encode()).hexdigest()[:10]
-    news,results,start,end=shared_filters(news,analyses,sector_options=parent_names,model_choices=choices,model_widget_key=widget_key)
+    with st.container(key='product_filters'):
+        news,results,start,end=shared_filters(news,analyses,sector_options=parent_names,model_choices=choices,model_widget_key=widget_key)
     children=[n for n in catalog['nodes'] if n['parent_id'] and (not st.session_state.get('local_sectors') or node_label(next(p for p in catalog['nodes'] if p['id']==n['parent_id'])) in st.session_state['local_sectors'])]
     valid=[n['id'] for n in children]
     if any(k not in valid for k in st.session_state.get('product_children',[])):st.session_state['product_children']=[k for k in st.session_state['product_children'] if k in valid]
@@ -283,9 +307,11 @@ def main():
     st.caption(f"{sum(n.sectors==('Unclassified',) for n in news)} unclassified originals · {len(news)-len(results)} without a current selected-model result; neither is Neutral by default.")
     rows=industry_rows(news,results,classes,catalog)
     if page=='Dashboard':
-        with st.container(key='product_kpis'):
+        with kpis:
             for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):col.metric(label,value)
-        if not news:st.info('No real originals match these filters. Set sources or widen the date range.');return
+        if not news:
+            st.info('No real originals match these filters. Set sources or widen the date range.')
+            save_view(store,dict(st.session_state));return
         with st.container(key='product_dashboard_charts'):
             left,right=st.columns([1.5,1])
             with left:
@@ -302,8 +328,13 @@ def main():
                 heatmap(news,results,start,end,store,sectors_override=parent_names,background=True)
     elif page=='Industries':
         sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
-        st.dataframe(pd.DataFrame(rows),hide_index=True,width='stretch')
+        visible=[r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)]
+        if visible:
+            st.dataframe(pd.DataFrame([{'Industry':r['Industry'],'Articles':r['Articles'],'Analyzed':r['Articles']-r['Not analyzed'],
+                **{k:r[k] for k in ('Positive','Neutral','Negative','Not analyzed')}} for r in visible]),hide_index=True,width='stretch')
+        else:st.info('No saved industry assignments in this selection; originals awaiting classification remain below.')
         st.caption('Parent counts deduplicate article IDs across child topics. Unknown sector is not CSRC S/91.')
         article_list(news,results,store,classes,catalog,'industries')
     elif page=='Knowledge Graph':network(news,results,store,classes,catalog)
     else:article_list(news,results,store,classes,catalog,'explorer')
+    save_view(store,dict(st.session_state))
