@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import streamlit as st
+from .localized_ui import st
+from .i18n import t,tr,display,Verbatim,node_name
 
 from .api_sources import ENV_KEYS, TOPICS, local_credentials
 from .local_news import (Analysis, ContentRights, FetchBlocked, LocalIngestionService,
@@ -75,7 +76,7 @@ def api_source(store):
     env_key = local_credentials().get(ENV_KEYS[provider])
     status = LocalIngestionService(store).source_status(provider, configured=bool(st.session_state.get("key_"+provider) or
                 (env_key if st.session_state.get('env_'+provider,True) else None)))
-    st.caption(f"{status.state} · {status.reason}")
+    st.caption(Verbatim(f"{tr(status.state)} · {tr(status.reason)}"))
     if status.last_attempt:
         with st.expander("Last source attempt"):
             st.caption(f"{status.last_attempt} · {status.last_outcome} · holds use UTC days")
@@ -344,7 +345,7 @@ def analyze(store):
         st.session_state["analysis_articles"] = ids
     st.button("Select all pending" if queue.startswith("Pending") else "Select all shown", on_click=select_batch,disabled=not ids)
     selected = st.multiselect("Articles to analyze", ids,
-                 format_func=lambda key: next(n.title for n in eligible if n.article_id == key), key="analysis_articles")
+                 format_func=lambda key: Verbatim(next(n.title for n in eligible if n.article_id == key)), key="analysis_articles")
     if st.button("Run real AI analysis", type="primary", disabled=not selected or not options.ready):
         if options.mode=="OpenAI API" and len(selected)>10:
             st.error("Choose at most 10 originals for one external run.")
@@ -386,6 +387,8 @@ def dashboard(store):
 
 
 def about():
+    from .ui_preferences import language_settings
+    language_settings(local_store(),prefix="advanced_ui")
     st.title("Settings / Help")
     with st.expander("Models and limitations"):
         st.write("Pinned local ProsusAI FinBERT supplies Positive / Neutral / Negative probabilities. "

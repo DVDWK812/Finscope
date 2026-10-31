@@ -14,10 +14,11 @@ svg{display:block;background:var(--surface);border:1px solid var(--border);borde
 .graph-scroll{height:460px;overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}svg{min-width:1000px;border:0;touch-action:pan-x pan-y}.edge{opacity:.65}.node:hover rect,.node:focus rect{stroke:var(--accent);stroke-width:2.5}
 .article-scroll{background:var(--surface);max-height:550px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--border);border-radius:12px}.articles{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;border-spacing:0;font-size:12px}.articles th,.articles th:first-child{position:sticky;top:0;left:auto;min-width:0;background:var(--surface);padding:12px;text-align:left;white-space:normal}.articles th:first-child{width:65%}.articles td{padding:14px 12px;border-top:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;white-space:normal}.articles td strong{font-size:13px;font-weight:550;line-height:1.6;display:block}.articles td small{display:block;color:var(--muted);margin-top:7px;line-height:1.5}.articles tr[tabindex]{cursor:pointer}.articles tr[tabindex]:hover{background:var(--raised)}.articles tr[aria-selected=true]{background:var(--accent_surface)}.articles [data-tone=Positive]{color:var(--positive)}.articles [data-tone=Negative]{color:var(--negative)}.articles [data-tone=Neutral]{color:var(--neutral)}.articles [data-tone="Not analyzed"]{color:var(--industry)}
 @media(max-width:500px){.articles th:first-child{width:66%}.articles td,.articles th{padding:11px 8px}.articles td strong{font-size:12px}.article-scroll{max-height:420px}}
-</style></head><body><main id="root"></main>
+.data-table{border-collapse:collapse;color:var(--text);background:var(--surface)}.data-table th,.data-table td{padding:10px;border-bottom:1px solid var(--border);text-align:left}.data-table th{background:var(--raised)}.data-table td{overflow-wrap:anywhere;max-width:400px;white-space:normal}</style></head><body><main id="root"></main>
 <script>
 // Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
 const root=document.getElementById('root');let args={},counter=0,lastHeight=null,hasRendered=false,readyAttempts=0;
+function T(value){return args.labels?.[value]??value}
 function post(type,extra={}){parent.postMessage({isStreamlitMessage:true,type,...extra},'*')}
 // A host render can trigger ResizeObserver again at the same size. Avoid a
 // frame-height/render loop that replaces SVG nodes during a pointer click.
@@ -27,49 +28,52 @@ function svgEl(tag,attrs={}){const n=document.createElementNS('http://www.w3.org
 function choose(id){if(args.kind==='articles')root.querySelectorAll('[data-id]').forEach(n=>n.setAttribute('aria-selected',String(n.dataset.id===id)));root.querySelectorAll('.chosen').forEach(n=>n.classList.remove('chosen'));const n=[...root.querySelectorAll('[data-id]')].find(n=>n.dataset.id===id);if(n)n.classList.add('chosen');post('streamlit:setComponentValue',{value:{scope:args.scope,id,click:Date.now()+':'+(++counter)}})}
 function heatmap(data){
 const dates=[...new Set(data.cells.map(c=>c.Date))],sectors=[...new Set(data.cells.map(c=>c.Sector))];
-const lookup=new Map(data.cells.map(c=>[c.Date+'|'+c.Sector,c]));const wrap=el('div',undefined,{class:'scroll'}),table=el('table',undefined,{'aria-label':'Sector by publication date heatmap'});
-const header=el('tr');header.append(el('th','Sector / date'));for(const day of dates)header.append(el('th',day.slice(5),{title:day}));table.append(header);
+const lookup=new Map(data.cells.map(c=>[c.Date+'|'+c.Sector,c]));const wrap=el('div',undefined,{class:'scroll'}),table=el('table',undefined,{'aria-label':T('Sector by publication date heatmap')});
+const header=el('tr');header.append(el('th',T('Sector / date')));for(const day of dates)header.append(el('th',day.slice(5),{title:day}));table.append(header);
 const max=Math.max(1,...data.cells.map(c=>c.Articles));
-for(const sector of sectors){const row=el('tr');row.append(el('th',sector,{scope:'row'}));for(const day of dates){const c=lookup.get(day+'|'+sector),id=day+'|'+sector;
-const state=!c.Articles?'No local news':!c.Analyzed?'Not analyzed':c.Positive===0&&c.Negative===0?'Neutral':`Balance ${c.Balance.toFixed(2)}`;
-const label=`${day} · ${sector} · ${c.Articles} articles · ${c.Analyzed} analyzed · ${state}`;
-const b=el('button',undefined,{class:'cell','data-id':id,'aria-label':label,title:label+` · Positive ${c.Positive}, Neutral ${c.Neutral}, Negative ${c.Negative} · ${c.Sample}`});
+for(const sector of sectors){const row=el('tr');row.append(el('th',T(sector),{scope:'row'}));for(const day of dates){const c=lookup.get(day+'|'+sector),id=day+'|'+sector;
+const state=!c.Articles?'No local news':!c.Analyzed?'Not analyzed':c.Positive===0&&c.Negative===0?'Neutral':`${T('Balance')} ${c.Balance.toFixed(2)}`;
+const label=`${day} · ${T(sector)} · ${c.Articles} ${T('articles')} · ${c.Analyzed} ${T('analyzed')} · ${T(state)}`;
+const b=el('button',undefined,{class:'cell','data-id':id,'aria-label':label,title:label+` · ${T('Positive')} ${c.Positive}, ${T('Neutral')} ${c.Neutral}, ${T('Negative')} ${c.Negative} · ${c.Sample}`});
 let color='var(--raised)';if(c.Articles&&!c.Analyzed)color='var(--warning_bg)';else if(c.Articles){if(data.metric==='Article volume')color=`color-mix(in srgb, var(--positive) ${25+50*c.Articles/max}%, var(--surface))`;else color=c.Balance===0?'var(--neutral_bg)':c.Balance>0?`color-mix(in srgb, var(--positive) ${25+50*c.Balance}%, var(--surface))`:`color-mix(in srgb, var(--negative) ${25-50*c.Balance}%, var(--surface))`}
-b.style.background=color;b.append(el('span',data.metric==='Article volume'?String(c.Articles):!c.Articles?'—':!c.Analyzed?'?':c.Balance.toFixed(2)),el('small',c.Articles?`n=${c.Analyzed}${c.Analyzed<3?' · low':''}`:'no news'));
+b.style.background=color;b.append(el('span',data.metric==='Article volume'?String(c.Articles):!c.Articles?'—':!c.Analyzed?'?':c.Balance.toFixed(2)),el('small',c.Articles?`n=${c.Analyzed}${c.Analyzed<3?' · '+T('low'):''}`:T('no news')));
 if(args.selected===id)b.classList.add('chosen');b.onclick=()=>choose(id);const td=el('td');td.append(b);row.append(td)}table.append(row)}wrap.append(table);root.append(wrap);
-root.append(el('div','Grey: no local news · Amber: not analyzed · Blue-grey: neutral balance · n: analyzed sample; n<3 low sample',{class:'legend'}));
+root.append(el('div',T('Grey: no local news · Amber: not analyzed · Blue-grey: neutral balance · n: analyzed sample; n<3 low sample'),{class:'legend'}));
 }
 function graph(data){
 const palette=args.palette||{},colors={'Article':palette.accent,'Sector':palette.industry,'Subindustry':palette.candidate,'Text entity':palette.accent,'Keyword theme':palette.candidate};
 const groups={};for(const n of data.nodes)groups[n.kind]=(groups[n.kind]||0)+1;
 const height=Math.max(500,Math.min(2200,Math.max(0,...Object.values(groups))*70+90)),width=1220;
-let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),wrap=el('div',undefined,{class:'graph-scroll',tabindex:'0','aria-label':'Scrollable evidence graph'}),svg=svgEl('svg',{viewBox:`0 0 ${width} ${height}`,'aria-label':'Interactive evidence graph',role:'group'}),group=svgEl('g');svg.style.height=height+'px';svg.append(group);wrap.append(svg);
-for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',label,{'aria-label':label});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${width/2*(1-scale)},${height/2*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span','Click a node for originals; hover a relation for evidence.'));root.append(toolbar,wrap);
+let scale=1;const toolbar=el('div',undefined,{class:'toolbar'}),wrap=el('div',undefined,{class:'graph-scroll',tabindex:'0','aria-label':T('Scrollable evidence graph')}),svg=svgEl('svg',{viewBox:`0 0 ${width} ${height}`,'aria-label':T('Interactive evidence graph'),role:'group'}),group=svgEl('g');svg.style.height=height+'px';svg.append(group);wrap.append(svg);
+for(const[label,factor]of [['Zoom in',1.2],['Zoom out',1/1.2],['Reset',0]]){const b=el('button',T(label),{'aria-label':T(label)});b.onclick=()=>{scale=factor?Math.min(2.5,Math.max(.65,scale*factor)):1;group.setAttribute('transform',`translate(${width/2*(1-scale)},${height/2*(1-scale)}) scale(${scale})`)};toolbar.append(b)}toolbar.append(el('span',T('Click a node for originals; hover a relation for evidence.')));root.append(toolbar,wrap);
 const relations={'news_business_topic':'News topic','taxonomy_parent':'Catalog hierarchy','literal_text_mention':'Text mention','evidence_backed_theme':'Theme evidence'};
 const relationColor=r=>r==='taxonomy_parent'?palette.industry:r==='evidence_backed_theme'?palette.candidate:palette.accent;
 const point=n=>[120+n.x*235,45+n.y*(height-90)];
 for(const edge of data.edges){const a=point({x:edge.x,y:edge.y}),b=point({x:edge.x2,y:edge.y2}),direction=b[0]>=a[0]?1:-1,start=a[0]+95*direction,end=b[0]-95*direction,mid=(start+end)/2;
 const line=svgEl('path',{d:`M${start},${a[1]} C${mid},${a[1]} ${mid},${b[1]} ${end},${b[1]}`,fill:'none',stroke:relationColor(edge.relationship),class:'edge','stroke-dasharray':edge.relationship==='taxonomy_parent'?'5 4':''});const title=svgEl('title');title.textContent=`${edge.relationship}: ${edge.evidence}`;line.append(title);group.append(line)}
-for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${n.kind}: ${n.label}`});
+for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate(${x},${y})`,class:'node','data-id':n.id,role:'button',tabindex:'0','aria-label':`${T(n.kind)}: ${['Sector','Subindustry','Keyword theme'].includes(n.kind)?T(n.label):n.label}`});
 const box=svgEl('rect',{x:-96,y:-27,width:192,height:54,rx:8,fill:palette.raised||'#17263a',stroke:colors[n.kind]||palette.muted,'stroke-width':args.selected===n.id?3:1});
-const text=svgEl('text',{class:'label','text-anchor':'middle'});let lines=[],line='',size=0;for(const c of n.label){const w=c.charCodeAt(0)>255?2:1;if(size+w>26){lines.push(line);line='';size=0}line+=c;size+=w}if(line)lines.push(line);lines=lines.slice(0,2);if(n.label.length>lines.join('').length)lines[lines.length-1]+='…';
+const text=svgEl('text',{class:'label','text-anchor':'middle'});let lines=[],line='',size=0;for(const c of (['Sector','Subindustry','Keyword theme'].includes(n.kind)?T(n.label):n.label)){const w=c.charCodeAt(0)>255?2:1;if(size+w>26){lines.push(line);line='';size=0}line+=c;size+=w}if(line)lines.push(line);lines=lines.slice(0,2);if(n.label.length>lines.join('').length)lines[lines.length-1]+='…';
 lines.forEach((value,i)=>{const t=svgEl('tspan',{x:0,y:(i-(lines.length-1)/2)*15+4});t.textContent=value;text.append(t)});
-const title=svgEl('title');title.textContent=`${n.kind}: ${n.label}`;g.append(box,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
-const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${kind}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
-const rel=el('div',undefined,{class:'legend'});for(const relation of [...new Set(data.edges.map(e=>e.relationship))]){const span=el('span',(relation==='taxonomy_parent'?'┄ ':'— ')+(relations[relation]||relation));span.style.color=relationColor(relation);rel.append(span)}root.append(rel);
+const title=svgEl('title');title.textContent=`${T(n.kind)}: ${['Sector','Subindustry','Keyword theme'].includes(n.kind)?T(n.label):n.label}`;g.append(box,text,title);g.onclick=()=>choose(n.id);g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};group.append(g)}
+const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${T(kind)}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
+const rel=el('div',undefined,{class:'legend'});for(const relation of [...new Set(data.edges.map(e=>e.relationship))]){const span=el('span',(relation==='taxonomy_parent'?'┄ ':'— ')+T(relations[relation]||relation));span.style.color=relationColor(relation);rel.append(span)}root.append(rel);
 }
 function articles(data){
-const wrap=el('div',undefined,{class:'article-scroll'}),table=el('table',undefined,{'aria-label':'Original news articles',class:'articles'});
-const head=el('thead'),heading=el('tr');for(const name of ['Headline / source','Published / sentiment'])heading.append(el('th',name,{scope:'col'}));head.append(heading);table.append(head);const body=el('tbody');
+const wrap=el('div',undefined,{class:'article-scroll'}),table=el('table',undefined,{'aria-label':T('Original news articles'),class:'articles'});
+const head=el('thead'),heading=el('tr');for(const name of ['Headline / source','Published / sentiment'])heading.append(el('th',T(name),{scope:'col'}));head.append(heading);table.append(head);const body=el('tbody');
 for(const n of data.rows){const row=el('tr',undefined,{'data-id':n.id,tabindex:'0','aria-label':n.title,'aria-selected':String(args.selected===n.id)});
-const title=el('td');title.append(el('strong',n.title),el('small',n.source));const meta=el('td');meta.append(el('span',n.published),el('small',n.tone,{'data-tone':n.tone}));row.append(title,meta);if(args.selected===n.id)row.classList.add('chosen');row.onclick=()=>choose(n.id);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};body.append(row)}table.append(body);wrap.append(table);root.append(wrap);
+const title=el('td');title.append(el('strong',n.title),el('small',n.source));const meta=el('td');meta.append(el('span',T(n.published)),el('small',T(n.tone),{'data-tone':n.tone}));row.append(title,meta);if(args.selected===n.id)row.classList.add('chosen');row.onclick=()=>choose(n.id);row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(n.id)}};body.append(row)}table.append(body);wrap.append(table);root.append(wrap);
+}
+function dataTable(data){
+const wrap=el('div',undefined,{class:'scroll'}),table=el('table',undefined,{class:'data-table'}),head=el('tr');for(const h of data.headers)head.append(el('th',h,{scope:'col'}));table.append(head);for(const values of data.rows){const row=el('tr');for(const value of values)row.append(el('td',value==null?'—':String(value)));table.append(row)}wrap.append(table);root.append(wrap);
 }
 function cloud(data){
-const panel=el('div',undefined,{role:'list','aria-label':'Keywords by distinct article count',class:'cloud'});
+const panel=el('div',undefined,{role:'list','aria-label':T('Keywords by distinct article count'),class:'cloud'});
 
-for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} articles`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;font-weight:${term.count>2?600:400}`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
+for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} ${T('articles')}`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;font-weight:${term.count>2?600:400}`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
 }
-addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;if(document.documentElement?.style)document.documentElement.style.colorScheme=args.ui_theme||'dark';for(const[k,v]of Object.entries(args.palette||{})){if(document.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--'+k,v)}root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else if(args.kind==='articles')articles(args.data);else heatmap(args.data);resize()});
+addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;if(document.documentElement?.style)document.documentElement.style.colorScheme=args.ui_theme||'dark';for(const[k,v]of Object.entries(args.palette||{})){if(document.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--'+k,v)}root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else if(args.kind==='articles')articles(args.data);else if(args.kind==='data_table')dataTable(args.data);else heatmap(args.data);resize()});
 // A moving component may load before its host registers the iframe. Retry only
 // this local readiness handshake, at most eight times; never news/model calls.
 function announceReady(){if(hasRendered||readyAttempts++>=8)return;post('streamlit:componentReady',{apiVersion:1});setTimeout(announceReady,250)}

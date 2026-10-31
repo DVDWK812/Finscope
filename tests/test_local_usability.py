@@ -6,6 +6,18 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import pandas as pd
+
+
+def displayed_tables(container):
+    """Read the same table data from the themeable component protocol."""
+    tree=getattr(container,'_tree',container);result=[]
+    for node in getattr(tree,'children',{}).values():
+        if node.type=='component_instance':
+            payload=json.loads(node.proto.json_args)
+            if payload.get('kind')=='data_table':result.append(pd.DataFrame(payload['data']['rows'],columns=payload['data']['headers']))
+        result.extend(displayed_tables(node))
+    return result
 from unittest.mock import patch
 
 from finscope.local_analytics import default_result_model, model_key, select_articles, Filters
@@ -164,8 +176,8 @@ class FlowUITests(unittest.TestCase):
         history=next(e for e in app.expander if e.label=='Provenance, permissions and analysis history')
         self.assertFalse(history.proto.expanded)
         self.assertTrue(any('Revision:' in c.value for c in history.caption))
-        self.assertTrue(history.dataframe)
-        listing=next(d.value for d in app.dataframe if 'Title' in d.value.columns)
+        self.assertTrue(displayed_tables(history))
+        listing=next(d for d in displayed_tables(app) if 'Title' in d.columns)
         self.assertNotIn('Article ID',listing.columns)
         self.assertFalse(any('Revision:' in c.value for c in app.main.caption if c not in history.caption))
 
@@ -193,16 +205,18 @@ class FlowUITests(unittest.TestCase):
     def test_selected_sector_limits_charts_and_graph_not_original_metadata(self):
         original=item(sectors=('Financials','Technology'),timestamp_kind='published')
         store=LocalNewsStore(self.db);store.save_news(original)
-        seen=[]
+        seen=[];tables=[]
         def component(**args):
             if args['kind']=='heatmap':seen.append(args['data']['cells'])
+            if args['kind']=='data_table':tables.append(pd.DataFrame(args['data']['rows'],columns=args['data']['headers']))
         with patch('finscope.chart_interactions._chart',side_effect=component):
             app=self.app('Dashboard')
+            tables.clear()
             app.multiselect(key='local_sectors').set_value(['Financials']).run()
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key='graph_sector').options,['Financials'])
         self.assertEqual({c['Sector'] for c in seen[-1]},{'Financials'})
-        table=next(d.value for d in app.dataframe if 'Sector' in d.value.columns and 'Not analyzed' in d.value.columns)
+        table=next(d for d in tables if 'Sector' in d.columns and 'Not analyzed' in d.columns)
         self.assertEqual(table['Sector'].tolist(),['Financials'])
         self.assertEqual(store.list_news()[0].sectors,('Financials','Technology'))
 

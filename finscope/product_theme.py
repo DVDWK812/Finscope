@@ -32,12 +32,37 @@ COLORS=_Colors()
 
 
 def brand():
+    from .i18n import t
     return ('<div class="fs-brand"><span aria-hidden="true">F</span><div><strong>FinScope</strong>'
-            '<small>LOCAL NEWS INTELLIGENCE</small></div></div>')
+            '<small>'+escape(t('LOCAL NEWS INTELLIGENCE'))+'</small></div></div>')
 
 
 def plot(spec,**options):
     import streamlit as st
+    from copy import deepcopy
+    import json
+    from .i18n import display,tr,industry_labels
+    spec=deepcopy(spec)
+    labels={v:str(display(v)) for v in [*industry_labels(),'Positive','Neutral','Negative','Not analyzed','Unclassified','Technology','Healthcare','Materials','Energy','Financials']}
+    expression='('+json.dumps(labels,ensure_ascii=False)+')[datum.label] || datum.label'
+    for channel,encoding in spec.get('encoding',{}).items():
+        if not isinstance(encoding,dict):continue
+        field=encoding.get('field')
+        if encoding.get('title') is not None:encoding['title']=str(tr(encoding['title']))
+        elif 'title' not in encoding and field and channel not in ('theta','theta2','color'):encoding['title']=str(tr(field))
+        if field in ('Sector','Industry','Sentiment'):
+            if channel in ('x','y'):encoding.setdefault('axis',{})['labelExpr']=expression
+            if channel=='color':encoding.setdefault('legend',{}).update(labelExpr=expression,title=str(tr(field)))
+        if channel=='tooltip' and isinstance(encoding,list):pass
+    for item in spec.get('encoding',{}).get('tooltip',[]):
+        if isinstance(item,dict):
+            field=item.get('field','');item['title']=str(tr(item.get('title',field)))
+            if field in ('Sector','Industry','Sentiment'):
+                mapping=json.dumps(labels,ensure_ascii=False)
+                target='__ui_'+field
+                calculation=f'({mapping})[datum[{json.dumps(field)}]] || datum[{json.dumps(field)}]'
+                spec.setdefault('transform',[]).append({'calculate':calculation,'as':target})
+                item['field']=target
     tokens=palette()
     st.vega_lite_chart({**spec,'background':tokens['surface'],'config':{
         'font':'system-ui','view':{'stroke':None},
@@ -49,14 +74,15 @@ def plot(spec,**options):
 
 def status_markup(status,stage,counts):
     TOKENS=palette()
+    from .i18n import t,tr
     labels={'queued':'Queued','running':'In progress','completed':'Completed','partial_failed':'Completed with issues',
             'blocked':'Action needed','cancelled':'Stopped','interrupted':'Interrupted'}
     stages={'finished':'Finished','preflight':'Checking configuration','cancelled':'Stopped'}
-    stage='Fetching '+stage[7:] if stage.startswith('fetch: ') else stages.get(stage,stage.replace('_',' ').capitalize())
+    stage=t('Fetching {source}',source=stage[7:]) if stage.startswith('fetch: ') else tr(stages.get(stage,stage.replace('_',' ').capitalize()))
     color=TOKENS['negative'] if status in {'blocked','interrupted'} else TOKENS['industry'] if status=='partial_failed' else TOKENS['accent']
-    stats=''.join(f'<span><b>{int(counts.get(key,0))}</b> {label}</span>' for key,label in
+    stats=''.join(f'<span><b>{int(counts.get(key,0))}</b> {t(label)}</span>' for key,label in
                   [('new','new'),('classified','classified'),('analyzed','analyzed'),('failed','failed'),('skipped','skipped')])
-    return f'<div class="fs-task"><span style="color:{color}">{escape(labels.get(status,status))}</span><span>{escape(stage)}</span><div>{stats}</div></div>'
+    return f'<div class="fs-task"><span style="color:{color}">{escape(tr(labels.get(status,status)))}</span><span>{escape(stage)}</span><div>{stats}</div></div>'
 
 
 def css():
@@ -75,11 +101,11 @@ def css():
     [data-testid="stWidgetLabel"] p{color:var(--fs-text);font-size:.82rem}a{color:var(--fs-accent)}
     .fs-brand{display:flex;align-items:center;gap:11px;margin:.3rem 0 2rem}.fs-brand>span{display:grid;place-items:center;width:35px;height:38px;border-radius:9px;border:1px solid var(--fs-accent);background:var(--fs-accent-surface);color:var(--fs-accent);font-size:23px;font-weight:700}
     .fs-brand strong{display:block;font-size:1.2rem;letter-spacing:-.04em;color:var(--fs-text)}.fs-brand small{font-size:.52rem;letter-spacing:.13em;color:var(--fs-muted)}
-    .st-key-product_page [role="radiogroup"]{gap:5px;width:100%}.st-key-product_page label{display:flex!important;flex-direction:row!important;align-items:center;padding:.65rem .7rem;border:1px solid transparent;border-radius:9px;min-height:44px;gap:.6rem!important;width:100%}
-    .st-key-product_page label:hover{background:var(--fs-raised)}.st-key-product_page label:has(input:checked){background:var(--fs-accent-surface);border-color:var(--fs-button)}
-    .st-key-product_page label:has(input:checked) p{color:var(--fs-accent)!important;font-weight:600}
-    .st-key-product_page label>div:first-child:not(:has([data-testid="stMarkdownContainer"])),.st-key-product_page label>div>div:not([data-testid="stMarkdownContainer"]){display:none}.st-key-product_page label:before{display:block;min-width:20px;color:var(--fs-accent);font-size:20px;line-height:1}
-    .st-key-product_page label:has(input[value="0"]):before{content:'▦'}.st-key-product_page label:has(input[value="1"]):before{content:'▥'}.st-key-product_page label:has(input[value="2"]):before{content:'◎'}.st-key-product_page label:has(input[value="3"]):before{content:'▤'}.st-key-product_page label:has(input[value="4"]):before{content:'⚙'}
+    [class*="st-key-product_page"] [role="radiogroup"]{gap:5px;width:100%}[class*="st-key-product_page"] label{display:flex!important;flex-direction:row!important;align-items:center;padding:.65rem .7rem;border:1px solid transparent;border-radius:9px;min-height:44px;gap:.6rem!important;width:100%}
+    [class*="st-key-product_page"] label:hover{background:var(--fs-raised)}[class*="st-key-product_page"] label:has(input:checked){background:var(--fs-accent-surface);border-color:var(--fs-button)}
+    [class*="st-key-product_page"] label:has(input:checked) p{color:var(--fs-accent)!important;font-weight:600}
+    [class*="st-key-product_page"] label>div:first-child:not(:has([data-testid="stMarkdownContainer"])),[class*="st-key-product_page"] label>div>div:not([data-testid="stMarkdownContainer"]){display:none}[class*="st-key-product_page"] label:before{display:block;min-width:20px;color:var(--fs-accent);font-size:20px;line-height:1}
+    [class*="st-key-product_page"] label:has(input[value="0"]):before{content:'▦'}[class*="st-key-product_page"] label:has(input[value="1"]):before{content:'▥'}[class*="st-key-product_page"] label:has(input[value="2"]):before{content:'◎'}[class*="st-key-product_page"] label:has(input[value="3"]):before{content:'▤'}[class*="st-key-product_page"] label:has(input[value="4"]):before{content:'⚙'}
     .stButton button[kind="primary"]{background:var(--fs-button-bg)!important;border-color:var(--fs-button-bg)!important}.stButton button[kind="primary"] p{color:var(--fs-button-text)!important;font-weight:650}
     [data-testid="stMetric"]{border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1rem 1.15rem;min-height:108px;background:var(--fs-surface)}
     [data-testid="stMetricLabel"] p{color:var(--fs-muted);font-size:.76rem}[data-testid="stMetricValue"]{color:var(--fs-text);font-size:1.8rem}
@@ -107,4 +133,12 @@ def css():
     [data-testid="stAlert"]{background:var(--fs-raised)!important;color:var(--fs-text)!important;border:1px solid var(--fs-border)}[data-testid="stAlert"] p{color:var(--fs-text)!important}
     [data-testid="stForm"],[data-testid="stJson"],[data-testid="stCode"]{background:var(--fs-surface);color:var(--fs-text);border-color:var(--fs-border)}
     [data-testid="stCheckbox"] label,[data-testid="stRadio"] label,[data-testid="stSelectbox"] label,[data-testid="stMultiSelect"] label{color:var(--fs-text)!important}
+    [data-testid="stSelectbox"] [role="group"],[data-testid="stMultiSelect"] [role="group"]{background:var(--fs-raised)!important;border-color:var(--fs-border)!important}
+    [data-testid="stSelectbox"] button,[data-testid="stMultiSelect"] button,[data-testid="stNumberInput"] button{background:var(--fs-raised)!important;color:var(--fs-muted)!important;border-color:var(--fs-border)!important}
+    [data-testid="stMultiSelect"] [data-tag]{background:var(--fs-accent-surface)!important;color:var(--fs-accent)!important}
+    [data-testid="stMultiSelect"] [data-tag] button{background:transparent!important;color:var(--fs-accent)!important}
+    [role="dialog"] button,[role="gridcell"],[role="columnheader"],[role="rowheader"],[data-rac][role="grid"]{color:var(--fs-text)!important;background:var(--fs-surface)!important}
+    [role="gridcell"][aria-selected="true"],[role="gridcell"][data-selected]{background:var(--fs-accent-surface)!important;color:var(--fs-accent)!important}
+    [data-testid="stCheckbox"] input{accent-color:var(--fs-accent)}
+    input::placeholder,textarea::placeholder{color:var(--fs-muted)!important;opacity:.8}
     </style>'''

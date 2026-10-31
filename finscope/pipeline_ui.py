@@ -4,7 +4,8 @@ from contextlib import closing
 from datetime import datetime,timezone,date
 import json
 import pandas as pd
-import streamlit as st
+from .localized_ui import st
+from .i18n import t,tr,display,Verbatim,node_name
 
 from .task_queue import TaskQueue,ACTIVE
 from .product_storage import ProductStorage
@@ -50,8 +51,8 @@ def task_progress(store):
 
 def update_button(q):
     c=q.config();task=q.get()
-    st.button('更新并分析',type='primary',disabled=not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
-    if c:st.caption(', '.join(c['sources'])+' · '+c['model']+(' / '+c.get('model_id','') if c.get('model_id') else '')+f" · ≤{c['limit']} records/source")
+    st.button('Update & Analyze',type='primary',disabled=not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
+    if c:st.caption(t('Update scope',sources=', '.join(c['sources']),model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else ''),limit=c['limit']))
     else:st.info('Complete source and local model setup in Settings once, then use 更新并分析.')
     if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
     if c:
@@ -65,6 +66,8 @@ def update_button(q):
 
 
 def settings(store,q):
+    from .ui_preferences import language_settings
+    language_settings(store)
     from .local_collectors import SOURCES
     from .local_news import ContentRights
     from .model_ui import controls
@@ -83,7 +86,7 @@ def settings(store,q):
                 s=SOURCES[source];st.caption(s['scope']);st.write(s.get('license','RBA official information: source-level local text permission, third-party exceptions apply'))
                 from .local_news import LocalIngestionService
                 status=LocalIngestionService(store).source_status(s.get('bucket','rba'),configured=True)
-                st.caption(status.state+' · '+status.reason)
+                st.caption(str(tr(status.state))+' · '+str(tr(status.reason)))
                 st.caption(s.get('attribution','Source: Reserve Bank of Australia')+' · '+s.get('exclusions','No third-party material, media or separately restricted content'))
                 st.caption(f"HTTP/action ≤{s.get('body_http_budget',s.get('http_budget',2))}; body pages ≤{s.get('body_limit',0)}; no retries/pagination. Existing 60-second spacing / 3 actions per UTC day remain.")
                 if s.get('terms_url'):st.link_button('Source use policy',s['terms_url'])
@@ -151,12 +154,12 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
     from html import escape
     c=classifications.get(item.article_id,{})
     lookup={n['id']:n for n in catalog['nodes']}
-    st.caption(' · '.join(node_label(lookup[v['id']]) for v in c.get('labels',[])) or 'Unclassified / 二级未知')
+    st.caption(Verbatim(' · '.join(node_name(lookup[v['id']]) for v in c.get('labels',[]))) or t('Unclassified'))
     def text(n):
         if not n.rights.preview:st.warning('Local preview permission is unavailable.');return
         if keyword:
             for snippet in keyword_snippets(n,keyword):
-                st.caption(f"Keyword match · {snippet['field']}")
+                st.caption(t('Keyword match · {v0}',v0=tr(snippet['field'])))
                 st.markdown('<p class="fs-match-excerpt">'+snippet['html']+'</p>',unsafe_allow_html=True)
         content=n.body or n.summary
         if content:
@@ -178,7 +181,7 @@ def article_list(news,results,store,classes,catalog,context,keyword=None):
             clicked=interactive_chart('articles',{'rows':article_rows(ordered,results)},key=context+'_rows',selected=current)
             st.session_state[key]=article_selection(ids,current,clicked)
             with st.expander('Accessible article picker'):
-                identity=st.selectbox('Select original article',ids,format_func=lambda k:next(n.title for n in ordered if n.article_id==k),key=key)
+                identity=st.selectbox('Select original article',ids,format_func=lambda k:Verbatim(next(n.title for n in ordered if n.article_id==k)),key=key)
         with right:
             with st.container(key='story_detail_'+context):
                 details(next(n for n in ordered if n.article_id==identity),results.get(identity),store,classes,catalog,context,keyword)
@@ -208,7 +211,7 @@ def network(news,results,store,classes,catalog):
     if perspective=='Company':
         institutions={'NIST','Reserve Bank of Australia'}
         companies=sorted({e['name'] for n in news for e in classes.get(n.article_id,{}).get('entities',[]) if e['name'] not in institutions})
-        company=st.selectbox('Mentioned entity',companies,index=None)
+        company=st.selectbox('Mentioned entity',companies,index=None,format_func=Verbatim)
         if not company:st.info('No selected text-evidenced company; publisher/government institutions are not presented as companies. Issuer main business remains unverified.');return
     expanded=st.checkbox('Expand graph')
     publishers=st.checkbox('Show publisher institutions mentioned in text',value=False)
@@ -226,11 +229,11 @@ def network(news,results,store,classes,catalog):
     with st.container():
         if selection:
             members=graph_members(full,selection);node=next(n for n in data['nodes'] if n['id']==selection)
-            st.subheader(node['label'])
+            st.subheader(display(node['label']) if node['kind'] in {'Sector','Subindustry','Keyword theme'} else Verbatim(node['label']))
             article_list([n for n in news if n.article_id in members],results,store,classes,catalog,'graph_related')
             with st.expander('Selected relationship evidence'):st.json([e for e in full['edges'] if e['from']==selection or e['to']==selection])
     with st.expander('Accessible graph node selector'):
-        accessible=st.selectbox('Graph node',data['nodes'],index=None,format_func=lambda n:n['kind']+' · '+n['label'])
+        accessible=st.selectbox('Graph node',data['nodes'],index=None,format_func=lambda n:Verbatim(str(tr(n['kind']))+' · '+str(display(n['label']) if n['kind'] in {'Sector','Subindustry','Keyword theme'} else n['label'])))
         if accessible:
             ids=graph_members(full,accessible['id']);article_list([n for n in news if n.article_id in ids],results,store,classes,catalog,'graph_accessible')
     with st.container(key='product_cloud'):
@@ -312,7 +315,8 @@ def main():
     rows=industry_rows(news,results,classes,catalog)
     if page=='Dashboard':
         with kpis:
-            for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):col.metric(label,value)
+            for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):
+                with col:st.metric(label,value)
         if not news:
             st.info('No real originals match these filters. Set sources or widen the date range.')
             save_view(store,dict(st.session_state));return

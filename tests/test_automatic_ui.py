@@ -90,7 +90,7 @@ class AutomaticUITests(unittest.TestCase):
             found=[]
             for key,node in getattr(tree,'children',{}).items():
                 here=path+(key,)
-                if node.type=='component_instance' and json.loads(node.proto.json_args).get('kind')!='articles':found.append(here)
+                if node.type=='component_instance' and json.loads(node.proto.json_args).get('kind') in {'graph','cloud'}:found.append(here)
                 found.extend(paths(node,here))
             return found
         before=paths(app._tree)

@@ -13,6 +13,8 @@ def normalize(raw,store):
     mode=raw.get('product_taxonomy','US-BUSINESS-1')
     mode=mode if mode in CATALOGS else 'US-BUSINESS-1'
     catalog=load_taxonomy(mode)
+    aliases={value:node_label(n) for n in catalog['nodes'] if not n['parent_id']
+             for value in (n['id'],n['name_en'],n['name_zh'],node_label(n))}
     choices={'local_sectors':{node_label(n) for n in catalog['nodes'] if not n['parent_id']}|{'Unclassified'},
              'product_children':{n['id'] for n in catalog['nodes'] if n['parent_id']},
              'local_sources':{n.source for n in store.list_news()},'local_sentiments':{'Positive','Neutral','Negative'}}
@@ -20,7 +22,9 @@ def normalize(raw,store):
     if raw.get('product_page') in PAGES:result['product_page']=raw['product_page']
     for key,allowed in choices.items():
         value=raw.get(key,[])
-        if isinstance(value,(list,tuple)):result[key]=[v for v in value if isinstance(v,str) and v in allowed]
+        if isinstance(value,(list,tuple)):
+            if key=='local_sectors':value=[aliases.get(v,v) if isinstance(v,str) else v for v in value]
+            result[key]=[v for v in value if isinstance(v,str) and v in allowed]
     dates=raw.get('local_dates')
     if isinstance(dates,(tuple,list)) and len(dates)==2:
         try:

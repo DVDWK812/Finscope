@@ -37,7 +37,8 @@ def save(store,name,value):
 
 
 def bootstrap(store):
-    values=load(store);activate(values);return values
+    from .localized_ui import reset_keys
+    reset_keys();values=load(store);activate(values);return values
 
 
 def toggle(store):
@@ -46,6 +47,18 @@ def toggle(store):
 
 def toolbar(store):
     import streamlit as st
+    from .i18n import t
     with st.container(key='ui_topbar'):
         st.button('☀' if theme()=='dark' else '☾',key='ui_theme_toggle',
-                  help='Switch to light theme' if theme()=='dark' else 'Switch to dark theme',on_click=toggle,args=(store,))
+                  help=t('Switch to light theme' if theme()=='dark' else 'Switch to dark theme'),on_click=toggle,args=(store,))
+
+
+def language_settings(store,prefix='ui'):
+    import streamlit as st
+    from .i18n import t
+    st.subheader('Language / 语言')
+    st.session_state.setdefault(prefix+'_language_choice',language())
+    selected=st.selectbox(t('Language'),ALLOWED['ui_language'],key=prefix+'_language_choice',
+                          format_func=lambda value:'English (en)' if value=='en' else '简体中文 (zh-CN)')
+    if st.button(t('Save language'),key=prefix+'_language_save'):
+        save(store,'ui_language',selected);st.rerun()

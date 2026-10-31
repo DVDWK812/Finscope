@@ -511,3 +511,9 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   not independent human usability/accuracy evidence. Screenshots stay ignored.
 
 - 31 October P1.1 theme foundation: independent allowlisted ui_theme/ui_language preferences, two token sets, immediate theme control and explicit iframe palette/color-scheme parameters. Default remains dark; no config.toml mutation or browser-menu automation. 388 offline tests and benchmark dry run pass; actual cross-mode browser acceptance follows in the final milestone.
+- 31 October P1.1 bilingual presentation: centralized English/Chinese resources,
+  verbatim news/evidence boundaries, localized taxonomy display and canonical
+  widget/filter IDs. Independent language save does not alter pipeline settings.
+  Themeable read-only table components retain numeric values; chart tooltips use
+  display-only calculated labels. 395 offline tests and dry run pass, including
+  twenty page/mode subcases, strict preferences and zero-HTTP checks.

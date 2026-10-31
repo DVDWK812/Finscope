@@ -5,7 +5,8 @@ import json
 import math
 
 import pandas as pd
-import streamlit as st
+from .localized_ui import st
+from .i18n import t,tr,display,Verbatim,node_name
 
 from .local_analytics import (Filters, daily_counts, evidence_graph, heatmap_cells,
                             model_key, overview_counts, sector_counts, select_articles,
@@ -37,9 +38,9 @@ def restore_filters():
 def publication_label(item):
     if item.timestamp_kind == 'published' and item.timestamp:
         stamp=datetime.fromisoformat(item.timestamp).astimezone(timezone.utc)
-        return 'Published '+stamp.strftime('%d %b %Y, %H:%M UTC')
+        return str(t('Published'))+' '+stamp.strftime('%Y-%m-%d %H:%M UTC')
     if item.timestamp_kind == 'published' and item.publication_date:
-        return 'Published '+item.publication_date+' (date only)'
+        return t('Published {v0} (date only)',v0=item.publication_date)
     return 'Publication date unknown'
 
 
@@ -80,7 +81,7 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, s
     with st.expander("More filters", expanded=False):
         a, b = st.columns(2)
         with a:
-            sources = st.multiselect("Sources", sorted({n.source for n in news}), key="local_sources",on_change=remember_filter,args=('local_sources',))
+            sources = st.multiselect("Sources", sorted({n.source for n in news}), key="local_sources",on_change=remember_filter,args=('local_sources',),format_func=Verbatim)
         with b:
             sentiments = [] if for_analysis else st.multiselect("Sentiment", SENTIMENTS, key="local_sentiments",on_change=remember_filter,args=('local_sentiments',))
         unknown = st.checkbox("Include unknown publication dates (separate from daily charts)", value=True, key="local_unknown_dates",on_change=remember_filter,args=('local_unknown_dates',))
@@ -103,7 +104,7 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, s
                 st.session_state['local_result_model']=st.session_state[model_widget_key];remember_filter('local_result_model')
             current=st.selectbox('Results model',choices,key=model_widget_key,format_func=model_label,on_change=remember_product_model)
             st.session_state['local_result_model']=current
-            st.caption('Current results: '+' · '.join(current.split(' · ')[:2]))
+            st.caption(t('Current results: {v0}',v0=display(' · '.join(current.split(' · ')[:2]))))
         else:
             current = st.selectbox("Results model", choices, key="local_result_model",format_func=model_label,
                                   on_change=remember_filter,args=('local_result_model',))
@@ -201,7 +202,7 @@ def heatmap(news, results, start, end, store, *, sectors_override=None,backgroun
     if selected:
         day,sector=selected.split('|',1)
         records=cell_members(news,{'Date':day,'Sector':sector})
-        st.subheader(f"{sector} · {day}")
+        st.subheader(Verbatim(f"{display(sector)} · {day}"))
         st.caption(f"{len(records)} local originals · {sum(n.article_id in results for n in records)} analyzed")
         related_articles(records,results,store,context='heatmap',background=background)
     undated=[n for n in news if not n.published_day]
@@ -223,18 +224,18 @@ def related_articles(news, results, store, *, context,background=False):
         return
     by_id={n.article_id:n for n in news}
     keep_valid_selection(context+'_related',by_id)
-    key=st.selectbox("Related articles",list(by_id),format_func=lambda key:by_id[key].title,
+    key=st.selectbox("Related articles",list(by_id),format_func=lambda key:Verbatim(by_id[key].title),
                      key=context+'_related')
     article_details(by_id[key],results.get(key),store,context=context,background=background)
 
 
 def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None):
-    st.subheader(item.title)
-    st.caption(f"{item.source} · {publication_label(item)}")
+    st.subheader(Verbatim(item.title))
+    st.caption(Verbatim(f"{item.source} · {publication_label(item)}"))
     if item.provider=='authored_synthetic':
         st.caption('Synthetic development text')
-    st.write(f"**{result.label if result else 'Not analyzed'}** · {', '.join(item.sectors)}"+
-             (f" · {result.family}" if result else ''))
+    st.write(Verbatim(f"**{display(result.label if result else 'Not analyzed')}** · {', '.join(str(display(v)) for v in item.sectors)}"+
+             (f" · {display(result.family)}" if result else '')))
     if item.provider in {"rba_rss","rba_html","abs_html","accc_rss","nist_rss"}:
         try:
             origin=json.loads(item.provenance)
@@ -244,7 +245,7 @@ def article_details(item, result, store, *, context="explorer",background=False,
     if content_renderer:
         content_renderer(item)
     elif item.summary:
-        st.text(item.summary)
+        st.text(Verbatim(item.summary))
     st.caption('Permitted body saved locally; analysis excerpt coverage is retained in result provenance.' if item.body else "Headline + supplied summary; not full article text." if item.summary else "Headline only; no summary or full article supplied.")
     if item.url:
         st.link_button("Open original article", item.url)
@@ -314,7 +315,7 @@ def show_candidate(item,result,store):
             with st.expander(f"Unverified candidate: {len(members)} preserved originals (including outside filters)"):
                 st.caption("Semantic similarity is not confirmed event identity or factual contradiction detection.")
                 for n in members:
-                    st.write(f"{n.title} · {n.source} · {latest[n.article_id].label}")
+                    st.write(Verbatim(f"{n.title} · {n.source} · {display(latest[n.article_id].label)}"))
 
 
 def graph(news, results, store):
@@ -357,7 +358,7 @@ def graph(news, results, store):
     keep_valid_selection('local_graph_article',by_id)
     with st.expander('Accessible article selector'):
         accessible_id = st.selectbox("Graph article reference", list(by_id), index=None,
-                         format_func=lambda key: by_id[key].title+" · "+by_id[key].source,
+                         format_func=lambda key: Verbatim(by_id[key].title+" · "+by_id[key].source),
                          key="local_graph_article", placeholder="Choose an original article")
     selected_id = accessible_id
     if selected_id in by_id:
@@ -376,7 +377,7 @@ def explorer(news, results, store):
         "Model": results[n.article_id].family if n.article_id in results else "—", "Original URL": n.url} for n in ordered]),
         hide_index=True, width="stretch", column_config={"Original URL": st.column_config.LinkColumn(display_text='Open original')})
     record_id = st.selectbox("Inspect an article", [n.article_id for n in ordered], key="local_inspected_article",
-                  format_func=lambda key: next(n.title+" · "+n.source for n in ordered if n.article_id == key))
+                  format_func=lambda key: Verbatim(next(n.title+" · "+n.source for n in ordered if n.article_id == key)))
     if record_id:
         article_details(next(n for n in ordered if n.article_id == record_id), results.get(record_id), store)
 
@@ -387,7 +388,7 @@ def dashboard(store):
     all_news, analyses = store.list_news(), store.list_analyses()
     if not all_news:
         for col, label in zip(st.columns(4), ["Saved originals", "Analyzed articles", "Sources", "Pending analysis"]):
-            col.metric(label, 0)
+            with col:st.metric(label, 0)
         st.info("Your library is ready. Choose Add news to fetch a source or save approved text.")
         return
     news, results, start, end = shared_filters(all_news, analyses)
@@ -397,7 +398,7 @@ def dashboard(store):
     counts = overview_counts(news, results)
     for col, (label, value) in zip(st.columns(4), [("Original articles", counts["raw_articles"]), ("Analyzed articles", counts["analyzed"]),
                   ("Sources", counts["sources"]), ("Pending analysis", counts["unanalysed"])]):
-        col.metric(label, value)
+        with col:st.metric(label, value)
     if not news:
         st.info("No articles match these filters. Widen the date range or clear filters.")
         return

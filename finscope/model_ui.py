@@ -3,7 +3,8 @@ from dataclasses import dataclass, field, replace
 from contextlib import closing
 from datetime import datetime
 
-import streamlit as st
+from .localized_ui import st
+from .i18n import t,tr,display,Verbatim,node_name
 
 from .api_sources import local_credentials
 from .model_providers import (ExternalLLMProvider, FinBERTProvider, LMStudioProvider, ModelError,
@@ -128,7 +129,7 @@ def lmstudio_controls(prefix,options):
                 'Start the installed LM Studio server on 127.0.0.1:1234, then refresh. No model download is performed.')
         return
     st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB · "+
-               ('Loaded · API exposed; inference requires Run' if selected['callable'] else 'Loaded · not exposed by /v1/models' if selected['loaded'] else 'Not loaded · cannot infer'))
+               tr('Loaded · API exposed; inference requires Run' if selected['callable'] else 'Loaded · not exposed by /v1/models' if selected['loaded'] else 'Not loaded · cannot infer'))
     others=[m for k,m in models.items() if k!=options.model and m['loaded']]
     for other in others:
         st.info('Another model is loaded: '+other['key']+'. Unload it explicitly before loading the selection.')
