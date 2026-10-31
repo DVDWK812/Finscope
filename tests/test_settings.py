@@ -24,15 +24,17 @@ class SettingsTests(unittest.TestCase):
         self.http=guard.start();self.addCleanup(guard.stop)
         vault=patch('finscope.local_credentials.vault_key',return_value='')
         self.vault=vault.start();self.addCleanup(vault.stop)
-    def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.run()
+    def app(self,section='general'):
+        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.session_state['settings_section']=section;app.run()
         self.assertFalse(app.exception);return app
     def test_three_tabs_single_language_editor_and_no_nested_help_page(self):
         app=self.app()
-        self.assertEqual([x.label for x in app.tabs],['General','News sources','Analysis models'])
+        self.assertEqual(app.radio(key='settings_section').options,['General','News sources','Analysis models'])
         self.assertEqual(sum(s.key=='ui_language_choice' for s in app.selectbox),1)
         self.assertFalse(any(h.value=='Settings / Help' for h in app.title))
-        self.assertEqual([x.label for x in app.expander],['Collection settings','Advanced & diagnostics'])
+        self.assertEqual([x.label for x in app.expander],['Advanced & diagnostics'])
+        self.assertFalse(any(b.key.startswith('settings_edit_') for b in app.button))
+        self.assertFalse(any(s.key=='pipeline_model' for s in app.selectbox))
         self.assertFalse(any(x.key.startswith('settings_secret_') for x in app.text_input))
     def test_complete_offline_model_can_save_without_connection_load_or_jobs(self):
         config={**editable(self.q),'model':'Local LM Studio','model_id':'installed/actual-id'}
@@ -54,7 +56,7 @@ class SettingsTests(unittest.TestCase):
                 save(self.q,{**editable(self.q),**extra})
         self.assertIsNone(saved(self.q));self.assertEqual(self.q.config(),C)
     def test_current_source_only_fields_and_key_input_requires_edit(self):
-        app=self.app()
+        app=self.app('sources')
         app.button(key='settings_edit_marketaux').click().run()
         self.assertFalse(any(x.key=='settings_ticker' for x in app.text_input))
         self.assertFalse(any(x.key.startswith('settings_secret_') for x in app.text_input))
@@ -67,19 +69,22 @@ class SettingsTests(unittest.TestCase):
         self.http.assert_not_called()
     def test_language_change_and_failed_refresh_keep_unsaved_values_and_model_id(self):
         self.q.configure({**C,'model':'Local LM Studio','model_id':'installed/actual-id'})
-        app=self.app();app.number_input(key='settings_limit').set_value(9).run()
+        app=self.app('sources');app.number_input(key='settings_limit').set_value(9).run()
+        app.radio(key='settings_section').set_value('general').run()
         app.selectbox(key='ui_language_choice').set_value('zh-CN').run();app.button(key='ui_language_save').click().run()
+        app.radio(key='settings_section__zh-CN').set_value('models').run()
         with patch('finscope.model_ui.LMStudioProvider.inventory',side_effect=ValueError('unused')):
             # Model failure is handled using the existing typed provider error.
             from finscope.model_providers import ModelError
             with patch('finscope.model_ui.LMStudioProvider.inventory',side_effect=ModelError('Offline')):
                 app.button(key='pipeline_lmstudio_refresh').click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.number_input(key='settings_limit__zh-CN').value,9)
         self.assertEqual(app.selectbox(key='pipeline_lmstudio_model__zh-CN').value,'installed/actual-id')
+        app.radio(key='settings_section__zh-CN').set_value('sources').run()
+        self.assertEqual(app.number_input(key='settings_limit__zh-CN').value,9)
         self.assertEqual(self.q.config()['limit'],3);self.assertIsNone(self.q.get())
     def test_key_save_clears_password_and_has_no_sql_or_request_side_effect(self):
-        app=self.app()
+        app=self.app('sources')
         app.button(key='settings_edit_marketaux').click().run();app.button(key='settings_secret_marketaux_edit').click().run()
         app.text_input(key='news_keys_marketaux_new_name').set_value('Authored main').run()
         app.text_input(key='settings_secret_marketaux').set_value('UNIT-KEY-ONLY').run()
@@ -91,6 +96,31 @@ class SettingsTests(unittest.TestCase):
         self.assertNotIn('settings_secret_marketaux',app.session_state)
         self.assertNotIn('UNIT-KEY-ONLY',str(app.session_state['_ui_mirrors']))
         self.assertNotIn(b'UNIT-KEY-ONLY',self.store.path.read_bytes());self.assertEqual(self.q.config(),C)
+        self.http.assert_not_called()
+
+    def test_settings_modules_render_conditionally_without_source_warning_leak(self):
+        from unittest.mock import Mock
+        source=Mock();model=Mock()
+        with patch('finscope.settings_ui.source_editor',source),patch('finscope.settings_ui.model_editor',model):
+            app=self.app();source.assert_not_called();model.assert_not_called()
+            app.radio(key='settings_section').set_value('models').run()
+            source.assert_not_called();self.assertTrue(model.called)
+            self.assertFalse(any('manual pause' in str(e.value).lower() for e in app.warning))
+            app.radio(key='settings_section').set_value('sources').run();self.assertTrue(source.called)
+            before=model.call_count
+            app.radio(key='settings_section').set_value('general').run()
+            self.assertEqual(model.call_count,before);self.assertFalse(app.warning)
+        self.http.assert_not_called();self.assertIsNone(self.q.get())
+
+    def test_selected_source_has_one_missing_summary_and_default_cards_are_compact(self):
+        app=self.app('sources')
+        self.assertFalse(app.warning);self.assertFalse(app.error)
+        self.assertFalse(any('Missing:' in str(x.value) for x in app.markdown))
+        app.button(key='settings_edit_newsdata').click().run()
+        self.assertEqual(sum(str(x.value).startswith('Missing:') for x in app.markdown),1)
+        self.assertFalse(app.warning)
+        app.radio(key='settings_section').set_value('models').run()
+        self.assertFalse(any('manual pause' in str(x.value).lower() or 'Missing:' in str(x.value) for x in app.markdown))
         self.http.assert_not_called()
 
 

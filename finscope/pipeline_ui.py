@@ -52,32 +52,34 @@ def task_progress(store,show_diagnostics=True):
 
 def update_button(q):
     from .settings_state import saved,editable
-    from .news_readiness import source_plan
-    draft=saved(q)
-    c=draft or q.config();task=q.get()
-    expected=editable(q)
+    from .news_readiness import source_plan,LABELS
+    from .news_source_ui import conditions
+    expected=editable(q);c=saved(q) or q.config();task=q.get()
     unsaved=st.session_state.get('_settings_edit',expected)!=expected
-    if unsaved:st.warning('Unsaved settings edits; save them in Settings before starting a task.')
-    ready,blocked=source_plan(q.store,c) if c else ([],{})
-    if draft:st.info('Saved draft selected; the old configuration will not be run.')
-    for source,state in blocked.items():
-        from .news_source_ui import conditions
-        st.caption(Verbatim(source+' · '+str(conditions(state))))
-    scope=json.dumps([c,ready],sort_keys=True)
-    if st.session_state.get('_ready_scope')!=scope:
-        from .news_key_ui import clear_input
-        clear_input('product_ready_consent');st.session_state['_ready_scope']=scope
+    if unsaved:st.caption('Unsaved changes')
+    if st.button('Update & Analyze',type='primary',disabled=unsaved or not c or not c.get('sources') or bool(task and task['status'] in ACTIVE),key='product_update'):
+        ready,blocked=source_plan(q.store,expected)
+        st.session_state['_update_review']={'config':expected,'ready':ready,'blocked':blocked}
         st.session_state.pop('_product_submit_error',None)
-    consent=st.checkbox('Use only the ready sources shown below',key='product_ready_consent') if c and (draft or blocked) else True
-    model_ready=c and c['model'] in ('Local FinBERT','Local LM Studio','Local Ollama') and (c['model']=='Local FinBERT' or bool(c.get('model_id')))
-    def submit():
-        try:q.submit_ready(confirmed=True,expected_sources=ready,expected_config=expected)
-        except ValueError as error:st.session_state['_product_submit_error']=str(error)
-    st.button('Update & Analyze',type='primary',disabled=unsaved or not consent or not ready or not model_ready or bool(task and task['status'] in ACTIVE),on_click=submit,key='product_update')
+    review=st.session_state.get('_update_review')
+    if review:
+        with st.container(border=True):
+            st.subheader('Review update')
+            st.write(t('Runnable sources',sources=', '.join(LABELS.get(p,p) for p in review['ready']) or str(tr('None'))))
+            for provider,state in review['blocked'].items():
+                st.caption(t('Skipped source',source=LABELS.get(provider,provider),reason=conditions(state)))
+            config=review['config']
+            st.write(t('Analysis model summary',model=str(display(config['model']))+(' / '+config.get('model_id','') if config.get('model_id') else '')))
+            if saved(q):st.caption('This review uses the saved draft.')
+            model_ready=config['model'] in ('Local FinBERT','Local LM Studio','Local Ollama') and (config['model']=='Local FinBERT' or bool(config.get('model_id')))
+            if st.button('Confirm update and analysis',key='product_confirm_update',disabled=not review['ready'] or not model_ready or unsaved or bool(task and task['status'] in ACTIVE)):
+                try:
+                    q.submit_ready(confirmed=True,expected_sources=review['ready'],expected_config=config)
+                    st.session_state.pop('_update_review',None);st.rerun()
+                except ValueError as error:st.session_state['_product_submit_error']=str(error)
+            if st.button('Cancel',key='product_cancel_review'):st.session_state.pop('_update_review',None);st.rerun()
+            if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
     if st.session_state.get('_product_submit_error'):st.error(st.session_state['_product_submit_error'])
-    if c:st.caption(t('Update scope',sources=', '.join(ready) or str(tr('None')),model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else ''),limit=c['limit']))
-    else:st.info('Complete source and local model setup in Settings once, then use 更新并分析.')
-    if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
 
 
 def settings(store,q):

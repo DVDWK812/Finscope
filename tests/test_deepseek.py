@@ -178,7 +178,7 @@ class DeepSeekUITests(unittest.TestCase):
                       patch('finscope.external_ui.DeepSeekProvider',UIProvider)):
             guard.start();self.addCleanup(guard.stop)
     def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.run()
+        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.session_state['settings_section']='models';app.run()
         app.selectbox(key='pipeline_model').set_value('External API').run();app.selectbox(key='external_provider').set_value('deepseek').run()
         self.assertFalse(app.exception);return app
     def test_waiting_for_key_is_explicit_and_all_external_actions_disabled(self):

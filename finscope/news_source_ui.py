@@ -3,17 +3,21 @@ from datetime import date,datetime,timezone
 import hashlib,json
 from .localized_ui import st
 from .i18n import t,tr,display,Verbatim
-from .news_readiness import LABELS,LOCAL,API,CONDITIONS,key_metadata,source_readiness,verify_api,storage_label
+from .news_readiness import LABELS,key_metadata,source_readiness,verify_api,latest_receipt
 from .local_news import LocalIngestionService,FetchBlocked
 
 
 def conditions(state,compact=False):
-    def names(keys):
-        return ', '.join(str(tr(CONDITIONS[k])) for k in keys) or str(tr('None'))
-    missing=names(state['missing'])
-    if state['hold_reason']:missing+=' · '+str(tr(state['hold_reason']))
-    if compact:return t('Readiness count',done=len(state['complete']),total=len(state['complete'])+len(state['missing']),missing=missing)
-    return t('Conditions summary',done=names(state['complete']),missing=missing)
+    labels={'primary':'Primary key','local':'Local key check','preview':'Preview permission','processing':'Storage and NLP permission',
+            'quota':'Today’s request allowance','ticker':'Finnhub ticker','enabled':'Enable this source for automatic collection'}
+    missing=[str(tr(labels[k])) if k!='hold' else str(tr(state['hold_reason'])) for k in state['missing']]
+    return t('Missing conditions',missing=', '.join(missing)) if missing else tr('Ready')
+
+
+def card_state(provider,state):
+    if provider=='newsdata':return 'Manual pause'
+    if state['hold_reason'] or state['quota_exhausted']:return 'Request restricted'
+    return 'Ready' if state['ready'] else 'Needs configuration'
 
 
 def sync_profiles(c,values):
@@ -35,20 +39,16 @@ def render(store,c,field):
     from .local_collectors import SOURCES
     service=LocalIngestionService(store)
     sync_profiles(c,st.session_state.get('_settings_values',{}))
-    st.caption('Source cards use saved metadata; opening this page does not read credentials or test APIs.')
     with st.container(key='news_source_cards'):columns=st.columns(3)
     for column,provider in zip(columns,LABELS):
         info=key_metadata(store,provider);primary=info['primary']
-        state=source_readiness(store,provider,c,service=service)
+        state=source_readiness(store,provider,c,target='preview',service=service)
         with column,st.container(border=True,key='news_source_card_'+provider):
             st.subheader(LABELS[provider])
             st.caption('Enabled' if provider in c['sources'] else 'Disabled')
             st.write(t('Primary summary',name=tr(primary['name']) if primary and primary['slot_id']=='legacy' else primary['name'] if primary else tr('No primary key')))
             st.caption(t('Backup count',count=info['backups']))
-            st.caption(t('Local status summary',state=tr(storage_label(primary)) if primary else tr('Missing locally')))
-            st.caption(t('API status summary',state=tr(API[primary['api_state']]) if primary else tr('Not tested')))
-            st.write('Automatic collection ready' if state['ready'] else 'Automatic collection not ready')
-            st.caption(conditions(state,compact=True))
+            st.write(card_state(provider,state))
             if st.button('Manage',key='settings_edit_'+provider):
                 st.session_state['settings_edit_source']=provider
     with st.expander('Collection settings',expanded=False):
@@ -76,14 +76,19 @@ def render(store,c,field):
     keys(store,provider)
     def parameters_changed():sync_profiles(c,st.session_state.get('_settings_values',{}))
     with st.expander('Permissions and request parameters',expanded=False):
+        terms={'marketaux':'https://www.marketaux.com/tos','finnhub':'https://finnhub.io/terms-of-service','newsdata':'https://newsdata.io/terms'}
+        accounts={'marketaux':'https://www.marketaux.com/login','finnhub':'https://finnhub.io/','newsdata':'https://newsdata.io/'}
+        left,right=st.columns(2)
+        with left:st.link_button('Provider terms',terms[provider])
+        with right:st.link_button('Account usage',accounts[provider])
         p=c['source_permissions'].get(provider,{})
-        reference=field('text_input','Storage/NLP permission reference','settings_permission_ref_'+provider,p.get('reference',''),max_chars=500,after_change=parameters_changed)
+        reference=field('text_input','Usage basis','settings_permission_ref_'+provider,p.get('reference',''),max_chars=500,after_change=parameters_changed,placeholder=terms[provider],help='Use your account terms for personal preview; storage and NLP require their own permission.')
         preview=field('checkbox','Permission includes local preview','settings_preview_'+provider,p.get('preview',False),after_change=parameters_changed)
         retain=field('checkbox','Permission includes local storage','settings_retain_'+provider,p.get('retain',False),after_change=parameters_changed)
         analyze=field('checkbox','Permission includes local NLP','settings_analyze_'+provider,p.get('analyze',False),after_change=parameters_changed)
         b=c['budgets'].get(provider,{})
         day=field('date_input','Quota verification UTC date','settings_day_'+provider,date.fromisoformat(b.get('utc_day',datetime.now(timezone.utc).date().isoformat())),after_change=parameters_changed)
-        remaining=int(field('number_input','Verified request allowance for this UTC day (existing attempts count against it)','settings_budget_'+provider,b.get('remaining',0),min_value=0,max_value=10000,after_change=parameters_changed))
+        remaining=int(field('number_input','FinScope request budget for this UTC day','settings_budget_'+provider,b.get('remaining',0),min_value=0,max_value=10000,after_change=parameters_changed,help='Confirm account availability first. This local budget includes existing attempts; one new test needs existing attempts plus one.'))
         topic=field('selectbox','API topic','settings_topic_'+provider,b.get('topic','technology'),options=['technology','healthcare','materials'],after_change=parameters_changed)
         symbol=field('text_input','Finnhub ticker','settings_ticker',b.get('symbol',''),max_chars=15,after_change=parameters_changed) if provider=='finnhub' else ''
         sync_profiles(c,st.session_state.get('_settings_values',{}))
@@ -91,7 +96,6 @@ def render(store,c,field):
     state=source_readiness(store,provider,c,target=target,service=service)
     st.write(conditions(state))
     preview=source_readiness(store,provider,c,target='preview',service=service)
-    st.caption('API verification checks the primary key once and may consume one request. No model runs and no articles are saved.')
     signature=hashlib.sha256(json.dumps([preview['keys']['primary'],c['source_permissions'].get(provider),c['budgets'].get(provider)],sort_keys=True).encode()).hexdigest()[:16]
     confirmation='news_api_confirm_'+provider+'_'+signature
     consent=st.checkbox('I confirm preview permission and one request within the verified allowance',key=confirmation)
@@ -100,10 +104,25 @@ def render(store,c,field):
         clear_input(confirmation)
         try:
             selected=preview['keys']['primary']
-            status,count=verify_api(store,provider,c,confirmed=True,expected_selection={k:selected[k] for k in ('slot_id','credential_ref')})
-            st.session_state['news_api_result_'+provider]=('API check succeeded' if status=='ok' else 'API check failed; provider holds are retained.')
+            report=verify_api(store,provider,c,confirmed=True,expected_selection={k:selected[k] for k in ('slot_id','credential_ref')},details=True)
+            st.session_state['news_api_preview_'+provider]={'ref':{k:selected[k] for k in ('slot_id','credential_ref')},'items':report.pop('items')}
+            st.session_state.pop('news_api_result_'+provider,None)
             st.session_state.pop('news_keys_'+provider+'_notice',None)
         except ValueError as error:
             st.session_state['news_api_result_'+provider]=str(error) if isinstance(error,FetchBlocked) else 'API check failed; provider holds are retained.'
+        except Exception:
+            st.session_state['news_api_result_'+provider]='Request outcome needs review; no automatic retry.'
         st.rerun()
-    if st.session_state.get('news_api_result_'+provider):st.info(st.session_state['news_api_result_'+provider])
+    if st.session_state.get('news_api_result_'+provider):st.error(st.session_state['news_api_result_'+provider])
+    receipt=latest_receipt(store,provider)
+    if receipt:
+        (st.success if receipt['status']=='ok' else st.error)('API check succeeded' if receipt['status']=='ok' else 'API check failed; provider holds are retained.')
+        st.caption(t('API receipt',http=str(receipt['http_status']) if receipt['http_status'] is not None else tr('Not observed'),returned=receipt['returned'],previewed=receipt['previewed'],time=receipt['requested_utc']))
+    previous=st.session_state.get('news_api_preview_'+provider,{})
+    selected=preview['keys']['primary']
+    if selected and previous.get('ref')=={k:selected[k] for k in ('slot_id','credential_ref')} and c.get('source_permissions',{}).get(provider,{}).get('preview'):
+        with st.expander('News preview',expanded=False):
+            for item in previous.get('items',[]):
+                st.write(Verbatim(item.title));st.caption(Verbatim(item.source+' · '+(item.timestamp or item.publication_date or str(tr('Unknown time')))))
+                st.text(Verbatim(item.summary or str(tr('Summary unavailable'))))
+                if item.url:st.link_button('Open original article',item.url)

@@ -34,7 +34,7 @@ class NewsKeyUITests(unittest.TestCase):
                   patch('finscope.windows_credentials.c.WinDLL',create=True,side_effect=AssertionError('No native credentials'))):
             p.start();self.addCleanup(p.stop)
     def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.run()
+        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.session_state['settings_section']='sources';app.run()
         self.assertFalse(app.exception);return app
     def source(self,app,p):widget(app,'button','settings_edit_'+p).click().run()
     def action(self,app,p,slot,choice):
@@ -128,10 +128,12 @@ class NewsKeyUITests(unittest.TestCase):
             for name in ('Backup A','Backup B'):self.registry.add(p,name,'AUTHORED-'+p+'-'+name,primary=False)
         app=self.app()
         self.assertEqual(sum(c.value=='Backup keys: 2' for c in app.caption),3)
-        self.assertEqual(sum(c.value=='API verification: Not tested' for c in app.caption),3)
+        self.assertEqual(sum(c.value=='API verification: Not tested' for c in app.caption),0)
+        for provider in ('marketaux','newsdata','finnhub'):
+            self.assertTrue(all(r['api_state']=='untested' for r in key_metadata(self.store,provider)['rows']))
         self.assertEqual(sum(b.label=='Manage' for b in app.button),3)
         self.source(app,'newsdata')
-        self.assertTrue(any('Existing manual pause' in c.value for c in app.caption))
+        self.assertTrue(any('Existing manual pause' in str(x.value) for x in app.markdown))
         self.assertTrue(widget(app,'button','news_api_verify_newsdata').disabled)
 
     def test_explicit_local_check_only_updates_nonsecret_check_metadata(self):

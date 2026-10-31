@@ -79,7 +79,7 @@ def api_source(store):
     st.caption(Verbatim(f"{tr(status.state)} · {tr(status.reason)}"))
     st.caption('Key configured' if configured else 'Key not configured')
     if st.button('Open product settings',key='manual_source_settings'):
-        st.session_state['advanced_manual_ui']=False;st.session_state['product_page']='Settings';st.rerun()
+        st.session_state['advanced_manual_ui']=False;st.session_state['product_page']='Settings';st.session_state['settings_section']='sources';st.rerun()
     if status.last_attempt:
         with st.expander("Last source attempt"):
             st.caption(f"{status.last_attempt} · {status.last_outcome} · holds use UTC days")

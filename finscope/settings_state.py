@@ -32,6 +32,13 @@ def issues(config,*,store=None):
     return result
 
 
+def model_issues(config):
+    if config['model']=='OpenAI API':return ['External API is manual only; automatic updates require a local model.']
+    if config['model'] in ('Local LM Studio','Local Ollama') and not config.get('model_id'):
+        return ['Choose a local model ID before running.']
+    return []
+
+
 def save(queue,config):
     from .task_queue import validate_config
     c=deepcopy(config)

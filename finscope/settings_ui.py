@@ -4,7 +4,7 @@ from datetime import date,datetime,timezone
 import json
 from .localized_ui import st
 from .i18n import t,tr,display,Verbatim
-from .settings_state import editable,save,issues,saved
+from .settings_state import editable,save,model_issues
 
 
 def field(kind,label,key,default,*,after_change=None,**kwargs):
@@ -68,11 +68,11 @@ def model_editor(store,c):
     if c['model']!='Local LM Studio':c['classifier_llm']=False
 
 
-def diagnostics(store,q):
+def diagnostics(store,q,section):
     from .local_collectors import SOURCES
     with st.expander('Advanced & diagnostics',expanded=False):
         st.caption('Read-only diagnostics and retained manual actions.')
-        for source in editable(q)['sources']:
+        for source in editable(q)['sources'] if section=='sources' else []:
             if source in SOURCES:
                 s=SOURCES[source];st.write(Verbatim(s.get('attribution',source)))
                 st.caption(s.get('license','Official RBA information; third-party exceptions apply'))
@@ -85,7 +85,7 @@ def diagnostics(store,q):
         with closing(store.connect()) as db:
             present=db.execute("SELECT 1 FROM sqlite_master WHERE name='deepseek_requests'").fetchone()
             requests=db.execute('SELECT kind,status,http_status,error_kind,reserved_at,hold_until FROM deepseek_requests ORDER BY reserved_at').fetchall() if present else []
-        if present:
+        if present and section=='models':
             st.caption('Independent DeepSeek ledger; unresolved outcomes and holds are retained. No automatic retry.')
             import pandas as pd
             st.dataframe(pd.DataFrame(requests,columns=['Operation','Status','HTTP','Reason','Created UTC','Hold until UTC']),hide_index=True,width='stretch')
@@ -98,24 +98,24 @@ def diagnostics(store,q):
 def render(store,q):
     from .ui_preferences import language_settings
     c=st.session_state.setdefault('_settings_edit',editable(q))
-    general,sources,models=st.tabs(['General','News sources','Analysis models'])
-    with general:language_settings(store)
-    with sources:source_editor(store,c)
-    with models:model_editor(store,c)
+    labels={'general':'General','sources':'News sources','models':'Analysis models'}
+    section=st.radio('Settings section',list(labels),format_func=lambda key:labels[key],key='settings_section',horizontal=True,label_visibility='collapsed')
+    if section=='general':
+        language_settings(store);diagnostics(store,q,section);return
+    if section=='sources':source_editor(store,c)
+    else:model_editor(store,c)
     c['source_permissions']={k:v for k,v in c['source_permissions'].items() if k in c['sources'] or k in ('marketaux','newsdata','finnhub')}
-    if c!=editable(q):st.info('Unsaved settings edits; save them in Settings before starting a task.')
-    elif saved(q):st.info('Editing a saved draft; the previous pipeline will not run silently.')
+    if c!=editable(q):st.caption('Unsaved changes')
     if st.button('Save settings',key='settings_save',type='primary'):
         try:
             pending=save(q,c)
             if st.session_state.get('_external_api_edit'):
                 from .external_ui import save_external
                 save_external(store,st.session_state['_external_api_edit'])
-            st.session_state['settings_save_message']='Draft saved; review and explicitly confirm the ready-source scope before updating.' if pending else 'Settings saved. Connection checks happen separately.'
+            st.session_state['settings_save_message_'+section]='Saved as draft.' if pending else 'Settings saved.'
             st.rerun()
         except ValueError as error:st.error(str(error))
-    if st.session_state.get('settings_save_message'):st.success(st.session_state['settings_save_message'])
-    pending=issues(c,store=store)
-    for reason in pending:
-        if not reason.startswith('Source setup incomplete:'):st.warning(tr(reason))
-    diagnostics(store,q)
+    if st.session_state.get('settings_save_message_'+section):st.success(st.session_state['settings_save_message_'+section])
+    if section=='models':
+        for reason in model_issues(c):st.caption(reason)
+    diagnostics(store,q,section)

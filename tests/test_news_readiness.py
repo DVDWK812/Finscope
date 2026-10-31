@@ -7,7 +7,7 @@ from unittest.mock import patch,Mock
 from finscope.local_news import LocalNewsStore,LocalIngestionService,FetchBlocked
 from finscope.local_credentials import credential_store
 from finscope.news_keys import NewsKeyRegistry,LEGACY
-from finscope.news_readiness import key_metadata,check_local,source_readiness,source_plan,verify_api
+from finscope.news_readiness import key_metadata,check_local,source_readiness,source_plan,verify_api,latest_receipt
 from finscope.task_queue import TaskQueue
 from finscope.settings_state import save,saved
 from finscope.api_sources import HTTPResponse,APIError
@@ -169,6 +169,33 @@ class ReadinessTests(unittest.TestCase):
             with self.assertRaises(ValueError):action()
         with closing(self.store.connect()) as db:self.assertNotIn('AUTHORED-marketaux-Main','\n'.join(db.iterdump()))
         self.transport.assert_not_called()
+
+    def test_receipt_keeps_counts_http_and_time_without_news_or_secret_persistence(self):
+        self.add()
+        report=verify_api(self.store,'marketaux',self.config,confirmed=True,service=self.service,details=True)
+        self.assertEqual(report['http_status'],200);self.assertEqual(report['returned'],0)
+        receipt=latest_receipt(self.store,'marketaux')
+        self.assertEqual(receipt['requested_utc'],self.now.isoformat())
+        self.assertEqual(receipt['http_status'],200);self.assertEqual(receipt['previewed'],0)
+        for _ in range(3):self.assertEqual(latest_receipt(self.store,'marketaux'),receipt)
+        self.assertEqual(self.transport.call_count,1)
+        with closing(self.store.connect()) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM local_news').fetchone()[0],0)
+            self.assertNotIn('AUTHORED-',str(db.execute('SELECT * FROM news_api_receipts').fetchall()))
+
+    def test_legacy_last_use_comes_from_its_exact_request_not_managed_backups(self):
+        self.add('finnhub','Backup',False)
+        with patch.object(self.registry,'legacy_key',return_value='AUTHORED-LEGACY'):
+            self.registry.promote('finnhub',LEGACY)
+        with closing(self.store.connect()) as db:
+            db.execute('INSERT INTO news_request_keys VALUES (?,?,?,?,?,?,?)',('authored','finnhub',LEGACY,LEGACY,self.now.isoformat(),'ok',None));db.commit()
+        with patch.object(self.memory,'read',side_effect=AssertionError('Metadata must not read credentials')):
+            info=key_metadata(self.store,'finnhub')
+        self.assertEqual(info['primary']['last_used_at'],self.now.isoformat())
+        self.assertEqual(info['primary']['last_status'],'ok')
+        self.assertEqual(info['primary']['api_state'],'verified')
+        backup=next(r for r in info['rows'] if r['slot_id']!=LEGACY)
+        self.assertIsNone(backup['last_used_at']);self.assertEqual(backup['api_state'],'untested')
 
 
 if __name__=='__main__':unittest.main()

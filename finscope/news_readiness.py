@@ -44,6 +44,8 @@ def key_metadata(store,provider):
             row['checked_at']=check['checked_at'] if check else version[0] if version else ''
             row['check_basis']='explicit_read' if check else 'save_readback' if version else 'none'
             request=db.execute('SELECT k.status,k.error,k.reserved_at FROM news_request_keys k WHERE k.provider=? AND k.slot_id=? AND k.credential_ref=? ORDER BY k.rowid DESC LIMIT 1',(provider,slot,ref)).fetchone() if 'news_request_keys' in tables else None
+            if request:
+                row['last_used_at']=request[2];row['last_status']=request[0];row['last_error']=request[1]
             row['api_state']=('verified' if request[0]=='ok' else 'authentication' if request[0]=='invalid' else
                 'restricted' if request[1] in ('permission_or_subscription','rate_limit') else 'pending' if request[0]=='pending' else 'failed') if request else 'authentication' if row['last_status']=='invalid' else 'untested'
             row['api_checked_at']=request[2] if request else ''
@@ -95,7 +97,8 @@ def source_readiness(store,provider,config,*,target='pipeline',service=None):
     if provider=='finnhub':checks['ticker']=bool(budget.get('symbol','').strip())
     return {'ready':all(checks.values()),'complete':[k for k,v in checks.items() if v],
             'missing':[k for k,v in checks.items() if not v],'hold_reason':status.reason if status.blocked else '',
-            'keys':info,'remaining':max(0,budget.get('remaining',0)-used) if quota else 0}
+            'keys':info,'remaining':max(0,budget.get('remaining',0)-used) if quota else 0,
+            'quota_exhausted':bool(budget.get('utc_day')==now.date().isoformat() and type(budget.get('remaining')) is int and 0<budget['remaining']<=used)}
 
 
 def source_plan(store,config,*,service=None):
@@ -114,7 +117,7 @@ def source_plan(store,config,*,service=None):
     return ready,blocked
 
 
-def verify_api(store,provider,config,*,confirmed=False,service=None,expected_selection=None):
+def verify_api(store,provider,config,*,confirmed=False,service=None,expected_selection=None,details=False):
     """One explicitly confirmed preview, using unchanged provider reservations."""
     if confirmed is not True:raise FetchBlocked('Confirm one quota-consuming API preview before checking')
     service=service or LocalIngestionService(store)
@@ -128,4 +131,21 @@ def verify_api(store,provider,config,*,confirmed=False,service=None,expected_sel
     rights=ContentRights(preview=True,reference=permission['reference'])
     result,items=NewsKeyRegistry(store).fetch(service,provider,config['budgets'][provider]['topic'],selection=ref,
         rights=rights,remaining=state['remaining'],symbol=config['budgets'][provider].get('symbol') or None,explicit=True)
+    with closing(store.connect()) as db:
+        row=db.execute('SELECT k.request_id,r.reserved_at,r.completed_at FROM news_request_keys k JOIN local_requests r ON r.id=k.request_id WHERE k.provider=? AND k.slot_id=? AND k.credential_ref=? ORDER BY k.rowid DESC LIMIT 1',(provider,ref['slot_id'],ref['credential_ref'])).fetchone()
+        db.execute('CREATE TABLE IF NOT EXISTS news_api_receipts(request_id TEXT PRIMARY KEY,raw_count INTEGER,preview_count INTEGER)')
+        if row:db.execute('INSERT OR IGNORE INTO news_api_receipts VALUES (?,?,?)',(row[0],result.raw_count,len(items)))
+        db.commit()
+    if details:
+        return {'status':result.status,'http_status':result.http_status,'returned':result.raw_count,'previewed':len(items),
+                'requested_utc':row[1] if row else '', 'completed_utc':row[2] if row else '', 'items':items}
     return result.status,len(items)
+
+
+def latest_receipt(store,provider):
+    info=key_metadata(store,provider);primary=info['primary']
+    if not primary:return None
+    with closing(store.connect()) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='news_api_receipts'").fetchone():return None
+        row=db.execute('SELECT r.status,r.http_status,x.raw_count,x.preview_count,r.reserved_at,r.completed_at FROM news_api_receipts x JOIN local_requests r ON r.id=x.request_id JOIN news_request_keys k ON k.request_id=r.id WHERE k.provider=? AND k.slot_id=? AND k.credential_ref=? ORDER BY r.rowid DESC LIMIT 1',(provider,primary['slot_id'],primary['credential_ref'])).fetchone()
+    return dict(zip(('status','http_status','returned','previewed','requested_utc','completed_utc'),row)) if row else None

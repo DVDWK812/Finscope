@@ -36,7 +36,8 @@ class AutomaticUITests(unittest.TestCase):
         self.assertFalse(app.exception);self.assertEqual(app.radio(key='product_page').value,'Settings');self.http.assert_not_called()
     def test_primary_navigation_and_single_queued_task_across_rerenders(self):
         app=self.app();self.assertEqual(app.radio(key='product_page').options,['Dashboard','Industries','Knowledge Graph','News Explorer','Settings'])
-        app.button(key='product_update').click().run();key=self.q.get()['id']
+        app.button(key='product_update').click().run();self.assertIsNone(self.q.get())
+        app.button(key='product_confirm_update').click().run();key=self.q.get()['id']
         app.run();self.assertTrue(app.button(key='product_update').disabled)
         app.radio(key='product_page').set_value('News Explorer').run();app.run()
         self.assertEqual(self.q.get()['id'],key);self.http.assert_not_called()
@@ -51,9 +52,25 @@ class AutomaticUITests(unittest.TestCase):
         from datetime import date
         app=self.app();app.date_input(key='local_dates').set_value((date(2026,10,30),)*2).run()
         app.button(key='product_update').click().run()
+        self.assertIsNone(self.q.get());app.button(key='product_confirm_update').click().run()
         w=Worker(self.store,fetch=lambda *a:[replace(fixture(),provider='licensed_test_fixture')],infer=prediction,resources=lambda *a,**k:None)
         w.run_one();app.run();self.assertFalse(app.exception)
         self.assertEqual(app.metric[0].value,'1');self.assertEqual(self.q.get()['status'],'completed')
+        self.http.assert_not_called()
+
+    def test_partial_draft_is_reviewed_and_only_confirmed_ready_sources_are_queued(self):
+        from finscope.settings_state import save
+        c={**C,'sources':['abs_html','newsdata'],'taxonomy':'CSRC-JRT0020-2024'}
+        self.assertTrue(save(self.q,c))
+        app=self.app();self.assertIsNone(self.q.get())
+        self.assertFalse(any('manual pause' in str(x.value).lower() for x in app.markdown))
+        app.button(key='product_update').click().run()
+        self.assertIsNone(self.q.get())
+        self.assertTrue(any('NewsData.io skipped' in str(x.value) for x in app.caption))
+        app.button(key='product_confirm_update').click().run()
+        self.assertEqual(self.q.get()['snapshot']['sources'],['abs_html'])
+        self.assertEqual(self.q.get()['snapshot']['taxonomy'],'CSRC-JRT0020-2024')
+        app.run();self.assertTrue(app.button(key='product_update').disabled)
         self.http.assert_not_called()
     def test_date_and_source_filters_survive_navigation_and_no_automatic_inference(self):
         ProductStorage(self.store).save(prepare(replace(fixture(),provider='licensed_test_fixture'))[0])
