@@ -113,14 +113,24 @@ def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''
 
 
 def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
-    st.caption(st.session_state.get('lmstudio_status','Untested · Refresh models to check 127.0.0.1:1234'))
+    reason=st.session_state.get('lmstudio_connection_error')
+    st.caption(Verbatim(str(tr('Failed'))+' · '+str(tr(reason))) if reason else st.session_state.get('lmstudio_status','Service not checked.'))
     if st.session_state.get('lmstudio_operation_error'):
         st.error('Last model action: '+st.session_state['lmstudio_operation_error'])
-    if st.button('Refresh LM Studio models',key=prefix+'_lmstudio_refresh'):
+    connected=st.session_state.get('lmstudio_connected',False)
+    action='Refresh models' if connected else 'Start service & refresh models'
+    if st.button(action,key=prefix+'_lmstudio_refresh'):
         try:
-            refresh_lmstudio()
+            if connected:refresh_lmstudio()
+            else:
+                from .lmstudio_runtime import start_service
+                with st.spinner('Starting local service; no model will be loaded…'):
+                    report=start_service(store,explicit=True,transport=LMStudioProvider().transport)
+                st.session_state['lmstudio_start_report']={k:v for k,v in report.items() if k!='models'}
+                refresh_lmstudio(report['models'])
         except ModelError as error:
             st.session_state['lmstudio_connected']=False
+            st.session_state['lmstudio_connection_error']=str(error)
             st.session_state['lmstudio_status']='Failed · '+str(error)
         st.rerun()
     models=st.session_state.get('lmstudio_models',{})
@@ -134,7 +144,11 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
     options.ready=False
     selected=models.get(options.model)
     if not selected:
-        st.info('Saved model selection retained; service and model readiness are unverified.' if options.model else 'Choose a downloaded model above; selection never loads or infers.')
+        connected=st.session_state.get('lmstudio_connected',False)
+        st.info('Saved selection is absent from the downloaded catalog.' if connected and options.model else
+                'Connected · No downloaded local LLMs.' if connected and not models else
+                'Saved model selection retained; service and model readiness are unverified.' if options.model else
+                'Choose a downloaded model above; selection never loads or infers.')
         return
     connected=st.session_state.get('lmstudio_connected',True)
     st.caption('Loaded · API exposed; inference requires Run' if connected and selected['callable'] else 'Not loaded · cannot infer' if connected else 'Saved model selection retained; service and model readiness are unverified.')
@@ -142,31 +156,34 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
         st.caption(f"Downloaded · {selected['format'].upper()} / {selected['quantization']} · {selected['size_bytes']/1e9:.2f} GB")
         from .lmstudio_runtime import gpu_ratio
         st.caption(f"Safe load: context 2048, one prediction, {float(gpu_ratio(selected)):.0%} GPU offload; estimate and free RAM/VRAM checked first.")
+        startup=st.session_state.get('lmstudio_start_report')
+        if startup:st.caption(Verbatim(startup['cli_version']))
+        report=st.session_state.get('lmstudio_last_load',{})
+        if isinstance(report,dict) and report.get('model_key')==selected['key'] and report.get('estimate'):
+            estimate,snapshot=report['estimate'],report['resources_before_load']
+            st.caption(f"Estimate: GPU {estimate['gpu_bytes']/1024**3:.2f} GiB / total {estimate['total_bytes']/1024**3:.2f} GiB · context {estimate['context_length']}")
+            st.caption(f"Available before load: RAM {snapshot['ram_available']/1024**3:.2f} GiB / VRAM {snapshot['gpu_available']/1024**3:.2f} GiB · one model, one prediction")
+    if not connected:return
     others=[m for k,m in models.items() if k!=options.model and m['loaded']]
     for other in others:
         st.info('Another model is loaded: '+other['key']+'. Unload it explicitly before loading the selection.')
         if st.button('Unload '+other['key'],key=prefix+'_lmstudio_unload_'+other['key'],disabled=model_busy(store)):
-            lmstudio_action(lambda:LMStudioProvider().unload(other['key'],explicit=True))
+            lmstudio_action(lambda:LMStudioProvider().unload(other['key'],explicit=True,store=store))
     if selected['loaded']:
         if st.button('Unload selected LM Studio model',key=prefix+'_lmstudio_unload',disabled=model_busy(store)):
-            lmstudio_action(lambda:LMStudioProvider().unload(options.model,explicit=True))
+            lmstudio_action(lambda:LMStudioProvider().unload(options.model,explicit=True,store=store))
     else:
         if st.button('Load selected LM Studio model',disabled=bool(others) or model_busy(store) or not connected,key=prefix+'_lmstudio_load'):
-            lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True))
+            lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True,store=store))
     options.ready=bool(connected and selected['callable'])
-    report=st.session_state.get('lmstudio_last_load',{})
-    if isinstance(report,dict) and report.get('model_key')==selected['key'] and report.get('estimate'):
-        with st.expander('LM Studio load resources'):
-            estimate,snapshot=report['estimate'],report['resources_before_load']
-            st.caption(f"Estimate: GPU {estimate['gpu_bytes']/1024**3:.2f} GiB / total {estimate['total_bytes']/1024**3:.2f} GiB · context {estimate['context_length']}")
-            st.caption(f"Available before load: RAM {snapshot['ram_available']/1024**3:.2f} GiB / VRAM {snapshot['gpu_available']/1024**3:.2f} GiB · one model, one prediction")
 
 
-def refresh_lmstudio():
+def refresh_lmstudio(models=None):
     from .local_news import utcnow
-    models=LMStudioProvider().inventory()
+    if models is None:models=LMStudioProvider().inventory()
     st.session_state['lmstudio_models']=models
     st.session_state['lmstudio_connected']=True
+    st.session_state.pop('lmstudio_connection_error',None)
     st.session_state.pop('lmstudio_operation_error',None)
     st.session_state['lmstudio_status']=f"Available local service · {len(models)} downloaded local LLMs · checked {utcnow().strftime('%H:%M:%S UTC')}"
 
@@ -192,6 +209,8 @@ def lmstudio_action(action):
 
 
 def execute(item,store,settings):
+    if settings.mode in ('Local LM Studio','Local Ollama') and model_busy(store):
+        raise ModelError('Worker is using the model; loading, unloading and switching are paused.',kind='worker_owns_model')
     if settings.mode=="Local FinBERT":
         # Advanced manual screens must not load a second copy beside the worker.
         from .task_queue import TaskQueue

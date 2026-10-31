@@ -23,7 +23,7 @@ PAGES=['Dashboard','Industries','Knowledge Graph','News Explorer','Settings']
 
 
 @st.fragment(run_every=2)
-def task_progress(store):
+def task_progress(store,show_diagnostics=True):
     from .ui_preferences import bootstrap
     bootstrap(store)
     q=TaskQueue(store);task=q.get()
@@ -34,7 +34,8 @@ def task_progress(store):
     st.markdown(status_markup(task['status'],task['stage'],counts),unsafe_allow_html=True)
     if task['error']:
         st.warning('Some stages need attention; completed results are retained.')
-        with st.expander('Task diagnostics'):st.write(task['error'])
+        if show_diagnostics:
+            with st.expander('Task diagnostics'):st.write(task['error'])
     if not q.worker_alive() and task['status'] in ACTIVE:st.warning('Worker heartbeat unavailable. Launch through launch_local.ps1; a running task is identified as interrupted on worker restart.')
     if task['status'] in ACTIVE:
         if st.button('Stop task',key='product_cancel'):q.cancel(task['id']);st.rerun(scope='fragment')
@@ -209,7 +210,7 @@ def main():
         page=st.radio('Workspace',PAGES,key='product_page',label_visibility='collapsed',width='stretch')
         st.caption('Local SQLite · persistent originals and model history')
     st.title(page)
-    task_progress(store)
+    task_progress(store,page!='Settings')
     if page=='Settings':
         save_view(store,dict(st.session_state));settings(store,q);return
     for key,value in st.session_state.get('product_view_preferences',{}).items():

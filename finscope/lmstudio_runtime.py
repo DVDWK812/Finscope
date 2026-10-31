@@ -1,10 +1,12 @@
-"""Explicit, bounded local model loading. No server startup, downloads or inference."""
+"""Explicit bounded loopback startup and model loading; never downloads weights."""
 import json
 import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import socket
+import time
 
 from .model_providers import ModelError
 
@@ -19,7 +21,7 @@ def lms_executable():
         candidate=Path.home()/'.lmstudio/bin/lms.exe'
         executable=str(candidate) if candidate.is_file() else None
     if not executable:
-        raise ModelError('LM Studio CLI is not installed/on PATH; start the installed app and configure lms',kind='not_configured')
+        raise ModelError('LM Studio CLI is not installed/on PATH; start the installed app and configure lms',kind='cli_missing')
     return executable
 
 
@@ -34,6 +36,105 @@ def run_lms(arguments,timeout=30):
     if result.returncode or len(result.stdout)+len(result.stderr)>1024*1024:
         raise ModelError('LM Studio CLI rejected the operation; inspect its local UI/logs; no retry',kind='load_error')
     return result.stdout if '--json' in arguments else result.stdout+'\n'+result.stderr
+
+
+def port_in_use():
+    with socket.socket() as connection:
+        try:connection.bind(('127.0.0.1',1234))
+        except OSError:return True
+        return False
+
+
+def installed_runtime():
+    """Start only the installed desktop runtime, whose single-instance guard is retained."""
+    candidate=Path(os.environ.get('LOCALAPPDATA',''))/'Programs/LM Studio/LM Studio.exe'
+    if os.name!='nt' or not candidate.is_file():
+        raise ModelError('Installed LM Studio runtime was not found; install/configure it before starting.',kind='cli_missing')
+    startup=subprocess.STARTUPINFO();startup.dwFlags|=subprocess.STARTF_USESHOWWINDOW;startup.wShowWindow=0
+    try:
+        subprocess.Popen([str(candidate)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                         startupinfo=startup,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    except OSError:
+        raise ModelError('Installed LM Studio runtime could not start; check local permissions.',kind='startup_failed') from None
+
+
+def start_service(store,*,explicit=False,runner=run_lms,transport=None,occupied=port_in_use,
+                  bootstrap=installed_runtime,clock=time.monotonic,sleep=time.sleep,total_timeout=35,max_checks=6):
+    """One cross-process startup; successful CLI exit is not API readiness."""
+    from .model_providers import LMStudioProvider,model_request,LMSTUDIO_ORIGIN
+    from .task_queue import ProcessLock
+    if explicit is not True:raise ModelError('Service startup requires an explicit button action.')
+    transport=transport or model_request
+    deadline=clock()+min(35,max(1,total_timeout));checks=0
+    def remaining(cap):
+        value=deadline-clock()
+        if value<=0:raise ModelError('LM Studio service startup timed out; no model was loaded.',kind='startup_timeout')
+        return min(cap,value)
+    def probe():
+        nonlocal checks
+        checks+=1
+        def bounded(method,url,payload=None,headers=None,timeout=5):
+            if method!='GET' or url not in (LMSTUDIO_ORIGIN+'/v1/models',LMSTUDIO_ORIGIN+'/api/v1/models'):
+                raise ModelError('Startup may only inspect loopback model lists.')
+            try:return transport(method,url,None,None,remaining(3)/2)
+            except ModelError as error:
+                if error.status in (401,403):
+                    raise ModelError('LM Studio requires authentication; existing authentication was preserved.',kind='authentication',status=error.status) from None
+                if error.status==404:
+                    raise ModelError('Port 1234 is occupied by a service without the required LM Studio API; no process was stopped.',kind='port_conflict') from None
+                raise
+        try:return LMStudioProvider(bounded).inventory()
+        except ModelError as error:
+            if error.kind=='validation':raise ModelError('LM Studio model list parsing failed; no model was loaded.',kind='invalid_registry') from None
+            raise
+    try:
+        with ProcessLock(str(store.path)+'.lmstudio-start.lock'):
+            try:
+                models=probe()
+                return {'models':models,'started':False,'checks':checks,'cli_version':'Existing service reused'}
+            except ModelError as error:
+                if error.kind not in ('connection_refused','connection_error','timeout'):raise
+            if occupied():raise ModelError('Port 1234 is occupied; no process was stopped.',kind='port_conflict')
+            version=runner(['--version'],remaining(3))
+            match=re.search(r'CLI commit:\s*([a-f0-9]{7,40})|\bv?([0-9]+\.[0-9]+\.[0-9]+)',version)
+            version=('CLI '+next(v for v in match.groups() if v)) if match else 'Version not supplied'
+            help_text=runner(['server','start','--help'],remaining(3))
+            if not all(flag in help_text for flag in ('--bind','--port')):
+                raise ModelError('Installed lms does not support explicit loopback binding; startup stopped.',kind='unsupported_cli')
+            command=['server','start','--bind','127.0.0.1','--port','1234']
+            try:runner(command,remaining(12))
+            except ModelError as error:
+                # A timeout may mean the command is still taking effect. Probe;
+                # never launch another copy after an unknown startup outcome.
+                if error.kind=='timeout':pass
+                elif error.kind=='load_error':
+                    bootstrap();runner(command,remaining(12))
+                else:raise
+            last=None
+            while checks<min(8,max(2,max_checks)):
+                try:
+                    models=probe()
+                    return {'models':models,'started':True,'checks':checks,'cli_version':version}
+                except ModelError as error:
+                    if error.kind not in ('connection_refused','connection_error','timeout'):raise
+                    last=error.kind
+                if checks<max_checks:sleep(min(.5,remaining(.5)))
+            raise ModelError('LM Studio service startup timed out; no model was loaded.',kind='startup_timeout')
+    except RuntimeError:
+        raise ModelError('LM Studio startup is already in progress in another tab; refresh shortly.',kind='startup_busy') from None
+
+
+def model_operation(store,action,*,editing=True):
+    from .task_queue import ProcessLock,TaskQueue,ACTIVE
+    try:
+        with ProcessLock(str(store.path)+'.lmstudio-operation.lock'):
+            if editing:
+                task=TaskQueue(store).get()
+                if task and task['status'] in ACTIVE:
+                    raise ModelError('Worker is using the model; loading, unloading and switching are paused.',kind='worker_owns_model')
+            return action()
+    except RuntimeError:
+        raise ModelError('Another local model operation is active; no conflicting action was performed.',kind='model_busy') from None
 
 
 def system_resources():

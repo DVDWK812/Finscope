@@ -540,3 +540,11 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   late mock; its Marketaux fixture entry was immediately removed and all new
   credential tests now isolate the vault for their entire lifetime. Project .env
   was unchanged/readable. A prior different vault value cannot be reconstructed.
+- 31 October LM Studio service startup: explicit loopback CLI arguments, bounded
+  API readiness checks, cross-process startup/model-operation locks and active-job
+  mutation guards. Real browser cold service startup succeeded with CLI 43d4b26;
+  127.0.0.1:1234 stayed on PID 1608 on refresh. Native/compatible catalogs showed
+  google/gemma-4-e4b and qwen/qwen3.8-27b, both downloaded and unloaded. No weights
+  downloaded/loaded and no inference/task resume. Initial empty-port timeout was
+  reproduced and repaired without treating a CLI exit as readiness. Desktop and
+  390px settings checks passed; 421 offline tests and benchmark dry run pass.

@@ -97,7 +97,9 @@ class Worker:
         from .model_providers import LMStudioProvider,OllamaProvider
         # Existing providers save results. Intercept that write only so the queue
         # can commit analysis+cache together, preserving their validations/rights.
+        source_store=self.store
         class Capture:
+            path=source_store.path
             def save_analysis(self,_):pass
         provider=LMStudioProvider() if c['model']=='Local LM Studio' else OllamaProvider()
         return provider.analyze(item,Capture(),model=c['model_id'])

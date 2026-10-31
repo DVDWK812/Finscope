@@ -43,7 +43,7 @@ def model_request(method, endpoint, payload=None, headers=None, timeout=60):
         with requests.Session() as session:
             session.trust_env = False  # Loopback must never go through an environment proxy.
             response = session.request(method, endpoint, json=payload, headers=headers or {},
-                                       timeout=(5,timeout), allow_redirects=False)
+                                       timeout=(min(5,timeout),timeout), allow_redirects=False)
         if response.status_code != 200:
             retry = safe_retry_after(response.headers.get("Retry-After",""))
             raise ModelError(f"Model request failed (HTTP {response.status_code}); no retry was made",
@@ -282,15 +282,19 @@ class LMStudioProvider:
                 'callable':bool(instance and model_id in ids),'reasoning':reasoning}
         return models
 
-    def load(self,key,*,explicit=False):
-        from .lmstudio_runtime import load_model
+    def load(self,key,*,explicit=False,store=None):
+        from .lmstudio_runtime import load_model,model_operation
+        if store is not None:return model_operation(store,lambda:self.load(key,explicit=explicit))
         models=self.inventory()
         if key not in models:raise ModelError('Select a downloaded local LM Studio model')
         if any(m['loaded'] for m in models.values()):
             raise ModelError('A model is already loaded; explicitly unload it before loading another model')
         return load_model(models[key],explicit=explicit)
 
-    def unload(self,key,*,explicit=False):
+    def unload(self,key,*,explicit=False,store=None):
+        if store is not None:
+            from .lmstudio_runtime import model_operation
+            return model_operation(store,lambda:self.unload(key,explicit=explicit))
         if explicit is not True:raise ModelError('Unloading needs an explicit action')
         models=self.inventory()
         if key not in models or not models[key]['loaded']:raise ModelError('Selected model is not loaded')
@@ -298,6 +302,9 @@ class LMStudioProvider:
         return self.transport('POST',LMSTUDIO_ORIGIN+'/api/v1/models/unload',{'instance_id':models[key]['model_id']},None,30)
 
     def analyze(self,item,store,*,model=None,**options):
+        if hasattr(store,'path') and not options.get('_runtime_locked'):
+            from .lmstudio_runtime import model_operation
+            return model_operation(store,lambda:self.analyze(item,store,model=model,_runtime_locked=True),editing=False)
         validate_input(item)
         models=self.inventory()
         if model not in models:raise ModelError('Choose an installed local LM Studio model; no downloads or fallback are performed')
