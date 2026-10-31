@@ -34,6 +34,12 @@ The launcher owns the single worker; direct `streamlit run` serves the UI withou
 
 API success is separate from permission to display, retain, process or send publisher text. Preview is local personal noncommercial access; storage/NLP/transmission remain off until a permission reference and the relevant rights are supplied. Full publisher pages are never fetched. Approved self-authored or licensed text can be saved and analyzed independently. Missing publication times remain unknown.
 
+Reviewed source policies additionally record covered fields/purposes, retention
+basis, attribution and exclusions. The first versioned policy covers official
+ABS releases; unknown providers receive no policy grant. One retained ABS original
+has completed actual local FinBERT and formal Dashboard/Explorer acceptance without
+new collection: [evidence and policy rollout limits](docs/ABS_P2_ACCEPTANCE.md).
+
 ## Models and evidence
 
 FinBERT is the default local model and requires no API key. Its genuine three-class probabilities and exact revision are preserved with MiniLM revision and unverified candidate groups. No mock prediction is substituted on failure. FinBERT weights: **CC BY-NC-SA 4.0**, ProsusAI / MIH AI B.V.; MiniLM: **Apache-2.0**. These weight licences do not grant publisher rights. See [model evidence](docs/AI_PROTOTYPE.md).

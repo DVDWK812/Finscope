@@ -171,6 +171,19 @@ class TaskQueue:
         c['source_permissions']={p:v for p,v in c.get('source_permissions',{}).items() if p in ready}
         c['budgets']={p:v for p,v in c.get('budgets',{}).items() if p in ready}
         return self._enqueue(validate_config(c))
+    def submit_saved_local(self,article_id,*,confirmed=False,taxonomy='US-BUSINESS-1',force_reanalysis=False):
+        """Analyze one retained, policy-covered original without source setup."""
+        if confirmed is not True:raise ValueError('Confirm local processing of the saved original')
+        from .product_storage import ProductStorage
+        from .source_policies import authorize
+        item=next((n for n in ProductStorage(self.store).news() if n.article_id==article_id),None)
+        if item is None:raise ValueError('Saved original not found')
+        evidence=authorize(item,('retain','local_classification','local_sentiment','local_display'))
+        provenance=json.loads(item.provenance);provenance['automatic_use_policy']=evidence
+        item=replace(item,rights=replace(item.rights,external=False),provenance=json.dumps(provenance,ensure_ascii=False))
+        c=validate_config(dict(sources=[],article_ids=[article_id],model='Local FinBERT',model_id='',
+            classifier_llm=False,taxonomy=taxonomy,limit=1,budgets={},source_permissions={},force_reanalysis=force_reanalysis))
+        return self._enqueue(c,preview_item=item)
     def submit_preview(self,item,rights,*,scope,confirmed=False,taxonomy='US-BUSINESS-1'):
         """One selected, permitted preview; no source dispatch or draft mutation."""
         if confirmed is not True:

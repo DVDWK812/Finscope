@@ -154,7 +154,12 @@ class Worker:
                     stage('text / save: '+source)
                     try:
                         raw.rights.require('retain');raw.rights.require('analyze')
+                        policy=None
+                        if raw.provider=='abs_html':
+                            from .source_policies import authorize
+                            policy=authorize(raw,('retain','local_classification','local_sentiment','local_display'))
                         item,coverage=prepare(raw)
+                        if policy:coverage['source_policy']=policy
                         item,fresh,changed=self.data.save(item)
                     except ValueError:
                         counts['failed']+=1;errors.append('One text/URL record failed validation');continue

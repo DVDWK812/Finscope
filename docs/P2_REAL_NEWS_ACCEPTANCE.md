@@ -1,5 +1,13 @@
 # P2 real API news acceptance — 1 November 2026 Sydney
 
+**Latest scope correction:** The user ended the Business Standard permission
+discussion and chose previously licensed ABS news for actual end-to-end
+acceptance. [ABS acceptance](ABS_P2_ACCEPTANCE.md) now verifies one genuine
+local FinBERT result and formal Dashboard/Explorer drill-down, with no new fetch.
+The Marketaux HTTP-200 / three-preview result remains connection evidence only;
+its third-party API-content storage/NLP remains unauthorized. No user-authored
+text was substituted or represented as actual API-news NLP evidence.
+
 ## Follow-up from `0c50164` — formal session inspected
 
 Latest fetched remote and clean worktree at start were

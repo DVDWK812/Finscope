@@ -1,5 +1,15 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November 2026 Sydney — execute the licensed ABS path:** Reuse an existing
+reviewed ABS release for saved-original, source-free local FinBERT processing.
+Actual inference and formal Dashboard/Explorer drill-down passed; original count
+stays 47, analysis history becomes 84, and repeat processing makes no new
+inference. Preserve API connection evidence separately from unapproved API-text
+NLP. Add a versioned ABS policy and explicit saved-original submission without
+changing API drafts or restarting the live process. Unknown sources receive no
+registry grant; other policy migrations/contract expiry remain scoped follow-up.
+See [actual results and limits](ABS_P2_ACCEPTANCE.md).
+
 **1 November 2026 Sydney — P2 follow-up:** The formal 8511 tab is now accessible;
 both current API managers have receipts but no retained preview. Account quota
 requires user login/verification and fresh bounded-request consent. NewsData's
