@@ -192,3 +192,52 @@ processing controls; that runtime/UI qualification remains for the next step.
 No restart, inference, processing permission edit or attempt to reconstruct news
 from receipts was performed. Source code remains the tested 938c73d revision;
 this checkpoint changes non-article documentation only.
+
+
+## Third-preview selection and runtime diagnosis — 1 November 2026 Sydney
+
+The user selected the third current Marketaux preview and prohibited new news
+requests, external LLM calls, page refresh, tab closure and server restart. The
+formal tab was inspected through normal sidebar navigation only: all three
+previews, including the selected third one, remain in the session. Selection,
+text-scope and local-analysis controls are absent. No permission was entered or
+checked and no news text or screenshot containing article text was persisted.
+
+Observed version evidence: disk/origin/local was 43af714c5763601c4253aa962a861ca8f5686897;
+8511 PID 27264 started at 02:43:22 Sydney, before the selected-preview UI commit
+0c50164 at 03:35:39 Sydney. `.streamlit/config.toml` explicitly sets
+`fileWatcherType = "none"` and documents restart after source edits. Disk
+`news_source_ui.py` contains the controls at lines 129–156. These facts explain
+the observed UI as an older imported-module runtime; the exact loaded Git SHA
+is not directly verified and is not inferred solely from process start time.
+No watcher setting, source file or running process was changed to activate code
+while the existing unretained preview is at risk. Browser-controller state was
+reset to recover its handle without refreshing the page or restarting Streamlit.
+
+The current local queue API supports a source-free selected-preview checkpoint
+with local FinBERT. After explicit applicable rights, approved fields from the
+still-visible selected preview can be handed to that existing local queue
+without requesting news or replacing the 8511 process. This path has not been
+executed for the selected article; it does not establish formal UI activation.
+FinBERT snapshot, revision and installed runtime pins passed read-only checks,
+and its resource preflight passed. No weights were downloaded and no inference
+was run.
+
+Rights review: [Business Standard terms](https://www.business-standard.com/terms-conditions),
+Prohibited Use 1.1(3), address development/operation of AI systems, not only
+training; 1.1(5) addresses caching/archiving without prior written consent.
+[Marketaux terms](https://www.marketaux.com/tos) provide a limited personal
+noncommercial access/download basis and separately address third-party content;
+[its FAQ](https://www.marketaux.com/faq) does not establish a field-specific
+retention/NLP licence. These public pages do not resolve the user's applicable
+API-supplied headline/description entitlement. No jurisdictional or statutory
+exception, separate permission or downstream sublicence is assumed. The user
+was asked for an actual applicable basis, permitted fields and retention period.
+No publisher article body was fetched and no provider was contacted.
+
+This turn added zero news requests, originals, classifications, actual FinBERT
+analyses or external LLM calls. The prior 2/2 budget, ten request rows, 47
+originals, 83 analyses, four tasks, credentials and all 171 frozen files remain
+intact. Only normal persisted view preferences may change through sidebar
+navigation. Actual API-news Dashboard drill-down remains pending. Code is
+unchanged; exact 43af714 CI completed successfully (run 41224843519).
