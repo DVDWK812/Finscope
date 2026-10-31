@@ -44,43 +44,8 @@ def credential_editor(provider):
 
 
 def source_editor(store,c):
-    from .local_collectors import SOURCES
-    from .local_credentials import credential
-    from .local_news import LocalIngestionService
-    choices=[k for k,v in SOURCES.items() if v.get('enabled',True)]+['marketaux','newsdata','finnhub']
-    c['sources']=field('multiselect','Enabled sources','settings_sources',c['sources'],options=choices,
-        format_func=lambda k:SOURCES.get(k,{}).get('label',k))
-    c['limit']=int(field('number_input','Records per source','settings_limit',c['limit'],min_value=1,max_value=20))
-    service=LocalIngestionService(store)
-    for source in c['sources']:
-        s=SOURCES.get(source,{})
-        state=service.source_status(s.get('bucket','rba' if source.startswith('rba_') else source),configured=source in SOURCES or bool(credential(source,store=store)))
-        st.write(Verbatim(str(display(s.get('label',source)))+' · '+str(tr(state.state))))
-        if state.blocked:st.warning(str(tr(state.reason)))
-        if st.button('Modify configuration',key='settings_edit_'+source):
-            st.session_state['settings_edit_source']=source
-    source=st.session_state.get('settings_edit_source')
-    if source not in c['sources']:return
-    s=SOURCES.get(source)
-    st.subheader(t('Configure {source}',source=str(display(s.get('label',source) if s else source))))
-    if s:
-        st.caption(s['scope'])
-        st.link_button('Source use policy',s.get('terms_url','https://www.rba.gov.au/copyright/'))
-        return
-    from .news_key_ui import render as news_key_editor
-    news_key_editor(store,source)
-    p=c['source_permissions'].get(source,{})
-    reference=field('text_input','Storage/NLP permission reference','settings_permission_ref_'+source,p.get('reference',''),max_chars=500)
-    preview=field('checkbox','Permission includes local preview','settings_preview_'+source,p.get('preview',False))
-    retain=field('checkbox','Permission includes local storage','settings_retain_'+source,p.get('retain',False))
-    analyze=field('checkbox','Permission includes local NLP','settings_analyze_'+source,p.get('analyze',False))
-    c['source_permissions'][source]=dict(preview=preview,retain=retain,analyze=analyze,external=False,reference=reference)
-    b=c['budgets'].get(source,{})
-    day=field('date_input','Quota verification UTC date','settings_day_'+source,date.fromisoformat(b.get('utc_day',datetime.now(timezone.utc).date().isoformat())))
-    remaining=int(field('number_input','Verified request allowance for this UTC day (existing attempts count against it)','settings_budget_'+source,b.get('remaining',0),min_value=0,max_value=10000))
-    topic=field('selectbox','API topic','settings_topic_'+source,b.get('topic','technology'),options=['technology','healthcare','materials'])
-    symbol=field('text_input','Finnhub ticker','settings_ticker',b.get('symbol',''),max_chars=15) if source=='finnhub' else ''
-    c['budgets'][source]=dict(utc_day=day.isoformat(),remaining=remaining,topic=topic,symbol=symbol)
+    from .news_source_ui import render
+    render(store,c,field)
 
 
 def model_editor(store,c):
@@ -137,17 +102,20 @@ def render(store,q):
     with general:language_settings(store)
     with sources:source_editor(store,c)
     with models:model_editor(store,c)
-    c['source_permissions']={k:v for k,v in c['source_permissions'].items() if k in c['sources']}
-    c['budgets']={k:v for k,v in c['budgets'].items() if k in c['sources']}
+    c['source_permissions']={k:v for k,v in c['source_permissions'].items() if k in c['sources'] or k in ('marketaux','newsdata','finnhub')}
+    if c!=editable(q):st.info('Unsaved settings edits; save them in Settings before starting a task.')
+    elif saved(q):st.info('Editing a saved draft; the previous pipeline will not run silently.')
     if st.button('Save settings',key='settings_save',type='primary'):
         try:
             pending=save(q,c)
             if st.session_state.get('_external_api_edit'):
                 from .external_ui import save_external
                 save_external(store,st.session_state['_external_api_edit'])
-            st.session_state['settings_save_message']='Draft saved; complete the items below before running.' if pending else 'Settings saved. Connection checks happen separately.'
+            st.session_state['settings_save_message']='Draft saved; review and explicitly confirm the ready-source scope before updating.' if pending else 'Settings saved. Connection checks happen separately.'
+            st.rerun()
         except ValueError as error:st.error(str(error))
     if st.session_state.get('settings_save_message'):st.success(st.session_state['settings_save_message'])
     pending=issues(c,store=store)
-    for reason in pending:st.warning(tr(reason))
+    for reason in pending:
+        if not reason.startswith('Source setup incomplete:'):st.warning(tr(reason))
     diagnostics(store,q)

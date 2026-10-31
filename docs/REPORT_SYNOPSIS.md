@@ -198,3 +198,13 @@ pause. No real key changes or news/model requests. 496 offline tests (one POSIX-
 skip on Windows) plus isolated dry run pass; 16 existing data tables and 171 frozen
 hashes remain unchanged. Descriptor-relative temporary cleanup is also guarded.
 Provider authentication is not established by these offline checks.
+
+1 November 2026 Sydney: source cards now separate dated local-save evidence,
+exact-key-version API verification, role and last use. Preview and automatic NLP
+readiness differ; partial draft updates require explicit ready-source scope and
+never silently use the old pipeline. 519 offline tests (one POSIX-only Windows
+skip), dry run and isolated browser checks pass, including 390px layout and two
+isolated one-response simulations with no replay. Real inspection used only nonsecret metadata:
+no credential access or live news/model request. All 20 current production tables
+(heartbeat excluded) and 171 frozen hashes remain unchanged. Actual provider
+authentication for the new key slots remains untested.

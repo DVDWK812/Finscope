@@ -115,6 +115,9 @@ def css():
     [data-testid="stMetricLabel"] p{color:var(--fs-muted);font-size:.76rem}[data-testid="stMetricValue"]{color:var(--fs-text);font-size:1.8rem}
     .st-key-product_chart_sector,.st-key-product_chart_mix,.st-key-product_chart_time,.st-key-product_chart_heatmap,.st-key-product_map,.st-key-product_cloud,[class*="st-key-story_detail_"]{background:var(--fs-surface);border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1.1rem}
     .st-key-product_cloud{border-top:2px solid var(--fs-button)}
+    [class*="st-key-news_source_card_"]{background:var(--fs-surface)}
+    .st-key-news_source_cards p{overflow-wrap:anywhere}
+    @media(max-width:700px){.st-key-news_source_cards [data-testid="stHorizontalBlock"]{flex-direction:column}.st-key-news_source_cards [data-testid="stColumn"]{width:100%;flex:1 1 100%}}
     .fs-task{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem 1rem;padding:.8rem 1rem;background:var(--fs-surface);border:1px solid var(--fs-border);border-radius:12px;font-size:.8rem;color:var(--fs-muted)}
     .fs-task>span:first-child{font-weight:650}.fs-task>div{display:flex;gap:1rem;flex-wrap:wrap;margin-left:auto}.fs-task b{color:var(--fs-text);font-size:.95rem}
     .fs-news-copy,.fs-match-excerpt{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;color:var(--fs-text);font-size:.93rem}

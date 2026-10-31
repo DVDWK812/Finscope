@@ -51,22 +51,33 @@ def task_progress(store,show_diagnostics=True):
 
 
 def update_button(q):
-    from .settings_state import saved
+    from .settings_state import saved,editable
+    from .news_readiness import source_plan
     draft=saved(q)
     c=draft or q.config();task=q.get()
-    if draft:st.warning('Saved settings are a draft. Complete and save them in Settings before starting a task.')
-    st.button('Update & Analyze',type='primary',disabled=bool(draft) or not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
-    if c:st.caption(t('Update scope',sources=', '.join(c['sources']),model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else ''),limit=c['limit']))
+    expected=editable(q)
+    unsaved=st.session_state.get('_settings_edit',expected)!=expected
+    if unsaved:st.warning('Unsaved settings edits; save them in Settings before starting a task.')
+    ready,blocked=source_plan(q.store,c) if c else ([],{})
+    if draft:st.info('Saved draft selected; the old configuration will not be run.')
+    for source,state in blocked.items():
+        from .news_source_ui import conditions
+        st.caption(Verbatim(source+' · '+str(conditions(state))))
+    scope=json.dumps([c,ready],sort_keys=True)
+    if st.session_state.get('_ready_scope')!=scope:
+        from .news_key_ui import clear_input
+        clear_input('product_ready_consent');st.session_state['_ready_scope']=scope
+        st.session_state.pop('_product_submit_error',None)
+    consent=st.checkbox('Use only the ready sources shown below',key='product_ready_consent') if c and (draft or blocked) else True
+    model_ready=c and c['model'] in ('Local FinBERT','Local LM Studio','Local Ollama') and (c['model']=='Local FinBERT' or bool(c.get('model_id')))
+    def submit():
+        try:q.submit_ready(confirmed=True,expected_sources=ready,expected_config=expected)
+        except ValueError as error:st.session_state['_product_submit_error']=str(error)
+    st.button('Update & Analyze',type='primary',disabled=unsaved or not consent or not ready or not model_ready or bool(task and task['status'] in ACTIVE),on_click=submit,key='product_update')
+    if st.session_state.get('_product_submit_error'):st.error(st.session_state['_product_submit_error'])
+    if c:st.caption(t('Update scope',sources=', '.join(ready) or str(tr('None')),model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else ''),limit=c['limit']))
     else:st.info('Complete source and local model setup in Settings once, then use 更新并分析.')
     if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
-    if c:
-        from .local_collectors import SOURCES
-        from .local_news import LocalIngestionService
-        service=LocalIngestionService(q.store)
-        for source in c['sources']:
-            bucket=SOURCES.get(source,{}).get('bucket','rba' if source.startswith('rba_') else source)
-            status=service.source_status(bucket,configured=True)
-            if status.blocked:st.warning(source+' · '+status.reason+'; other permitted sources can continue.')
 
 
 def settings(store,q):
@@ -210,7 +221,8 @@ def main():
         page=st.radio('Workspace',PAGES,key='product_page',label_visibility='collapsed',width='stretch')
         st.caption('Local SQLite · persistent originals and model history')
     st.title(page)
-    task_progress(store,page!='Settings')
+    task=q.get()
+    if page!='Settings' or task and task['status'] in ACTIVE:task_progress(store,page!='Settings')
     if page=='Settings':
         save_view(store,dict(st.session_state));settings(store,q);return
     for key,value in st.session_state.get('product_view_preferences',{}).items():

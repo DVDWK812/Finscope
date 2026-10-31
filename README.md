@@ -65,8 +65,10 @@ live availability depends on your local service/account.
 
 Settings has three tabs: General, News sources and Analysis models, with retained
 manual actions and logs under Advanced & diagnostics. Configuration can be saved
-offline. Incomplete drafts preserve the last complete pipeline but block new jobs
-until completed; saving settings never fetches news or calls a model.
+offline. Incomplete drafts preserve the last complete pipeline. Updates use the
+latest saved draft, with explicit confirmation of its ready-source subset; they
+never silently run the old pipeline. Unsaved form edits block updates until saved.
+Saving settings never fetches news or calls a model.
 
 **DeepSeek** is a separate, controlled interface test under Analysis models →
 External API. Configure `DEEPSEEK_API_KEY` in the ignored project `.env` or its
@@ -133,5 +135,18 @@ provider/account quota, daily cap, spacing, failure/Retry-After holds and study
 ledger protections; NewsData's manual pause remains. A 403 is a permission or
 subscription restriction, not proof of an invalid key. Verification uses fake
 credentials and offline transports, with no real news API request.
+
+Three source cards are always visible, even for disabled sources. Each separates
+local save/readback evidence, exact-version API verification, primary/backup role
+and last use. Default inspection reads only nonsecret SQLite metadata. Legacy key
+existence stays unconfirmed until an explicit local check; it is never inferred
+from a different key's historical HTTP 200. The selected-key action menu contains
+promotion/replacement and separately confirmed availability/deletion operations.
+
+API preview and automatic fetch-and-analysis have separate readiness conditions.
+An explicit local check reads no network; an explicitly confirmed API check may
+consume one preview request through the unchanged reservations and provider holds,
+without saving articles or running models. An API verification is not a grant of
+publisher storage/NLP rights. NewsData remains manually paused.
 
 This local-product task uses the explicitly requested `local` branch and isolated worktree; the concurrent web task keeps its original `main` checkout. No PR or merge is opened. No GDELT retry/task recreation, challenge tuning/rescoring, Moodle access or coursework submission. Internal target: 31 October; the official deadline remains user-confirmed, with the historical conflicting values preserved in [assessment notes](docs/ASSESSMENT_VERIFICATION.md).

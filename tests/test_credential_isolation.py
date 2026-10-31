@@ -215,16 +215,17 @@ class CredentialUIIsolationTests(unittest.TestCase):
         with patch('finscope.windows_credentials.c.WinDLL', create=True) as native:
             app = AppTest.from_file(str(safety.PROJECT / 'streamlit_app.py'), default_timeout=20)
             app.session_state['product_page'] = 'Settings'; app.run()
-            app.multiselect(key='settings_sources').set_value(['marketaux']).run()
             app.button(key='settings_edit_marketaux').click().run()
             from finscope.news_keys import NewsKeyRegistry
             for index,value in enumerate(('AUTHORED-UI-FIRST', 'AUTHORED-UI-REPLACEMENT')):
                 if index==0:
                     app.button(key='settings_secret_marketaux_edit').click().run()
                     app.text_input(key='news_keys_marketaux_new_name').set_value('Authored main').run()
+                    app.checkbox(key='news_keys_marketaux_new_primary').check().run()
                 else:
                     slot=NewsKeyRegistry(store).selection('marketaux')['slot_id']
-                    app.button(key='news_keys_marketaux_manage_'+slot).click().run()
+                    app.selectbox(key='news_keys_marketaux_selected').set_value(slot).run()
+                    app.selectbox(key='news_keys_marketaux_action_'+slot).set_value('Replace key').run()
                     app.button(key='news_keys_marketaux_replace_'+slot).click().run()
                 app.text_input(key='settings_secret_marketaux').set_value(value).run()
                 app.button(key='settings_secret_marketaux_save').click().run()
@@ -241,7 +242,6 @@ class CredentialUIIsolationTests(unittest.TestCase):
         save_credential('marketaux', 'AUTHORED-PRIOR-KEY')
         app = AppTest.from_file(str(safety.PROJECT / 'streamlit_app.py'), default_timeout=20)
         app.session_state['product_page']='Settings'; app.run()
-        app.multiselect(key='settings_sources').set_value(['marketaux']).run()
         app.button(key='settings_edit_marketaux').click().run()
         app.button(key='settings_secret_marketaux_edit').click().run()
         app.text_input(key='news_keys_marketaux_new_name').set_value('Authored replacement').run()

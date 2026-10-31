@@ -19,24 +19,16 @@ def editable(queue):
 
 
 def issues(config,*,store=None):
-    from .local_credentials import credential
     result=[]
     if not config['sources']:result.append('Select at least one news source.')
     if config['model']=='OpenAI API':result.append('External API is manual only; automatic updates require a local model.')
     elif config['model'] in ('Local LM Studio','Local Ollama') and not config.get('model_id'):
         result.append('Choose a local model ID before running.')
-    today=datetime.now(timezone.utc).date().isoformat()
     for source in config['sources']:
         if source not in ('marketaux','newsdata','finnhub'):continue
-        if not (credential(source,store=store) if store is not None else credential(source)):
-            result.append('Configure credentials for {source}.'.format(source=source))
-        p=config.get('source_permissions',{}).get(source,{})
-        if not all(p.get(k) for k in ('preview','retain','analyze','reference')):
-            result.append('Confirm preview, storage and NLP permission for {source}.'.format(source=source))
-        b=config.get('budgets',{}).get(source,{})
-        if b.get('utc_day')!=today or not b.get('remaining'):
-            result.append('Verify the current UTC-day request allowance for {source}.'.format(source=source))
-        if source=='finnhub' and not b.get('symbol'):result.append('Choose the Finnhub ticker.')
+        from .news_readiness import source_readiness
+        missing=source_readiness(store,source,config)['missing'] if store is not None else ['local']
+        if set(missing)-{'hold','enabled'}:result.append('Source setup incomplete: '+source)
     return result
 
 
@@ -50,7 +42,7 @@ def save(queue,config):
     candidate={**c,'sources':c.get('sources') or ['abs_html'],'model':'Local FinBERT' if c['model']=='OpenAI API' else c['model']}
     validate_config(candidate)
     from .credential_store import NEWS_PROVIDERS
-    if any(p in NEWS_PROVIDERS for p in c['sources']):
+    if (set(c['sources'])|set(c.get('source_permissions',{})))&set(NEWS_PROVIDERS):
         from .news_keys import NewsKeyRegistry
         NewsKeyRegistry(queue.store).reject_secret_text(json.dumps(c))
     pending=issues(c,store=queue.store)

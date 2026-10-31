@@ -32,7 +32,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual([x.label for x in app.tabs],['General','News sources','Analysis models'])
         self.assertEqual(sum(s.key=='ui_language_choice' for s in app.selectbox),1)
         self.assertFalse(any(h.value=='Settings / Help' for h in app.title))
-        self.assertEqual([x.label for x in app.expander],['Advanced & diagnostics'])
+        self.assertEqual([x.label for x in app.expander],['Collection settings','Advanced & diagnostics'])
         self.assertFalse(any(x.key.startswith('settings_secret_') for x in app.text_input))
     def test_complete_offline_model_can_save_without_connection_load_or_jobs(self):
         config={**editable(self.q),'model':'Local LM Studio','model_id':'installed/actual-id'}
@@ -54,7 +54,7 @@ class SettingsTests(unittest.TestCase):
                 save(self.q,{**editable(self.q),**extra})
         self.assertIsNone(saved(self.q));self.assertEqual(self.q.config(),C)
     def test_current_source_only_fields_and_key_input_requires_edit(self):
-        app=self.app();app.multiselect(key='settings_sources').set_value(['marketaux','finnhub']).run()
+        app=self.app()
         app.button(key='settings_edit_marketaux').click().run()
         self.assertFalse(any(x.key=='settings_ticker' for x in app.text_input))
         self.assertFalse(any(x.key.startswith('settings_secret_') for x in app.text_input))
@@ -79,10 +79,11 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(app.selectbox(key='pipeline_lmstudio_model__zh-CN').value,'installed/actual-id')
         self.assertEqual(self.q.config()['limit'],3);self.assertIsNone(self.q.get())
     def test_key_save_clears_password_and_has_no_sql_or_request_side_effect(self):
-        app=self.app();app.multiselect(key='settings_sources').set_value(['marketaux']).run()
+        app=self.app()
         app.button(key='settings_edit_marketaux').click().run();app.button(key='settings_secret_marketaux_edit').click().run()
         app.text_input(key='news_keys_marketaux_new_name').set_value('Authored main').run()
         app.text_input(key='settings_secret_marketaux').set_value('UNIT-KEY-ONLY').run()
+        app.checkbox(key='news_keys_marketaux_new_primary').check().run()
         app.button(key='settings_secret_marketaux_save').click().run()
         from finscope.news_keys import NewsKeyRegistry
         self.assertEqual(NewsKeyRegistry(self.store).resolve('marketaux'),'UNIT-KEY-ONLY')

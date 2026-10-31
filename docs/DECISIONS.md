@@ -195,3 +195,20 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   Streamlit fixture with memory credentials and injected offline responses; its
   local listener exception permits no outgoing connection. No user's key is
   added, copied, replaced, deleted or inventoried during acceptance.
+
+- 1 November 2026 Sydney, news-source readiness: inspect only nonsecret metadata
+  by default. A managed version's creation records verified write/readback at that
+  time; distinguish this from an explicit current local read. Uninspected legacy
+  selection is unknown, not missing or safely readable. API evidence is keyed by
+  provider, slot and immutable credential reference, never borrowed from provider
+  history or a replaced key. New optional local-check rows contain fixed status
+  codes and timestamps only; credentials and request ledgers are not rewritten.
+- Keep one primary-key API-preview action, separately confirmed and rechecked
+  against preview rights, current account allowance, ticker and every existing
+  hold. It makes at most one request and saves no articles; storage/NLP rights are
+  additional conditions for automatic processing. No live checks were authorized
+  or executed in this milestone.
+- Saved incomplete drafts can run only an explicitly reviewed ready-source subset
+  of that draft. Unsaved edits and changed saved scope block submission; default
+  submit still rejects drafts. Pin slot/version IDs as before and keep worker
+  checks unchanged. A past blocked task is not a current source-connection state.

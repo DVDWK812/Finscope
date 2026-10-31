@@ -647,3 +647,46 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   mocked cross-platform boundary test and an actual POSIX nested-cleanup test.
   Final local suite: 496 tests, one POSIX-only skip on Windows; dry run passes.
   Real production path and native credential blocks remain mandatory.
+
+- 1 November 2026 Sydney, news-source UX/readiness (baseline `662aada`): replaced
+  the enabled-source-only list with three compact API cards and one managed source
+  panel. Collection limits appear once. One selected-key menu replaces stacked
+  controls; availability/deletion have separate confirmations. English/Chinese,
+  both themes and phone wrapping use the existing presentation layer.
+- Added metadata-only key evidence and shared preview/automatic source preflight.
+  Saved/readback, API verification, role and last use are independent; API evidence
+  belongs to an exact credential version. Explicit local check stores no secret;
+  explicit one-request API preview retains all existing holds and rights gates.
+  Ready-source submission reviews the latest saved draft, never the old pipeline,
+  and refuses stale scope or unsaved UI edits. No provider safeguard was relaxed.
+- 519 offline tests pass locally (one POSIX-only skip on Windows), plus isolated
+  benchmark dry run. New regressions cover nine fake keys, no implicit credential
+  reads, per-version evidence, preview versus NLP rights, paused/invalid primary,
+  stale consent, partial drafts and no automatic replay. Existing privacy and
+  masked-field tests were adapted to the single management entry, not removed.
+- Browser observation used temporary SQLite/memory credentials: three sources
+  with one primary/two backups each, a local check and injected API responses,
+  promotion without inherited verification, replacement with immediate safe-save
+  notice and cleared password, and refresh with the same single request row in
+  each of two isolated sessions (two simulated checks total, zero live checks).
+  Invalid NewsData primary plus backup promotion retained its manual pause.
+  Four language/theme combinations were checked; actual 390x844 CSS viewport
+  measured scrollWidth=390 with vertically stacked cards. Screenshots are local.
+  No MutationObserver/component error appeared; one WebSocket 1006 warning came
+  from the intentional fixture-server restart, not a source/model request.
+- Real-application inspection was read-only, with credential/.env/native access
+  patched to fail. Only stored slot roles, save evidence, request state and current
+  conditions were inspected; legacy readability was deliberately not asserted.
+  All 20 existing production tables (heartbeat excluded), 47 originals, 83 analysis
+  rows, seven news requests, four tasks and 171 frozen hashes are unchanged. No
+  real credential value was read or changed; no news/model request was dispatched.
+- Follow-up save regression: retain typed permissions/budgets for disabled API
+  sources without enabling them or adding them to a job. Preserve the strict
+  known-provider/typed schema and apply secret rejection to disabled profiles as
+  well. Parameter edits update the shared readiness state, and successful Save
+  rerenders its status immediately. Regression verifies persistence in a new UI
+  session, zero requests and no task creation.
+  Latest-code browser verification saved a disabled source's preview-only profile,
+  refreshed it and made one of the two simulated checks above; refreshed request
+  count stayed one, tasks stayed zero and that fresh session had no console
+  warning/error. Earlier intentional-server-restart warning remains qualified above.

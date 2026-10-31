@@ -109,7 +109,7 @@ def validate_config(config):
     if c.get('classifier_llm') and c['model']!='Local LM Studio':
         raise ValueError('Classification enhancement must reuse the selected LM Studio model')
     for source,p in c.get('source_permissions',{}).items():
-        if source not in c['sources'] or not isinstance(p,dict) or set(p)!={'preview','retain','analyze','external','reference'}:
+        if (source not in c['sources'] and source not in {'marketaux','newsdata','finnhub'}) or not isinstance(p,dict) or set(p)!={'preview','retain','analyze','external','reference'}:
             raise ValueError('Invalid source permission')
         if any(type(p[x]) is not bool for x in ('preview','retain','analyze','external')) or not isinstance(p['reference'],str) or len(p['reference'])>500:
             raise ValueError('Invalid source permission')
@@ -140,6 +140,9 @@ class TaskQueue:
         return json.loads(row[0]) if row else None
     def configure(self,config):
         c=validate_config(config)
+        from .news_keys import NewsKeyRegistry
+        if (set(c['sources'])|set(c.get('source_permissions',{})))&{'marketaux','newsdata','finnhub'}:
+            NewsKeyRegistry(self.store).reject_secret_text(json.dumps(c))
         c.pop('news_key_slots',None)
         with closing(self.store.connect()) as db:
             db.execute("INSERT OR REPLACE INTO product_settings VALUES ('pipeline',?)",(json.dumps(c),))
@@ -148,9 +151,29 @@ class TaskQueue:
         from .settings_state import guard_submit
         guard_submit(self)
         c=validate_config(config or self.config())
+        return self._enqueue(c)
+    def submit_ready(self,*,confirmed=False,expected_sources=None,expected_config=None):
+        if confirmed is not True:raise ValueError('Confirm the ready-source scope before starting')
+        from .settings_state import editable
+        from .news_readiness import source_plan
+        c=editable(self)
+        if expected_config is not None and c!=expected_config:
+            raise ValueError('Saved settings changed; review the current source scope before starting')
+        if (c['model'] not in ('Local FinBERT','Local LM Studio','Local Ollama') or
+                c['model']!='Local FinBERT' and not c.get('model_id')):
+            raise ValueError('Complete the saved local model selection before starting')
+        ready,blocked=source_plan(self.store,c)
+        if expected_sources is not None and ready!=expected_sources:
+            raise ValueError('Source readiness changed; review the current scope before starting')
+        if not ready:raise ValueError('No selected source is ready; review News sources')
+        c['sources']=ready
+        c['source_permissions']={p:v for p,v in c.get('source_permissions',{}).items() if p in ready}
+        c['budgets']={p:v for p,v in c.get('budgets',{}).items() if p in ready}
+        return self._enqueue(validate_config(c))
+    def _enqueue(self,c):
         from .credential_store import NEWS_PROVIDERS
         from .news_keys import NewsKeyRegistry
-        registry=NewsKeyRegistry(self.store) if any(p in NEWS_PROVIDERS for p in c['sources']) else None
+        registry=NewsKeyRegistry(self.store) if (set(c['sources'])|set(c.get('source_permissions',{}))) & set(NEWS_PROVIDERS) else None
         if registry:registry.reject_secret_text(json.dumps(c))
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
