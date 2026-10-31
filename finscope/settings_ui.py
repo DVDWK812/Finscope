@@ -54,7 +54,7 @@ def source_editor(store,c):
     service=LocalIngestionService(store)
     for source in c['sources']:
         s=SOURCES.get(source,{})
-        state=service.source_status(s.get('bucket','rba' if source.startswith('rba_') else source),configured=source in SOURCES or bool(credential(source)))
+        state=service.source_status(s.get('bucket','rba' if source.startswith('rba_') else source),configured=source in SOURCES or bool(credential(source,store=store)))
         st.write(Verbatim(str(display(s.get('label',source)))+' · '+str(tr(state.state))))
         if state.blocked:st.warning(str(tr(state.reason)))
         if st.button('Modify configuration',key='settings_edit_'+source):
@@ -67,7 +67,8 @@ def source_editor(store,c):
         st.caption(s['scope'])
         st.link_button('Source use policy',s.get('terms_url','https://www.rba.gov.au/copyright/'))
         return
-    credential_editor(source)
+    from .news_key_ui import render as news_key_editor
+    news_key_editor(store,source)
     p=c['source_permissions'].get(source,{})
     reference=field('text_input','Storage/NLP permission reference','settings_permission_ref_'+source,p.get('reference',''),max_chars=500)
     preview=field('checkbox','Permission includes local preview','settings_preview_'+source,p.get('preview',False))
@@ -147,6 +148,6 @@ def render(store,q):
             st.session_state['settings_save_message']='Draft saved; complete the items below before running.' if pending else 'Settings saved. Connection checks happen separately.'
         except ValueError as error:st.error(str(error))
     if st.session_state.get('settings_save_message'):st.success(st.session_state['settings_save_message'])
-    pending=issues(c)
+    pending=issues(c,store=store)
     for reason in pending:st.warning(tr(reason))
     diagnostics(store,q)

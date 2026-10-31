@@ -56,15 +56,15 @@ class Worker:
         rights.require('preview');rights.require('retain');rights.require('analyze')
         budget=c.get('budgets',{}).get(source,{})
         if budget.get('utc_day')!=utcnow().date().isoformat():raise FetchBlocked('Current UTC-day quota attestation is missing or expired')
-        from .local_credentials import credential
-        key=credential(source)
-        if not key:raise FetchBlocked('Project .env / Windows credential missing for '+source)
         # Remaining is an account attestation, not permission to repeat it forever.
         with closing(self.store.connect()) as db:
             used=db.execute('SELECT count(*) FROM local_requests WHERE provider=? AND substr(reserved_at,1,10)=?',(source,budget['utc_day'])).fetchone()[0]
         remaining=budget['remaining']-used
         if remaining<=0:raise FetchBlocked('Attested UTC-day request budget exhausted')
-        result,items=service.fetch(source,budget['topic'],api_key=key,rights=rights,remaining=remaining,
+        from .news_keys import NewsKeyRegistry,CURRENT
+        registry=NewsKeyRegistry(self.store)
+        selection=c.get('news_key_slots',{}).get(source,CURRENT)
+        result,items=registry.fetch(service,source,budget['topic'],selection=selection,rights=rights,remaining=remaining,
                                    symbol=budget.get('symbol') or None,explicit=True)
         if result.status!='ok':raise FetchBlocked('Source request failed; protected provider ledger retained')
         return items[:c['limit']]

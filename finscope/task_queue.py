@@ -77,10 +77,19 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key'}
+    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
+    if 'news_key_slots' in c:
+        from .news_keys import validate_ref
+        from .credential_store import NEWS_PROVIDERS
+        if not isinstance(c['news_key_slots'],dict) or set(c['news_key_slots'])-set(NEWS_PROVIDERS):raise ValueError('Invalid news key selection')
+        for ref in c['news_key_slots'].values():
+            if ref is None:continue
+            if not isinstance(ref,dict) or set(ref)!={'slot_id','credential_ref'}:raise ValueError('Invalid news key selection')
+            validate_ref(ref['slot_id']);validate_ref(ref['credential_ref'])
+            if (ref['slot_id']=='legacy')!=(ref['credential_ref']=='legacy'):raise ValueError('Invalid news key selection')
     if (not isinstance(c.get('sources'),list) or not (c['sources'] or c.get('article_ids')) or len(c['sources'])>8
             or any(s not in {*SOURCES,'marketaux','newsdata','finnhub'} for s in c['sources'])):
         raise ValueError('Select registered sources')
@@ -131,6 +140,7 @@ class TaskQueue:
         return json.loads(row[0]) if row else None
     def configure(self,config):
         c=validate_config(config)
+        c.pop('news_key_slots',None)
         with closing(self.store.connect()) as db:
             db.execute("INSERT OR REPLACE INTO product_settings VALUES ('pipeline',?)",(json.dumps(c),))
             db.execute("DELETE FROM product_settings WHERE name='pipeline_draft'");db.commit()
@@ -138,10 +148,15 @@ class TaskQueue:
         from .settings_state import guard_submit
         guard_submit(self)
         c=validate_config(config or self.config())
+        from .credential_store import NEWS_PROVIDERS
+        from .news_keys import NewsKeyRegistry
+        registry=NewsKeyRegistry(self.store) if any(p in NEWS_PROVIDERS for p in c['sources']) else None
+        if registry:registry.reject_secret_text(json.dumps(c))
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
             row=db.execute("SELECT id FROM product_tasks WHERE status IN ('queued','running')").fetchone()
             if row:return row[0],False
+            if registry:c['news_key_slots']=registry.pin(c['sources'],db)
             identity=uuid4().hex;stamp=now()
             db.execute('INSERT INTO product_tasks(id,status,snapshot,stage,counts,created,updated) VALUES (?,?,?,?,?,?,?)',
                        (identity,'queued',json.dumps(c),'queued',json.dumps(dict(new=0,duplicates=0,classified=0,analyzed=0,failed=0,skipped=0)),stamp,stamp))

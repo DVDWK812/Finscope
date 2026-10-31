@@ -41,14 +41,30 @@ def save_credential(provider, value):
     vault_key(provider, value)
 
 
-def credential(provider):
+def credential(provider, *, store=None):
     from .api_sources import local_credentials
     validate_provider(provider)
+    if store is not None and provider in ('marketaux','finnhub','newsdata'):
+        from .news_keys import NewsKeyRegistry,NewsKeyError
+        from contextlib import closing
+        with closing(store.connect()) as db:managed=db.execute("SELECT 1 FROM sqlite_master WHERE name='news_key_slots'").fetchone()
+        if managed:
+            try:return NewsKeyRegistry(store).resolve(provider)
+            except NewsKeyError:return ''
     return vault_key(provider) or local_credentials().get(ENV_KEYS[provider], '')
 
 
-def credential_state(provider, *, ui_key_present=False, use_env=True, read_env=None, env_path=None):
+def credential_state(provider, *, ui_key_present=False, use_env=True, read_env=None, env_path=None,store=None):
     validate_provider(provider)
+    if store is not None and provider in ('marketaux','finnhub','newsdata') and use_env and not ui_key_present:
+        from contextlib import closing
+        with closing(store.connect()) as db:managed=db.execute("SELECT 1 FROM sqlite_master WHERE name='news_key_slots'").fetchone()
+        if managed:
+            from .news_keys import NewsKeyRegistry,LEGACY
+            registry=NewsKeyRegistry(store);selection=registry.selection(provider)
+            if selection is None or selection['slot_id']!=LEGACY:
+                present=registry.configured(provider) if selection else False
+                return {'present':present,'variable':ENV_KEYS[provider],'source':'Managed primary news key' if present else 'No enabled primary news key'}
     vault = bool(use_env and vault_key(provider))
     present = ui_key_present or vault or bool(use_env and (read_env or environment_credentials)().get(ENV_KEYS[provider]))
     return {'present': bool(present), 'variable': ENV_KEYS[provider],

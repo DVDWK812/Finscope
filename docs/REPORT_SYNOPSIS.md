@@ -189,3 +189,11 @@ Linux cleanup and Windows URI regressions. Production credential access,
 news/model requests: zero; 16 data tables and 171 frozen files remain unchanged.
 No claim of restoring a previously different Marketaux vault key is made; only
 the user can re-save it through the local masked editor if needed.
+
+31 October news multi-key refinement: named primary/backups for three news APIs,
+protected UUID credential versions, legacy compatibility and task-pinned nonsecret
+references; quota and all provider/study holds remain shared. Offline browser
+checks used six fake keys, four simulated dispatches and the retained NewsData
+pause. No real key changes or news/model requests. 494 offline tests plus isolated
+dry run pass; 16 existing data tables and 171 frozen hashes remain unchanged.
+Provider authentication is not established by these offline checks.

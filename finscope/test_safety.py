@@ -129,7 +129,12 @@ def _audit(event, args):
             caller = sys._getframe(1)
             socketpair = (event == 'socket.connect' and caller.f_code.co_name == 'socketpair'
                           and caller.f_globals.get('__name__') == 'socket')
-            if not socketpair:
+            # An explicit isolated Streamlit acceptance server may resolve its
+            # own loopback listener only. Outgoing connects remain forbidden.
+            port=os.environ.get('FINSCOPE_TEST_UI_PORT')
+            ui_listener=(event=='socket.getaddrinfo' and port in ('8512','8513','8514')
+                         and args[0]=='127.0.0.1' and str(args[1])==port)
+            if not socketpair and not ui_listener:
                 raise TestIsolationError('Test isolation blocked unmocked network access')
         elif event == 'subprocess.Popen':
             executable, command, cwd, env = args

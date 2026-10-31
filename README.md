@@ -117,4 +117,21 @@ log. No previously different vault value is claimed restored. Only the user can
 restore a different key through the local masked editor; no key enumeration,
 guessing, deletion or credential export is part of verification.
 
+Settings → News sources manages named Marketaux, Finnhub and NewsData.io keys:
+one enabled primary and optional backups. Passwords are held only in Windows
+Credential Manager; SQLite stores UUID references and nonsecret status metadata.
+Existing single-key targets and the project `.env` remain usable without silent
+migration or deletion. An explicit copy creates a separately verified managed key
+and keeps the original. Replacements are verified in a new protected target before
+switching references. Deleting a managed key requires confirmation and never
+deletes an original single-key target or `.env` entry.
+
+A newly submitted task records its selected slot/version IDs. Promoting a backup
+affects subsequent explicit tasks; existing tasks do not silently switch keys or
+retry failed requests. No-primary sources are skipped. All keys share the same
+provider/account quota, daily cap, spacing, failure/Retry-After holds and study
+ledger protections; NewsData's manual pause remains. A 403 is a permission or
+subscription restriction, not proof of an invalid key. Verification uses fake
+credentials and offline transports, with no real news API request.
+
 This local-product task uses the explicitly requested `local` branch and isolated worktree; the concurrent web task keeps its original `main` checkout. No PR or merge is opened. No GDELT retry/task recreation, challenge tuning/rescoring, Moodle access or coursework submission. Internal target: 31 October; the official deadline remains user-confirmed, with the historical conflicting values preserved in [assessment notes](docs/ASSESSMENT_VERIFICATION.md).

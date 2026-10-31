@@ -74,7 +74,7 @@ def api_source(store):
         collector_ui(store)
         return
     from .local_credentials import credential
-    configured=bool(credential(provider))
+    configured=bool(credential(provider,store=store))
     status = LocalIngestionService(store).source_status(provider, configured=configured)
     st.caption(Verbatim(f"{tr(status.state)} · {tr(status.reason)}"))
     st.caption('Key configured' if configured else 'Key not configured')
@@ -102,7 +102,8 @@ def api_source(store):
             if not preview or not quota:
                 raise FetchBlocked("Confirm local preview permission and current quota before Fetch")
             rights = ContentRights(preview=True, reference=f"Personal account preview attestation; {label} terms; downstream uses unverified")
-            result, items = LocalIngestionService(store).fetch(provider, topic, api_key=credential(provider),
+            from .news_keys import NewsKeyRegistry
+            result, items = NewsKeyRegistry(store).fetch(LocalIngestionService(store),provider, topic,
                             rights=rights, remaining=int(remaining), days=int(days), symbol=symbol, explicit=True)
             st.session_state["news_preview"] = items
             st.session_state["preview_saved"] = False

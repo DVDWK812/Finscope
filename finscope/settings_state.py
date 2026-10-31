@@ -18,7 +18,7 @@ def editable(queue):
     return deepcopy({**DEFAULT,**(saved(queue) or queue.config() or {})})
 
 
-def issues(config):
+def issues(config,*,store=None):
     from .local_credentials import credential
     result=[]
     if not config['sources']:result.append('Select at least one news source.')
@@ -28,7 +28,8 @@ def issues(config):
     today=datetime.now(timezone.utc).date().isoformat()
     for source in config['sources']:
         if source not in ('marketaux','newsdata','finnhub'):continue
-        if not credential(source):result.append('Configure credentials for {source}.'.format(source=source))
+        if not (credential(source,store=store) if store is not None else credential(source)):
+            result.append('Configure credentials for {source}.'.format(source=source))
         p=config.get('source_permissions',{}).get(source,{})
         if not all(p.get(k) for k in ('preview','retain','analyze','reference')):
             result.append('Confirm preview, storage and NLP permission for {source}.'.format(source=source))
@@ -48,7 +49,11 @@ def save(queue,config):
     # Validate the identical credential-free schema even for incomplete drafts.
     candidate={**c,'sources':c.get('sources') or ['abs_html'],'model':'Local FinBERT' if c['model']=='OpenAI API' else c['model']}
     validate_config(candidate)
-    pending=issues(c)
+    from .credential_store import NEWS_PROVIDERS
+    if any(p in NEWS_PROVIDERS for p in c['sources']):
+        from .news_keys import NewsKeyRegistry
+        NewsKeyRegistry(queue.store).reject_secret_text(json.dumps(c))
+    pending=issues(c,store=queue.store)
     with closing(queue.store.connect()) as db:
         if pending:
             db.execute("INSERT OR REPLACE INTO product_settings VALUES ('pipeline_draft',?)",(json.dumps(c),))

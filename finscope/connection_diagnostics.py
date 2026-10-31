@@ -10,10 +10,10 @@ from .local_news import LocalIngestionService, utcnow
 from .rate_limits import load_cooldowns
 
 
-def credential_report(provider, *, ui_key_present=False, use_env=True):
+def credential_report(provider, *, ui_key_present=False, use_env=True,store=None):
     from .local_credentials import credential_state
     return credential_state(provider,ui_key_present=ui_key_present,use_env=use_env,
-                            read_env=local_credentials,env_path=project_env_path())
+                            read_env=local_credentials,env_path=project_env_path(),store=store)
 
 
 def api_diagnostic(store, provider, *, ui_key_present=False, use_env=True, service=None):
@@ -21,7 +21,7 @@ def api_diagnostic(store, provider, *, ui_key_present=False, use_env=True, servi
         raise ValueError('Unsupported diagnostic provider')
     service = service or LocalIngestionService(store)
     now = service.clock().astimezone(timezone.utc)
-    credentials = credential_report(provider, ui_key_present=ui_key_present, use_env=use_env)
+    credentials = credential_report(provider, ui_key_present=ui_key_present, use_env=use_env,store=store)
     holds = []
 
     def hold(kind, record, status, trigger, until=None):

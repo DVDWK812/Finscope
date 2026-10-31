@@ -2,6 +2,17 @@
 from threading import RLock
 
 PROVIDERS = ('marketaux', 'newsdata', 'finnhub', 'openai', 'deepseek')
+NEWS_PROVIDERS = ('marketaux', 'finnhub', 'newsdata')
+
+
+def validate_slot(provider, slot_id):
+    from uuid import UUID
+    if provider not in NEWS_PROVIDERS or not isinstance(slot_id,str):
+        raise ValueError('Invalid news credential slot')
+    try:
+        if UUID(slot_id).hex != slot_id: raise ValueError
+    except (ValueError,AttributeError):
+        raise ValueError('Invalid news credential slot') from None
 
 
 def validate_provider(provider):
@@ -32,3 +43,16 @@ class MemoryCredentialStore:
 
     def __repr__(self):
         return '<MemoryCredentialStore>'
+
+    def read_slot(self, provider, slot_id):
+        validate_slot(provider,slot_id)
+        with self._lock: return self._values.get((provider,slot_id),'')
+
+    def write_slot(self, provider, slot_id, value):
+        validate_slot(provider,slot_id); validate_secret(value)
+        with self._lock: self._values[provider,slot_id]=value
+
+    def delete_slot(self, provider, slot_id, *, confirmed=False):
+        validate_slot(provider,slot_id)
+        if confirmed is not True: raise ValueError('Confirm deletion of this news key')
+        with self._lock: self._values.pop((provider,slot_id),None)

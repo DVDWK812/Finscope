@@ -62,5 +62,25 @@ class WindowsAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Windows credential read failed'):self.bindings.read('marketaux')
         self.api.CredFree.assert_called_once()
 
+    def test_uuid_slot_target_is_separate_and_delete_never_accepts_legacy_or_models(self):
+        from finscope.windows_credentials import target_name
+        slot='a'*32
+        self.assertEqual(target_name('marketaux'),'FinScope local / marketaux')
+        self.assertEqual(target_name('marketaux',slot),'FinScope local / marketaux/slots/'+slot)
+        self.bindings.delete_slot('marketaux',slot,confirmed=True)
+        self.api.CredDeleteW.assert_called_once_with('FinScope local / marketaux/slots/'+slot,1,0)
+        for provider,identity,confirmed in (('marketaux',None,True),('openai',slot,True),('deepseek',slot,True),('marketaux',slot,False)):
+            with self.assertRaises(ValueError):self.bindings.delete_slot(provider,identity,confirmed=confirmed)
+        self.assertEqual(self.api.CredDeleteW.call_count,1)
+
+    def test_slot_missing_and_delete_missing_are_idempotent_only_for_not_found(self):
+        self.api.CredReadW.return_value=False;self.api.CredDeleteW.return_value=False
+        self.bindings.last_error=lambda:1168
+        self.assertEqual(self.bindings.read('finnhub','a'*32),'')
+        self.bindings.delete_slot('finnhub','a'*32,confirmed=True)
+        self.bindings.last_error=lambda:5
+        with self.assertRaises(ValueError):self.bindings.read('finnhub','a'*32)
+        with self.assertRaises(ValueError):self.bindings.delete_slot('finnhub','a'*32,confirmed=True)
+
 
 if __name__ == '__main__':unittest.main()

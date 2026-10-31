@@ -615,3 +615,28 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   URI handling and all native credential guards remain intact.
   Final local regression is 466 tests plus isolated dry run, all passing; data
   hashes still match. Keep Linux matrix jobs independent for failure diagnosis.
+
+- 31 October news multi-key delivery: began at remote/local `1d803f2`, preserving
+  the newer credential-isolation fixes beyond the supplied `43bf529` baseline.
+  Added one compact Settings editor for named Marketaux/Finnhub/NewsData primary
+  and backup keys, enable/disable, verified replacement and confirmed managed-only
+  deletion. Legacy vault/`.env` entries are recognized without silent migration.
+  DeepSeek, OpenAI and model processing remain unchanged.
+- Guarded request resolution pins only slot/version IDs, checks existing source
+  holds before plaintext access, and never rotates/retries automatically. Added
+  primary concurrency, shared quota/day-cap, study/cooldown, unknown-outcome,
+  401-versus-403/429, failure-atomic storage, Windows namespace/deletion and UI
+  regressions. Existing tests retain privacy/request assertions.
+- Isolated real-browser observation: added two fake keys for each of the three
+  sources and promoted each backup. Four injected HTTP-200 empty responses (two
+  Marketaux, two Finnhub) used the pinned expected slots; NewsData remained paused
+  with no dispatch. Refresh preserved Chinese/light preferences and all primary
+  selections, with the request count still four. English/dark and Chinese/light
+  screenshots were saved locally; console warnings/errors were absent. These
+  are offline integration checks, not successful real-provider authentication.
+- Full local regression: 494 offline tests and isolated benchmark dry run passed.
+  Native credential calls and real news/model requests: zero. Read-only table and
+  file hashes match the prior preservation baseline: 16 production data tables
+  (worker heartbeat excluded) and all 171 frozen files. Production `8511` was not
+  restarted or modified; only the isolated acceptance process used the new UI.
+  The earlier credential incident's unverified prior-value limitation remains.

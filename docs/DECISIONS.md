@@ -177,3 +177,21 @@ change. See LOCAL_REDESIGN.md for actual evidence and interface/licence referenc
   security sandbox. Windows CI exercises mocked Win32 marshalling, not real vault
   reads/writes. Preserve the incident and unverified prior-value qualification;
   recovery of any different Marketaux key belongs to the user in the local editor.
+
+- 31 October news multi-key management: use news-provider UUID slots and a single
+  primary pointer, with immutable protected credential versions. Verify a newly
+  written target before publishing its reference; preserve old versions against
+  cross-store failures. Confirmed deletion removes only that managed slot's known
+  versions, never legacy/model targets or `.env`. A failed write may leave an
+  unused protected target; it is neither selected nor enumerated for cleanup.
+- Retain legacy selection unless the user explicitly changes it; no automatic
+  migration, backup rotation or retries. New task snapshots pin nonsecret slot
+  and version IDs. Worker reservations check rights, account budget and all
+  provider/study holds before resolving plaintext; a disabled/replaced snapshot
+  skips its source. Key count cannot increase quota. Store only fixed error codes:
+  401 marks that version invalid; 403/429 retain permission/rate-limit meaning.
+- Use the same mandatory memory/native-I/O guards for slot tests, including mocked
+  Windows deletion. Real-browser acceptance runs a visibly labeled temporary
+  Streamlit fixture with memory credentials and injected offline responses; its
+  local listener exception permits no outgoing connection. No user's key is
+  added, copied, replaced, deleted or inventoried during acceptance.

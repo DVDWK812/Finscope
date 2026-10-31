@@ -298,7 +298,7 @@ class LocalIngestionService:
             return SourceStatus("Available", "Last request succeeded; this is not a live connection probe", False, stamp, outcome)
         return SourceStatus("Untested", "Configured; no current successful connection check", False, stamp, outcome)
 
-    def _reserve(self, provider, remaining):
+    def _reserve(self, provider, remaining, *, credential_resolver=None):
         now = self.clock()
         if type(remaining) is not int or not 1 <= remaining <= 10000:
             raise FetchBlocked("Confirm a positive remaining account quota before Fetch")
@@ -307,12 +307,13 @@ class LocalIngestionService:
             db.execute("BEGIN IMMEDIATE")
             local_rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
             self._check_holds(provider, now, local_rows)
+            if credential_resolver is not None:credential_resolver(db,request_id)
             db.execute("INSERT INTO local_requests(id,provider,reserved_at,status) VALUES (?,?,?,?)",
                        (request_id, provider, now.isoformat(), "pending"))
             db.commit()  # Durable intent before dispatch, including transport failures.
         return request_id, now
 
-    def fetch(self, provider, topic, *, api_key, rights, remaining, days=2, symbol=None, explicit=False):
+    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False):
         if explicit is not True:
             raise FetchBlocked("An explicit Fetch action is required")
         if provider not in {"marketaux", "newsdata", "finnhub"}:
@@ -320,14 +321,23 @@ class LocalIngestionService:
         if provider == "newsdata":
             raise FetchBlocked("NewsData.io remains manually paused; no request was made")
         rights.require("preview")
-        if not isinstance(api_key, str) or not api_key.strip() or len(api_key) > 500:
+        if credential_resolver is not None and api_key is not None:
+            raise FetchBlocked('Choose one credential source for this request')
+        if credential_resolver is None and (not isinstance(api_key, str) or not api_key.strip() or len(api_key) > 500):
             raise FetchBlocked("Enter an API key or configure the project's local .env")
         if type(days) is not int or not 1 <= days <= 30:
             raise FetchBlocked("Choose a lookback between 1 and 30 days; account history is not guaranteed")
         # Validate inputs before consuming a reservation.
         from .api_sources import build_request
-        build_request(provider, topic, self.clock(), days, 3, api_key, symbol=symbol)
-        request_id, now = self._reserve(provider, remaining)
+        build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol)
+        def resolve(db,identity):
+            nonlocal api_key
+            from .news_keys import NewsKeyError
+            try:api_key=credential_resolver(db,identity)
+            except NewsKeyError as error:raise FetchBlocked(str(error)) from None
+            if not isinstance(api_key,str) or not api_key.strip() or len(api_key)>500:
+                raise FetchBlocked('Primary news credential is missing; this source was skipped')
+        request_id, now = self._reserve(provider, remaining,credential_resolver=resolve if credential_resolver is not None else None)
         result = fetch_provider(provider, topic, now=now, days=days, limit=3, timeout=15,
                                 api_key=api_key, symbol=symbol, transport=self.transport)
         # A malicious/upstream echo must never become a preview, SQL row or log.

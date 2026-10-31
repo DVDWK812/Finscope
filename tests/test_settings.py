@@ -81,9 +81,11 @@ class SettingsTests(unittest.TestCase):
     def test_key_save_clears_password_and_has_no_sql_or_request_side_effect(self):
         app=self.app();app.multiselect(key='settings_sources').set_value(['marketaux']).run()
         app.button(key='settings_edit_marketaux').click().run();app.button(key='settings_secret_marketaux_edit').click().run()
+        app.text_input(key='news_keys_marketaux_new_name').set_value('Authored main').run()
         app.text_input(key='settings_secret_marketaux').set_value('UNIT-KEY-ONLY').run()
         app.button(key='settings_secret_marketaux_save').click().run()
-        self.vault.assert_any_call('marketaux','UNIT-KEY-ONLY')
+        from finscope.news_keys import NewsKeyRegistry
+        self.assertEqual(NewsKeyRegistry(self.store).resolve('marketaux'),'UNIT-KEY-ONLY')
         self.assertFalse(any(x.key=='settings_secret_marketaux' for x in app.text_input))
         self.assertNotIn('settings_secret_marketaux',app.session_state)
         self.assertNotIn('UNIT-KEY-ONLY',str(app.session_state['_ui_mirrors']))

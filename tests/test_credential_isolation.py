@@ -54,6 +54,24 @@ class CredentialIsolationTests(unittest.TestCase):
         api.CredReadW.assert_not_called(); api.CredWriteW.assert_not_called()
         api.CredDeleteW.assert_not_called(); api.CredEnumerateW.assert_not_called()
 
+    def test_omitted_news_slot_mock_stops_before_native_read_write_or_delete(self):
+        api=Mock()
+        with patch('finscope.windows_credentials.c.WinDLL',create=True,return_value=api) as loader:
+            store=WindowsCredentialStore();slot='a'*32
+            for action in (lambda:store.read_slot('marketaux',slot),lambda:store.write_slot('marketaux',slot,'AUTHORED-ONLY'),
+                           lambda:store.delete_slot('marketaux',slot,confirmed=True)):
+                with self.assertRaises(safety.TestIsolationError):action()
+        loader.assert_not_called();api.CredReadW.assert_not_called();api.CredWriteW.assert_not_called();api.CredDeleteW.assert_not_called()
+
+    def test_offline_ui_listener_permission_cannot_allow_model_or_external_connections(self):
+        with patch.dict('os.environ',{'FINSCOPE_TEST_UI_PORT':'8512'}):
+            safety._audit('socket.getaddrinfo',('127.0.0.1',8512,0,1,0))
+            for event,args in (('socket.getaddrinfo',('api.deepseek.com',443,0,1,0)),
+                               ('socket.getaddrinfo',('127.0.0.1',1234,0,1,0)),
+                               ('socket.connect',(None,('127.0.0.1',11434))),
+                               ('socket.connect',(None,('127.0.0.1',8512)))):
+                with self.assertRaises(safety.TestIsolationError):safety._audit(event,args)
+
     def test_direct_unmocked_dll_access_is_also_blocked_before_loading(self):
         with self.assertRaisesRegex(safety.TestIsolationError, 'before loading'):
             ctypes.CDLL('Advapi32')
@@ -173,12 +191,19 @@ class CredentialUIIsolationTests(unittest.TestCase):
             app.session_state['product_page'] = 'Settings'; app.run()
             app.multiselect(key='settings_sources').set_value(['marketaux']).run()
             app.button(key='settings_edit_marketaux').click().run()
-            for value in ('AUTHORED-UI-FIRST', 'AUTHORED-UI-REPLACEMENT'):
-                app.button(key='settings_secret_marketaux_edit').click().run()
+            from finscope.news_keys import NewsKeyRegistry
+            for index,value in enumerate(('AUTHORED-UI-FIRST', 'AUTHORED-UI-REPLACEMENT')):
+                if index==0:
+                    app.button(key='settings_secret_marketaux_edit').click().run()
+                    app.text_input(key='news_keys_marketaux_new_name').set_value('Authored main').run()
+                else:
+                    slot=NewsKeyRegistry(store).selection('marketaux')['slot_id']
+                    app.button(key='news_keys_marketaux_manage_'+slot).click().run()
+                    app.button(key='news_keys_marketaux_replace_'+slot).click().run()
                 app.text_input(key='settings_secret_marketaux').set_value(value).run()
                 app.button(key='settings_secret_marketaux_save').click().run()
                 self.assertFalse(app.exception)
-                self.assertEqual(credential('marketaux'), value)
+                self.assertEqual(credential('marketaux',store=store), value)
                 self.assertNotIn('settings_secret_marketaux', app.session_state)
             self.assertNotIn(b'AUTHORED-UI',store.path.read_bytes())
             native.assert_not_called()
@@ -193,8 +218,9 @@ class CredentialUIIsolationTests(unittest.TestCase):
         app.multiselect(key='settings_sources').set_value(['marketaux']).run()
         app.button(key='settings_edit_marketaux').click().run()
         app.button(key='settings_secret_marketaux_edit').click().run()
+        app.text_input(key='news_keys_marketaux_new_name').set_value('Authored replacement').run()
         app.text_input(key='settings_secret_marketaux').set_value('AUTHORED-NEW-KEY').run()
-        with patch.object(credential_store(), 'write', side_effect=ValueError('AUTHORED-NEW-KEY')):
+        with patch.object(credential_store(), 'write_slot', side_effect=ValueError('AUTHORED-NEW-KEY')):
             app.button(key='settings_secret_marketaux_save').click().run()
         self.assertFalse(app.exception); self.assertEqual(credential('marketaux'),'AUTHORED-PRIOR-KEY')
         self.assertTrue(app.error); self.assertFalse(any('AUTHORED' in e.value for e in app.error))
