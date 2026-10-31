@@ -24,7 +24,7 @@ The local library is `reports/finscope_local.sqlite3` (ignored by Git); set `FIN
 ## Sources and permissions
 
 - **Marketaux:** user key, financial keyword feed, `group_similar=false`, at most 3 records/request on the free plan. Lookback filters do not guarantee free archive access.
-- **NewsData.io:** latest feed, approximately 48 hours, possible free-plan delay. Its existing manual pause remains active; the connector does not override it.
+- **NewsData.io:** latest feed, approximately 48 hours, possible free-plan delay. Headline/description are the adapter default. API `content` is separately supported only with explicit verified paid-plan and content-use references; a paid plan alone does not enable it. The existing manual pause remains active, including for paid access. See [current acceptance and account constraints](docs/P2_REAL_NEWS_ACCEPTANCE.md).
 - **Finnhub:** user key and company ticker. This is company news, not sector-wide coverage; historical entitlement depends on the account.
 - **Local sources:** fixed RBA RSS/HTML, ABS releases (CC BY 4.0) and NIST official news (unmarked public-information text; copyright exceptions apply). Automatic runs select at most 20 records/source: ABS uses ≤3 GETs including one permitted body, NIST ≤5 including up to three bodies. Legacy ABS index preview remains two GETs. No pagination, arbitrary URL crawling or retries; source attribution, text basis, raw date and exclusions persist. ACCC remains disabled after HTTP 403.
 

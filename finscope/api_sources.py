@@ -57,6 +57,39 @@ class Article:
     description: str
     timestamp: str
     timestamp_kind: str  # 'published' or 'first_seen'
+    body: str = field(default='', repr=False)
+    body_permission_reference: str = field(default='', repr=False)
+
+
+@dataclass(frozen=True)
+class NewsDataTextAccess:
+    """Explicit account evidence, separate from article storage/NLP grants.
+
+    Unknown/free access keeps headline/description only. A paid account alone
+    does not enable content: the caller must also supply its content-use basis.
+    No field here is transmitted to the provider except the opt-in filter.
+    """
+    plan: str = 'unknown'
+    include_body: bool = False
+    plan_reference: str = field(default='', repr=False)
+    body_permission_reference: str = field(default='', repr=False)
+
+    def validate(self):
+        if not isinstance(self.plan,str) or self.plan not in {'unknown','free','paid'} or type(self.include_body) is not bool:
+            raise ValueError('Invalid NewsData text access')
+        if any(not isinstance(v,str) or len(v)>500 for v in
+               (self.plan_reference,self.body_permission_reference)):
+            raise ValueError('Invalid NewsData access evidence')
+        if self.include_body and (self.plan!='paid' or not self.plan_reference.strip()
+                                  or not self.body_permission_reference.strip()):
+            raise ValueError('NewsData body access needs verified paid-plan and content permission references')
+        return self
+
+
+def _newsdata_access(provider,access):
+    if access is not None and (provider!='newsdata' or not isinstance(access,NewsDataTextAccess)):
+        raise ValueError('NewsData text access applies only to NewsData')
+    return (access or NewsDataTextAccess()).validate()
 
 
 @dataclass
@@ -159,8 +192,9 @@ def _published_datetime(value: Any) -> str:
         return ""
 
 
-def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
+def normalize(provider: str, payload: Any, *, newsdata_text_access=None) -> tuple[list[Article], int]:
     """Normalize successful provider responses; fail on unexpected JSON shapes."""
+    access=_newsdata_access(provider,newsdata_text_access)
     if provider == "gdelt":
         if not isinstance(payload, dict):
             raise APIError("Unexpected GDELT response shape")
@@ -224,13 +258,21 @@ def normalize(provider: str, payload: Any) -> tuple[list[Article], int]:
             kind = "published"
             desc = _text(row.get("summary"))
             source = _source(url, row.get("source"))
-        records.append(Article(provider, title, url, source, desc, ts, kind))
+        body='';body_reference=''
+        if provider=='newsdata' and access.include_body:
+            body=_text(row.get('content'))
+            if body.casefold().rstrip('.') in {'only available in paid plans','only available in paid plan','paid plans only'}:
+                body=''
+            if body:
+                body_reference='Paid plan: '+access.plan_reference+'; content use: '+access.body_permission_reference
+        records.append(Article(provider, title, url, source, desc, ts, kind,body,body_reference))
     return records, len(raw)
 
 
 def build_request(provider: str, topic: str, now: datetime, days: int, limit: int, key: str | None,
-                  *, symbol: str | None = None):
+                  *, symbol: str | None = None, newsdata_text_access=None):
     """Return (url, params, headers, query_mode, note). No network operation."""
+    access=_newsdata_access(provider,newsdata_text_access)
     if topic not in TOPICS:
         raise ValueError(f"Unsupported topic: {topic}")
     if provider not in PROVIDERS:
@@ -264,9 +306,13 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
     if provider == "newsdata":
         # Latest covers approximately 48 hours; archive is typically gated by plan.
         headers["X-ACCESS-KEY"] = str(key)
+        params={"q": keyword, "language": "en", "size": min(limit, 10), "timezone": "UTC"}
+        if access.include_body:
+            # This is the documented availability filter, not a body-page fetch.
+            params['full_content']=1
         return (
             "https://newsdata.io/api/1/latest",
-            {"q": keyword, "language": "en", "size": min(limit, 10), "timezone": "UTC"},
+            params,
             headers, "keyword",
             "Latest endpoint is approximately 48h coverage; do not interpret days as a guaranteed lookback.",
         )
@@ -293,7 +339,9 @@ def fetch_provider(
     transport: GetJSON = _http_get_json,
     api_key: str | None | object = _LOCAL_CREDENTIALS,
     symbol: str | None = None,
+    newsdata_text_access: NewsDataTextAccess | None = None,
 ) -> QueryResult:
+    _newsdata_access(provider,newsdata_text_access)
     if days < 1 or limit < 1 or timeout <= 0:
         raise ValueError("days, limit and timeout must be positive")
     if now is None:
@@ -305,7 +353,7 @@ def fetch_provider(
     if env_key and not key:
         return QueryResult(provider, topic, "not_run", "skipped", [],
                            note=f"Missing {env_key} in local .env", outcome="missing_credentials")
-    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol)
+    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol,newsdata_text_access=newsdata_text_access)
     started = time.perf_counter()
     http_status = None
     rate_headers = {}
@@ -315,7 +363,7 @@ def fetch_provider(
             http_status = payload.status_code
             rate_headers = payload.rate_limit_headers
             payload = payload.payload
-        items, raw_count = normalize(provider, payload)
+        items, raw_count = normalize(provider, payload,newsdata_text_access=newsdata_text_access)
     except APIError as exc:
         return QueryResult(provider, topic, query_mode, "failed", [],
                            latency_ms=round((time.perf_counter()-started)*1000, 1),

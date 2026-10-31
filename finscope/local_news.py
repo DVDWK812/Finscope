@@ -88,12 +88,20 @@ class NewsItem:
 
     @classmethod
     def from_article(cls, article, rights, *, now=None, company="", publication_date=""):
-        identity = (hashlib.sha256(json.dumps(asdict(article),sort_keys=True).encode()).hexdigest()[:32]
+        payload=asdict(article)
+        # Preserve legacy IDs for title/summary-only records.
+        if not article.body and not article.body_permission_reference:
+            payload.pop('body');payload.pop('body_permission_reference')
+        if article.body and not article.body_permission_reference.strip():
+            raise ValueError('API body text requires its content permission reference')
+        identity = (hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()[:32]
                     if article.url else uuid4().hex)
         return cls(identity, article.provider, article.title, article.source, article.url,
                    article.description, article.timestamp, article.timestamp_kind,
                    (now or utcnow()).isoformat(), tuple(classify_sectors(article.title+" "+article.description)),
-                   rights, publication_date, company)
+                   rights, publication_date, company,body=article.body,
+                   provenance=('API-supplied content; '+article.body_permission_reference if article.body
+                               else 'provider headline and available summary'))
 
 
 @dataclass(frozen=True)
@@ -313,7 +321,7 @@ class LocalIngestionService:
             db.commit()  # Durable intent before dispatch, including transport failures.
         return request_id, now
 
-    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False):
+    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False, newsdata_text_access=None):
         if explicit is not True:
             raise FetchBlocked("An explicit Fetch action is required")
         if provider not in {"marketaux", "newsdata", "finnhub"}:
@@ -329,7 +337,8 @@ class LocalIngestionService:
             raise FetchBlocked("Choose a lookback between 1 and 30 days; account history is not guaranteed")
         # Validate inputs before consuming a reservation.
         from .api_sources import build_request
-        build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol)
+        access_options={'newsdata_text_access':newsdata_text_access} if newsdata_text_access is not None else {}
+        build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol,**access_options)
         def resolve(db,identity):
             nonlocal api_key
             from .news_keys import NewsKeyError
@@ -339,7 +348,7 @@ class LocalIngestionService:
                 raise FetchBlocked('Primary news credential is missing; this source was skipped')
         request_id, now = self._reserve(provider, remaining,credential_resolver=resolve if credential_resolver is not None else None)
         result = fetch_provider(provider, topic, now=now, days=days, limit=3, timeout=15,
-                                api_key=api_key, symbol=symbol, transport=self.transport)
+                                api_key=api_key, symbol=symbol, transport=self.transport,**access_options)
         # A malicious/upstream echo must never become a preview, SQL row or log.
         if any(api_key in value for a in result.articles for value in asdict(a).values()):
             result = QueryResult(provider, topic, result.query_mode, "failed", [],

@@ -1,5 +1,14 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November 2026 Sydney — P2 follow-up:** The formal 8511 tab is now accessible;
+both current API managers have receipts but no retained preview. Account quota
+requires user login/verification and fresh bounded-request consent. NewsData's
+official paid/trial in-account multi-Key feature coexists with restrictive terms;
+the earlier blanket conclusion is qualified, not a pause release. Support a
+separate API body only with explicit paid entitlement and content-use evidence;
+default title/summary, original identities, manual pause and shared ledgers stay
+intact. See [follow-up evidence](P2_REAL_NEWS_ACCEPTANCE.md).
+
 **1 November 2026 Sydney — P2 retained API preview:** Add an explicit, one-article
 handoff to the existing source-free local FinBERT worker, narrowing text before
 durable writes and preserving source budgets/drafts. Existing Marketaux/Finnhub

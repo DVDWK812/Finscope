@@ -1,5 +1,59 @@
 # P2 real API news acceptance — 1 November 2026 Sydney
 
+## Follow-up from `0c50164` — formal session inspected
+
+Latest fetched remote and clean worktree at start were
+`0c50164ac3fca45190e20a74b8dae80bdf9c1307`. Browser control of the existing
+localhost:8511 tab now works. Both source managers were inspected without
+refreshing/restarting the app: each shows its historical HTTP-200 receipt, but
+neither shows News preview or selected-preview processing controls. The **current
+session has no usable retained Marketaux/Finnhub preview**. This establishes the
+current session state, not the contents of another browser's earlier session.
+
+The saved UTC 31 October budgets still each total one, with one existing request
+used. Marketaux's Account usage link was inspected in a separate tab and reached
+its login form; authenticated account allowance is not available to the agent.
+No local receipt or public plan limit is substituted for actual remaining quota.
+The original local permission/budget panel was expanded for the user without
+editing values. A fresh, legal single-request allowance and explicit confirmation
+were requested; no capture is dispatched while that confirmation is pending.
+After a capture the user must select the article, fields and actual storage/NLP
+basis locally. Current new API-news retained/classified/analyzed counts remain
+zero, and actual API-news Dashboard/Explorer drill-down remains pending.
+
+### NewsData correction and adapter scope
+
+The earlier categorical multi-Key statement below was incomplete. The official
+[multiple-Key article](https://newsdata.io/blog/multiple-api-key-newsdata-io/)
+describes up to five keys within one paid/trial account; downgraded free accounts
+lose created keys. This coexists with restrictive wording in the
+[terms](https://newsdata.io/terms). It does not establish this user's entitlement,
+permit multiple accounts or increase the shared account allowance. Clarify the
+actual subscription and applicable terms with the provider before resumption;
+keep the manual pause, headers/holds and existing keys unchanged.
+
+The [response schema](https://newsdata.io/documentation/response-object) distinguishes
+`description` (short description) and `content` (full content). The
+[latest endpoint](https://newsdata.io/documentation/latest-news-api) documents
+`full_content=1` as an availability filter, not a publisher-page fetch. The adapter
+now accepts typed `NewsDataTextAccess`: unknown/free and paid-without-opt-in keep
+headline/description only. Body opt-in requires both verified paid-plan entitlement
+and a separate content-use reference; invalid policy fails before dispatch. Only
+then is the filter set and real API `content` mapped to a separate `Article.body`,
+with its evidence reference. Missing/malformed/upgrade-placeholder content never
+becomes a body or an invented full text. `NewsItem` retains the separate body and
+reference for existing preprocessing, storage/NLP gates and content history.
+Existing title/summary-only article identities remain compatible.
+
+No paid-body Settings control is enabled while the actual account and manual
+pause are unresolved; passing a paid policy to the local service still fails
+before request reservation or credential resolution. Body mapping is authored
+offline adapter evidence, **not a real NewsData request or analysis**. Existing
+primary selection/explicit promotion remains sequential, with no automatic
+backup loop or retry and no bypass of source/account ledgers or unknown outcomes.
+
+The following sections preserve the earlier checkpoint and its qualifications.
+
 **Real-news end-to-end acceptance is incomplete.** Baseline and fetched
 `origin/local` at start: `b1e1ab8ab995f4b30db7fb529e3d70872afdc167`. Work uses the
 existing `local` worktree; the separate dirty `main` checkout remains preserved.
