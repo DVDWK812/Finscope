@@ -217,3 +217,6 @@ authentication for the new key slots remains untested.
 
 
 1 November 2026 Sydney, P2 follow-up: actual control of the formal 8511 tab is available; the current Marketaux/Finnhub managers show historical receipts but no retained previews. Fresh account allowance/one-capture confirmation and local article/field/rights selection remain pending, so no new API-news analysis or drill-down is claimed. The NewsData adapter now distinguishes summary defaults from explicitly evidenced paid API-body access; its manual pause remains. The official paid/trial in-account multiple-Key feature qualifies the earlier blanket interpretation of its restrictive terms. Details and primary sources are in [P2 follow-up](P2_REAL_NEWS_ACCEPTANCE.md).
+
+
+1 November 2026 Sydney, subsequent explicit single-capture consent: formal localhost:8511 made one new Marketaux request at 2026-10-31 17:27:04 UTC, HTTP 200, three returned/three retained session previews. The attested UTC-day total of two is consumed. Article selection and field-specific storage/NLP permission remain pending: zero new API originals, classifications or actual FinBERT analyses. Existing data and 171 frozen files remain unchanged; current formal processing controls are not rendered. See [the dated capture checkpoint](P2_REAL_NEWS_ACCEPTANCE.md#authorized-single-capture--1-november-2026-sydney).

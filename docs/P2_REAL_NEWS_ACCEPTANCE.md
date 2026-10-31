@@ -163,3 +163,32 @@ the existing 171 frozen files. Credentials, .env, assets, ledgers and real artic
 text stay local and outside commits. Tests/push/CI do not close real acceptance.
 Codex assisted implementation/verification; no frozen evaluation rerun, tuning,
 coursework submission or Moodle access occurred.
+
+
+## Authorized single capture — 1 November 2026 Sydney
+
+The user subsequently attested at least one lawful remaining Marketaux request,
+confirmed the current primary and a UTC 31 October total of two, and explicitly
+authorized one bounded preview with no retry, backup switch, retention or NLP.
+The saved UI/SQLite value was still one; the agent applied exactly the newly
+confirmed total of two through the existing Settings form and saved the draft,
+leaving storage/NLP/external grants false. No credential or primary changed.
+
+The formal 8511 action reserved at 2026-10-31T17:27:04.274583+00:00 and completed
+at 17:27:05.123136+00:00: **HTTP 200, three returned, three previewed**. Exactly
+one new request and its nonsecret receipt/key-use metadata were observed. The
+current expanded browser session contains all three actual title/description/
+source/time/link previews and is retained for user selection without reload.
+No article text, headline, publisher URL or raw response is copied into this
+record or other durable acceptance artifacts. A receipt-only screenshot stays
+local; the request budget is now 2/2 used. No additional fetch is authorized.
+
+All 47 originals, 83 analysis rows, four tasks, model-request/history/cache
+tables, earlier requests and 171 frozen files remain intact. New persisted API
+originals, classifications, actual FinBERT analyses and external LLM calls are
+zero. The user will separately select an article, fields and storage/NLP basis.
+The current formal preview did not render the repository's selected-preview
+processing controls; that runtime/UI qualification remains for the next step.
+No restart, inference, processing permission edit or attempt to reconstruct news
+from receipts was performed. Source code remains the tested 938c73d revision;
+this checkpoint changes non-article documentation only.
