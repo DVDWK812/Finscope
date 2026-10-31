@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;color:#253a37;background:transparent}
-button{font:inherit;cursor:pointer;border:1px solid #cad8d4;border-radius:5px;padding:6px;background:#fff;color:#203f37}
-button:focus-visible,[role=button]:focus-visible{outline:3px solid #18775f;outline-offset:2px}
-.scroll{overflow:auto;padding:8px 4px 14px}table{border-collapse:separate;border-spacing:3px;min-width:100%;font-size:12px}th{font-weight:500;white-space:nowrap}th:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:130px}
-.cell{min-width:55px;min-height:45px;width:100%;font-size:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px}.cell small{font-size:10px}.chosen{outline:3px solid #173f36;outline-offset:-3px}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;padding:6px}
-svg{display:block;background:#f7faf9;border:1px solid #e2ebe8;border-radius:10px;width:100%;height:430px;touch-action:pan-y}
-.node{cursor:pointer}.node:hover circle,.node:focus circle{stroke:#163f35;stroke-width:3}.label{font-size:11px;fill:#263f37;pointer-events:none}.edge{stroke:#b7cac3;stroke-width:1.5}.toolbar{display:flex;gap:8px;align-items:center;margin:5px 0}.toolbar span{font-size:12px;color:#526b63}
+:root{color-scheme:dark;--text:#e7edf6;--muted:#adbbce;--surface:#111d2e;--raised:#17263a;--border:#2c3b50;--accent:#70d6c0;--positive:#70d6b4;--neutral:#bcc9db;--negative:#f5a09a;--industry:#dfc38b;--candidate:#c8b5ed;--accent_surface:#183d3b}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;color:var(--text);background:transparent}
+button{font:inherit;cursor:pointer;border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:var(--raised);color:var(--text);min-height:36px}
+button:hover{border-color:var(--accent)}button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.scroll{overflow:auto;max-height:470px;padding:8px 4px 14px}table{border-collapse:separate;border-spacing:3px;min-width:100%;font-size:12px}th{font-weight:500;white-space:nowrap}th:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;min-width:130px}
+.cell{min-width:55px;min-height:45px;width:100%;font-size:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px}.cell small{font-size:10px}.chosen{outline:2px solid var(--accent);outline-offset:-2px}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;padding:8px 2px;color:var(--muted)}
+svg{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;height:430px;touch-action:pan-y}
+.node{cursor:pointer}.node:hover circle,.node:focus circle{stroke:var(--accent);stroke-width:3}.label{font-size:11px;fill:var(--text);pointer-events:none}.edge{stroke:var(--border);stroke-width:1.5}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0 12px}.toolbar span{font-size:12px;color:var(--muted)}
+.cloud{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:10px;padding:16px}.cloud button{border-color:transparent;color:var(--accent);background:transparent;overflow-wrap:anywhere}.cloud button:hover,.cloud .chosen{background:var(--accent_surface);border-color:var(--accent)}
 </style></head><body><main id="root"></main>
 <script>
 // Streamlit Components v1 protocol. No network, CDN, dynamic HTML or executable article content.
@@ -28,7 +30,7 @@ for(const sector of sectors){const row=el('tr');row.append(el('th',sector,{scope
 const state=!c.Articles?'No local news':!c.Analyzed?'Not analyzed':c.Positive===0&&c.Negative===0?'Neutral':`Balance ${c.Balance.toFixed(2)}`;
 const label=`${day} · ${sector} · ${c.Articles} articles · ${c.Analyzed} analyzed · ${state}`;
 const b=el('button',undefined,{class:'cell','data-id':id,'aria-label':label,title:label+` · Positive ${c.Positive}, Neutral ${c.Neutral}, Negative ${c.Negative} · ${c.Sample}`});
-let color='#f1f3f5';if(c.Articles&&!c.Analyzed)color='#fff0cf';else if(c.Articles){if(data.metric==='Article volume')color=`hsl(162 37% ${94-48*c.Articles/max}%)`;else color=c.Balance===0?'#d4dce6':c.Balance>0?`hsl(162 43% ${89-35*c.Balance}%)`:`hsl(354 55% ${89+35*c.Balance}%)`}
+let color='var(--raised)';if(c.Articles&&!c.Analyzed)color='#564426';else if(c.Articles){if(data.metric==='Article volume')color=`hsl(162 32% ${20+22*c.Articles/max}%)`;else color=c.Balance===0?'#526079':c.Balance>0?`hsl(162 43% ${25+18*c.Balance}%)`:`hsl(354 55% ${25-18*c.Balance}%)`}
 b.style.background=color;b.append(el('span',data.metric==='Article volume'?String(c.Articles):!c.Articles?'—':!c.Analyzed?'?':c.Balance.toFixed(2)),el('small',c.Articles?`n=${c.Analyzed}${c.Analyzed<3?' · low':''}`:'no news'));
 if(args.selected===id)b.classList.add('chosen');b.onclick=()=>choose(id);const td=el('td');td.append(b);row.append(td)}table.append(row)}wrap.append(table);root.append(wrap);
 root.append(el('div','Grey: no local news · Amber: not analyzed · Blue-grey: neutral balance · n: analyzed sample; n<3 low sample',{class:'legend'}));
@@ -43,11 +45,11 @@ for(const n of data.nodes){const[x,y]=point(n),g=svgEl('g',{transform:`translate
 const legend=el('div',undefined,{class:'legend'});for(const kind of [...new Set(data.nodes.map(n=>n.kind))]){const span=el('span',`● ${kind}`);span.style.color=colors[kind];legend.append(span)}root.append(legend);
 }
 function cloud(data){
-const panel=el('div',undefined,{role:'list','aria-label':'Keywords by distinct article count'});
-panel.style.cssText='display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:12px;padding:20px;border:1px solid #cad8d4;border-radius:14px';
-for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} articles`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;color:#27685e;border-color:#dce6e2`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
+const panel=el('div',undefined,{role:'list','aria-label':'Keywords by distinct article count',class:'cloud'});
+
+for(const term of data.terms){const b=el('button',`${term.term} (${term.count})`,{'aria-label':`${term.term}: ${term.count} articles`,'data-id':term.term});b.style.cssText=`font-size:${Math.min(30,15+term.count*2)}px;font-weight:${term.count>2?600:400}`;b.onclick=()=>choose(term.term);if(args.selected===term.term)b.classList.add('chosen');panel.append(b)}root.append(panel);
 }
-addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else heatmap(args.data);resize()});
+addEventListener('message',e=>{if(e.source!==parent||e.data.type!=='streamlit:render')return;hasRendered=true;args=e.data.args;for(const[k,v]of Object.entries(args.palette||{})){if(document.documentElement?.style?.setProperty)document.documentElement.style.setProperty('--'+k,v)}root.replaceChildren();if(args.kind==='graph')graph(args.data);else if(args.kind==='cloud')cloud(args.data);else heatmap(args.data);resize()});
 // A moving component may load before its host registers the iframe. Retry only
 // this local readiness handshake, at most eight times; never news/model calls.
 function announceReady(){if(hasRendered||readyAttempts++>=8)return;post('streamlit:componentReady',{apiVersion:1});setTimeout(announceReady,250)}

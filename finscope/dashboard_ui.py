@@ -12,7 +12,7 @@ from .local_analytics import (Filters, daily_counts, evidence_graph, heatmap_cel
                             default_result_model, result_models, graph_view, graph_members, cell_members)
 from .ui_data import SECTORS, SENTIMENTS
 
-COLORS = ["#16856b", "#8b97a8", "#dc6b72", "#d9dee6"]
+from .product_theme import COLORS,plot
 
 
 def keep_valid_selection(key, choices):
@@ -132,7 +132,7 @@ def distribution_chart(results):
         if count:
             rows.append({'Sentiment':sentiment,'Articles':count,'Start':angle,'End':end})
         angle=end
-    st.vega_lite_chart({"data": {"values": rows}, "mark": {"type": "arc", "innerRadius": 65},
+    plot({"data": {"values": rows}, "mark": {"type": "arc", "innerRadius": 65},
         "encoding": {"theta": {"field": "End", "type": "quantitative", "scale":None},"theta2":{"field":"Start"},
                      "color": {"field": "Sentiment", "type": "nominal", "scale": {"domain": list(SENTIMENTS), "range": COLORS[:3]}},
                      "tooltip": [{"field": "Sentiment"}, {"field": "Articles", "type": "quantitative"}]},
@@ -168,7 +168,7 @@ def timeline_chart(news, results, start, end):
     table=daily_counts(news,results,start,end,date_basis='published')
     rows=[{'Date':r['Date'],'Sentiment':label,'Articles':r[label]} for r in table for label in (*SENTIMENTS,'Not analyzed')]
     upper=max(1,max((r['Articles'] for r in rows),default=0))
-    st.vega_lite_chart({'data':{'values':rows},'mark':{'type':'line','point':True},'encoding':{
+    plot({'data':{'values':rows},'mark':{'type':'line','point':True},'encoding':{
         'x':{'field':'Date','type':'ordinal','title':'Publication date','axis':{'labelAngle':-40}},
         'y':{'field':'Articles','type':'quantitative','title':'Local articles','scale':{'domain':[0,upper]}},
         'color':{'field':'Sentiment','type':'nominal','scale':{'domain':[*SENTIMENTS,'Not analyzed'],'range':COLORS}},

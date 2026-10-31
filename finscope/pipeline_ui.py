@@ -14,6 +14,7 @@ from .local_analytics import evidence_graph,graph_members,model_key
 from .dashboard_ui import (shared_filters,distribution_chart,timeline_chart,heatmap,related_articles,article_details)
 from .chart_interactions import interactive_chart,chart_scope
 from .text_processing import keywords
+from .product_theme import TOKENS,COLORS,plot,brand,status_markup
 
 PAGES=['Dashboard','Industries','Knowledge Graph','News Explorer','Settings']
 
@@ -25,8 +26,10 @@ def task_progress(store):
     counts=task['counts'];signature=json.dumps([task['id'],task['status'],counts],sort_keys=True)
     previous=st.session_state.get('product_task_signature')
     st.session_state['product_task_signature']=signature
-    st.caption('Task · '+task['status']+' · '+task['stage']+' · '+' / '.join(f'{k} {v}' for k,v in counts.items()))
-    if task['error']:st.warning(task['error'])
+    st.markdown(status_markup(task['status'],task['stage'],counts),unsafe_allow_html=True)
+    if task['error']:
+        st.warning('Some stages need attention; completed results are retained.')
+        with st.expander('Task diagnostics'):st.write(task['error'])
     if not q.worker_alive() and task['status'] in ACTIVE:st.warning('Worker heartbeat unavailable. Launch through launch_local.ps1; a running task is identified as interrupted on worker restart.')
     if task['status'] in ACTIVE:
         if st.button('Stop task',key='product_cancel'):q.cancel(task['id']);st.rerun(scope='fragment')
@@ -44,7 +47,7 @@ def task_progress(store):
 def update_button(q):
     c=q.config();task=q.get()
     st.button('更新并分析',type='primary',disabled=not c or bool(task and task['status'] in ACTIVE),on_click=lambda:q.submit(),key='product_update')
-    if c:st.caption(', '.join(c['sources'])+' · '+c['model']+(' / '+c.get('model_id','') if c.get('model_id') else '')+f" · ≤{c['limit']} records/source; NIST ≤5 HTTP / ABS ≤3 (one body) / RBA ≤2, existing API holds and UTC-day budgets apply")
+    if c:st.caption(', '.join(c['sources'])+' · '+c['model']+(' / '+c.get('model_id','') if c.get('model_id') else '')+f" · ≤{c['limit']} records/source")
     else:st.info('Complete source and local model setup in Settings once, then use 更新并分析.')
     if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')
     if c:
@@ -221,9 +224,9 @@ def sector_plot(rows):
         return
     values=[{'Industry':r['Industry'],'Sentiment':s,'Articles':r[s]} for r in rows for s in ('Positive','Neutral','Negative','Not analyzed')]
     upper=max(1,max(sum(r[s] for s in ('Positive','Neutral','Negative','Not analyzed')) for r in rows))
-    st.vega_lite_chart({'data':{'values':values},'mark':{'type':'bar','cornerRadiusEnd':3},'encoding':{
+    plot({'data':{'values':values},'mark':{'type':'bar','cornerRadiusEnd':3},'encoding':{
         'y':{'field':'Industry','type':'nominal','title':None},'x':{'field':'Articles','type':'quantitative','title':'Distinct local originals','scale':{'domain':[0,upper]}},
-        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':['Positive','Neutral','Negative','Not analyzed'],'range':['#16856b','#8b97a8','#dc6b72','#d9dee6']}},
+        'color':{'field':'Sentiment','type':'nominal','scale':{'domain':['Positive','Neutral','Negative','Not analyzed'],'range':COLORS}},
         'tooltip':[{'field':'Industry'},{'field':'Sentiment'},{'field':'Articles'}]},'height':max(230,len(rows)*30)},width='stretch')
 
 
@@ -244,11 +247,11 @@ def main():
             store.set_setting('guide_completed',True);st.session_state['product_page']='Settings';st.rerun()
         return
     with st.sidebar:
-        st.title('FinScope');st.caption('LOCAL NEWS INTELLIGENCE')
-        page=st.radio('Workspace',PAGES,key='product_page')
+        st.markdown(brand(),unsafe_allow_html=True)
+        page=st.radio('Workspace',PAGES,key='product_page',label_visibility='collapsed',width='stretch')
         st.caption('Local SQLite · persistent originals and model history')
-    task_progress(store)
     st.title(page)
+    task_progress(store)
     if page=='Settings':settings(store,q);return
     for key,value in st.session_state.get('product_view_preferences',{}).items():
         if key not in st.session_state:st.session_state[key]=value
@@ -280,16 +283,23 @@ def main():
     st.caption(f"{sum(n.sectors==('Unclassified',) for n in news)} unclassified originals · {len(news)-len(results)} without a current selected-model result; neither is Neutral by default.")
     rows=industry_rows(news,results,classes,catalog)
     if page=='Dashboard':
-        for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):col.metric(label,value)
+        with st.container(key='product_kpis'):
+            for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):col.metric(label,value)
         if not news:st.info('No real originals match these filters. Set sources or widen the date range.');return
-        left,right=st.columns([1.5,1])
-        with left:st.subheader('Industry sentiment');sector_plot([r for r in rows if not r['Parent'] and r['Articles']])
-        with right:
-            st.subheader('Text sentiment')
-            if results:distribution_chart(results)
-            else:st.info('No selected-model results; missing analysis is not Neutral.')
-        timeline_chart(news,results,start,end)
-        heatmap(news,results,start,end,store,sectors_override=parent_names,background=True)
+        with st.container(key='product_dashboard_charts'):
+            left,right=st.columns([1.5,1])
+            with left:
+                with st.container(key='product_chart_sector'):
+                    st.subheader('Industry sentiment');sector_plot([r for r in rows if not r['Parent'] and r['Articles']])
+            with right:
+                with st.container(key='product_chart_mix'):
+                    st.subheader('Text sentiment')
+                    if results:distribution_chart(results)
+                    else:st.info('No selected-model results; missing analysis is not Neutral.')
+            with st.container(key='product_chart_time'):
+                st.subheader('News over time');timeline_chart(news,results,start,end)
+            with st.container(key='product_chart_heatmap'):
+                heatmap(news,results,start,end,store,sectors_override=parent_names,background=True)
     elif page=='Industries':
         sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
         st.dataframe(pd.DataFrame(rows),hide_index=True,width='stretch')

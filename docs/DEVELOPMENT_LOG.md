@@ -483,3 +483,5 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
   Explicit finite stacked-bar bounds removed remaining transition extent warnings;
   the subsequent Dashboard/filter/Industries/Graph console window was clean.
   Earlier warnings are retained above, not erased from the acceptance record.
+
+- 31 October P1 theme milestone: adapt read-only main f2fade9 palette, icon navigation, chart cards and readable task summary to the five local pages. No source/model dispatch or statistical changes. Full 370 offline tests and benchmark dry run pass; navigation repeat 8 tests passes. Fixed a test's fixed-date assumption by explicitly selecting its fixture date; product date filters still do not widen automatically.

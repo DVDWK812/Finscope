@@ -9,9 +9,13 @@ maxUploadSize = 1
 fileWatcherType = "none"
 
 [theme]
-primaryColor = "#16856b"
-base = "light"
-textColor = "#253a37"
+primaryColor = "#70d6c0"
+base = "dark"
+backgroundColor = "#0b1220"
+secondaryBackgroundColor = "#17263a"
+textColor = "#e7edf6"
 
 [theme.sidebar]
-textColor = "#253a37"
+backgroundColor = "#111d2e"
+secondaryBackgroundColor = "#17263a"
+textColor = "#e7edf6"

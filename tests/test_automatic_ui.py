@@ -47,7 +47,9 @@ class AutomaticUITests(unittest.TestCase):
         self.assertTrue(any('missing analysis is not Neutral' in x.value for x in app.info))
         app.checkbox(key='product_include_dev').check().run();self.assertEqual(app.metric[0].value,'2');self.http.assert_not_called()
     def test_worker_results_appear_without_user_save_or_run(self):
-        app=self.app();app.button(key='product_update').click().run()
+        from datetime import date
+        app=self.app();app.date_input(key='local_dates').set_value((date(2026,10,30),)*2).run()
+        app.button(key='product_update').click().run()
         w=Worker(self.store,fetch=lambda *a:[replace(fixture(),provider='licensed_test_fixture')],infer=prediction,resources=lambda *a,**k:None)
         w.run_one();app.run();self.assertFalse(app.exception)
         self.assertEqual(app.metric[0].value,'1');self.assertEqual(self.q.get()['status'],'completed')
