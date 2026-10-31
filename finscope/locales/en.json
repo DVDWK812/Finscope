@@ -813,5 +813,18 @@
   "Analysis model summary": "Analysis model: {model}",
   "This review uses the saved draft.": "This review uses the saved draft.",
   "Confirm update and analysis": "Confirm update and analysis",
-  "Wait at least 60 seconds between provider requests": "Wait at least 60 seconds between provider requests"
+  "Wait at least 60 seconds between provider requests": "Wait at least 60 seconds between provider requests",
+  "Reuse this session preview without another API request. Only the selected permitted fields are saved and analyzed with local FinBERT.": "Reuse this session preview without another API request. Only the selected permitted fields are saved and analyzed with local FinBERT.",
+  "Select one preview article": "Select one preview article",
+  "Permitted API text": "Permitted API text",
+  "Headline only": "Headline only",
+  "Headline and API summary": "Headline and API summary",
+  "Article storage and NLP permission reference": "Article storage and NLP permission reference",
+  "Permission covers local storage of the selected fields": "Permission covers local storage of the selected fields",
+  "Permission covers local NLP of the selected fields": "Permission covers local NLP of the selected fields",
+  "I confirm this article and permitted text scope": "I confirm this article and permitted text scope",
+  "Analyze selected preview locally": "Analyze selected preview locally",
+  "Another task is active; this preview was not submitted.": "Another task is active; this preview was not submitted.",
+  "Preview processing blocked; check the selected fields, article permissions and existing restrictions.": "Preview processing blocked; check the selected fields, article permissions and existing restrictions.",
+  "Selected preview queued for local FinBERT; no API fetch was submitted.": "Selected preview queued for local FinBERT; no API fetch was submitted."
 }

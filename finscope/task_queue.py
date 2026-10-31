@@ -1,5 +1,6 @@
 """Single-machine durable jobs. No UI, model, credential or HTTP imports."""
 from contextlib import closing
+from dataclasses import asdict,replace
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -170,11 +171,30 @@ class TaskQueue:
         c['source_permissions']={p:v for p,v in c.get('source_permissions',{}).items() if p in ready}
         c['budgets']={p:v for p,v in c.get('budgets',{}).items() if p in ready}
         return self._enqueue(validate_config(c))
-    def _enqueue(self,c):
+    def submit_preview(self,item,rights,*,scope,confirmed=False,taxonomy='US-BUSINESS-1'):
+        """One selected, permitted preview; no source dispatch or draft mutation."""
+        if confirmed is not True:
+            raise ValueError('Confirm the selected preview and its text permissions')
+        from .preview_processing import permitted_preview
+        from .product_storage import ProductStorage
+        item=permitted_preview(item,rights,scope)
+        # An explicit restriction on an already retained original still wins.
+        item=ProductStorage(self.store).apply_permissions(item)
+        for action in ('preview','retain','analyze'):item.rights.require(action)
+        item=replace(item,rights=replace(item.rights,external=False))
+        c=validate_config(dict(sources=[],article_ids=[item.article_id],
+            model='Local FinBERT',model_id='',classifier_llm=False,taxonomy=taxonomy,
+            limit=1,budgets={},source_permissions={item.provider:asdict(item.rights)}))
+        return self._enqueue(c,preview_item=item)
+    def _enqueue(self,c,*,preview_item=None):
         from .credential_store import NEWS_PROVIDERS
         from .news_keys import NewsKeyRegistry
         registry=NewsKeyRegistry(self.store) if (set(c['sources'])|set(c.get('source_permissions',{}))) & set(NEWS_PROVIDERS) else None
         if registry:registry.reject_secret_text(json.dumps(c))
+        preview_payload=None
+        if preview_item is not None:
+            preview_payload=json.dumps([asdict(preview_item)])
+            if registry:registry.reject_secret_text(preview_payload)
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
             row=db.execute("SELECT id FROM product_tasks WHERE status IN ('queued','running')").fetchone()
@@ -183,6 +203,11 @@ class TaskQueue:
             identity=uuid4().hex;stamp=now()
             db.execute('INSERT INTO product_tasks(id,status,snapshot,stage,counts,created,updated) VALUES (?,?,?,?,?,?,?)',
                        (identity,'queued',json.dumps(c),'queued',json.dumps(dict(new=0,duplicates=0,classified=0,analyzed=0,failed=0,skipped=0)),stamp,stamp))
+            if preview_payload is not None:
+                # Atomic handoff into the worker's existing saved-originals
+                # checkpoint: a crash cannot leave a job that fetches again.
+                db.execute('INSERT INTO product_steps VALUES (?,?,?,?)',
+                           (identity,'fetch:saved_originals','ok',preview_payload))
             db.commit();return identity,True
     def get(self,identity=None):
         with closing(self.store.connect()) as db:

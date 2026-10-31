@@ -126,3 +126,39 @@ def render(store,c,field):
                 st.write(Verbatim(item.title));st.caption(Verbatim(item.source+' · '+(item.timestamp or item.publication_date or str(tr('Unknown time')))))
                 st.text(Verbatim(item.summary or str(tr('Summary unavailable'))))
                 if item.url:st.link_button('Open original article',item.url)
+            process_preview(store,provider,previous.get('items',[]))
+
+
+def process_preview(store,provider,items):
+    """Explicit one-article handoff; a receipt alone can never supply a record."""
+    if not items:return
+    from .local_news import ContentRights
+    from .task_queue import TaskQueue,ACTIVE
+    q=TaskQueue(store);task=q.get();prefix='retained_preview_'+provider
+    st.caption('Reuse this session preview without another API request. Only the selected permitted fields are saved and analyzed with local FinBERT.')
+    selected=st.selectbox('Select one preview article',range(len(items)),index=None,
+        format_func=lambda i:Verbatim(items[i].title),key=prefix+'_article')
+    scope=st.radio('Permitted API text', ['title','title_summary'],
+        format_func=lambda v:'Headline only' if v=='title' else 'Headline and API summary',key=prefix+'_scope')
+    reference=st.text_input('Article storage and NLP permission reference',key=prefix+'_reference',max_chars=500)
+    retain=st.checkbox('Permission covers local storage of the selected fields',key=prefix+'_retain')
+    analyze=st.checkbox('Permission covers local NLP of the selected fields',key=prefix+'_analyze')
+    signature=hashlib.sha256(json.dumps([items[selected].article_id if selected is not None else None,
+        scope,reference,retain,analyze]).encode()).hexdigest()[:16]
+    confirmation=prefix+'_confirmed_'+signature
+    confirmed=st.checkbox('I confirm this article and permitted text scope',key=confirmation)
+    disabled=(selected is None or not reference.strip() or not retain or not analyze or not confirmed
+              or bool(task and task['status'] in ACTIVE))
+    if st.button('Analyze selected preview locally',key=prefix+'_submit',disabled=disabled):
+        try:
+            identity,created=q.submit_preview(items[selected],ContentRights(True,retain,analyze,False,reference),scope=scope,confirmed=confirmed)
+            if created:
+                st.session_state[prefix+'_queued']=identity
+                from .news_key_ui import clear_input
+                clear_input(confirmation)
+                st.rerun()
+            else:st.warning('Another task is active; this preview was not submitted.')
+        except ValueError:st.error('Preview processing blocked; check the selected fields, article permissions and existing restrictions.')
+    if st.session_state.get(prefix+'_queued'):
+        st.success('Selected preview queued for local FinBERT; no API fetch was submitted.')
+        if not q.worker_alive():st.caption('Local worker is not connected. Start FinScope with launch_local.ps1; queued tasks wait without issuing requests.')

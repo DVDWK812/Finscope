@@ -1,5 +1,13 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November 2026 Sydney — P2 retained API preview:** Add an explicit, one-article
+handoff to the existing source-free local FinBERT worker, narrowing text before
+durable writes and preserving source budgets/drafts. Existing Marketaux/Finnhub
+HTTP-200 receipts remain historical preview-only evidence. Real API storage/NLP
+counts are zero; article selection/account rights and the original browser
+session remain unverified. NewsData stays paused; current terms expressly
+prohibit multiple API Keys. See [P2 evidence and resumption conditions](P2_REAL_NEWS_ACCEPTANCE.md).
+
 **29 October 2026 Sydney — reporting responsibility clarified:** The team independently authors the academic report. Codex maintains a concise [evidence synopsis](REPORT_SYNOPSIS.md), with verified metrics/method qualifications, completed/pending work and primary-source reference suggestions. The old final-report path becomes a pointer; no submission-ready report or PDF is generated. The user confirmed there are no required section headings; the synopsis uses a practical outline without inventing assignment requirements. No Moodle access. The consumed challenge, actual outputs and original private human evidence remain unchanged. Continue technical verification and documentation on main only.
 
 **29 October 2026 Sydney — final delivery freeze:** Preserve the consumed challenge, locked reference, actual outputs and original private human annotation/amendment evidence. No challenge rerun or tuning. Report 12/16 scorable sentiment agreement (75%), macro-F1 0.730159, two mixed/uncertain exclusions and pairwise cosine precision 0.666667. P02 falsely matches reporting periods (cosine 0.813457); uncertain opposed-outcome P07 groups (0.962896). Reviewer independence and completion attestations remain unverified. Raw articles remain the default; event deduplication and contradiction detection are not validated. [Freeze verification](DELIVERY_FREEZE.md), [three-human template](USABILITY_EVIDENCE_TEMPLATE.md) and [demo checklist](DEMO_CHECKLIST.md) preserve these limits. No human sessions, attestations or rehearsal are claimed complete; no private records are published.

@@ -813,5 +813,18 @@
   "Analysis model summary": "本次分析模型：{model}",
   "This review uses the saved draft.": "本次使用已保存的草稿。",
   "Confirm update and analysis": "确认获取并分析",
-  "Wait at least 60 seconds between provider requests": "来源请求之间须至少间隔 60 秒"
+  "Wait at least 60 seconds between provider requests": "来源请求之间须至少间隔 60 秒",
+  "Reuse this session preview without another API request. Only the selected permitted fields are saved and analyzed with local FinBERT.": "复用本会话预览，不再请求 API。仅保存所选的已获准字段，并使用本地 FinBERT 分析。",
+  "Select one preview article": "选择一条预览新闻",
+  "Permitted API text": "获准使用的 API 文本",
+  "Headline only": "仅标题",
+  "Headline and API summary": "标题与 API 摘要",
+  "Article storage and NLP permission reference": "本条新闻的保存及 NLP 权限依据",
+  "Permission covers local storage of the selected fields": "权限涵盖所选字段的本地保存",
+  "Permission covers local NLP of the selected fields": "权限涵盖所选字段的本地 NLP",
+  "I confirm this article and permitted text scope": "确认本条新闻及获准文本范围",
+  "Analyze selected preview locally": "本地分析所选预览",
+  "Another task is active; this preview was not submitted.": "已有任务运行，本条预览未提交。",
+  "Preview processing blocked; check the selected fields, article permissions and existing restrictions.": "预览处理受阻，请核查所选字段、本条新闻权限及已有使用限制。",
+  "Selected preview queued for local FinBERT; no API fetch was submitted.": "所选预览已加入本地 FinBERT 队列，未提交 API 获取。"
 }
