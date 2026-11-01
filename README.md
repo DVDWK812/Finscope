@@ -2,6 +2,12 @@
 
 Local-first financial news intelligence. Run Streamlit on your own computer, fetch and preview news, analyze permitted text with pinned CPU FinBERT and MiniLM, and keep originals/results in local SQLite.
 
+The **2 November 2026 18:00 Australia/Sydney report handoff** is an internal
+technical baseline, not the final submission deadline or a permanent feature
+freeze. Start with the [handoff record](docs/REPORT_HANDOFF_20261102.md),
+[technical synopsis](docs/REPORT_SYNOPSIS.md) and [local demonstration](docs/DEMO_SCRIPT.md).
+Local development continues afterward; the consumed evaluation remains frozen.
+
 ## Launch locally
 
 ```powershell

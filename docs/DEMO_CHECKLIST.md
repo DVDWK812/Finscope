@@ -1,35 +1,24 @@
-# Final demonstration operator checklist
+# Local report handoff operator checklist
 
-Use with [the 6:15 A/B/C script](DEMO_SCRIPT.md), [team-reference synopsis](REPORT_SYNOPSIS.md) and [freeze verification](DELIVERY_FREEZE.md). Speaking roles remain placeholders; rehearsal, member signoff and three-human testing are pending until observed.
+Use the [6:15 flow](DEMO_SCRIPT.md), [technical synopsis](REPORT_SYNOPSIS.md) and [dated handoff evidence](REPORT_HANDOFF_20261102.md). This checklist is engineering preparation, not evidence that three humans participated.
 
-## Before presenting
+## Before the demonstration
 
-- Record UTC, public URL, verified main SHA and its push-triggered CI result. Note the last hosted smoke date separately; a repository SHA alone does not prove which code the host is running.
-- Open only the public approved-input app and public synopsis/checklist. Hide account panels, terminals, `.env`, private annotations and local reports. No Moodle access, upload or submission.
-- Prepare a fresh session and the existing CC0 authored p1/p2/n3 texts below. Do not open or run the consumed B01–B18 challenge in the app or CLI.
-- Confirm the rights gate and explicit preparation status. If assets are missing, explain the setup step and record its outcome; do not silently substitute fixtures for real inference. Do not manage/reboot the hosting account during the demonstration.
-- Verify raw articles are the initial default. Check all four pages and an approved synthetic-only export. Retain a clearly dated authored-text screenshot/export locally for fallback; never use private reviewer records as presentation material.
-- Rehearse all three substantive roles against a timer (target 6:15, permitted user target 5–7 minutes). Record actual duration and assistance privately; names/signatures remain team-owned.
+- Open desktop **FinScope.cmd**; confirm localhost:8511 is healthy. Repeated launch should reuse the instance, not create a duplicate worker. Keep the computer awake for the presentation; the app is not a24×7 hosted service.
+- Record the handoff SHA and exact CI from the sealed local delivery receipt/final delivery link. A later `local` HEAD may differ. Do not switch/reset the working tree or restore a baseline database over new data merely to rehearse.
+- Confirm local totals266 originals /232 historical analyses;261 real records,148 current-content FinBERT results and136 separate media discoveries. Any later intentional growth requires an explicitly dated comparison, not altered baseline screenshots.
+- Select FinBERT; government/official source scope; all saved dates for totals. Clear source/sector/search filters. For the heatmap, set **2026-10-01–2026-10-30** and search **Australians buying more fruit**. The daily heatmap supports at most367 columns; a wider range has a deliberate bound.
+- Confirm ABS date2026-10-30 is date-only, Consumer Staples → Food and beverages, body-matching Negative result, actual revision/probabilities/1349-of1675 coverage and original link. Retain the title-only historical result separately.
+- Keep media discovery separate: Yahoo's approved supplied-feed text is RAM-only and can expire; metadata/index evidence remains. All mainstream-media stored text/NLP counts are0. Never refresh a feed to recreate a missing screenshot.
+- Hide `.env`, masked-key editors, accounts, contact identifiers, private annotations and local database contents. Do not open external publisher pages or Moodle.
 
-## Approved live-input cue cards
+## Allowed actions in this read-only rehearsal
 
-These are development examples from [authored-demo-v1](../evaluation/authored_demo_v1.json), dedicated CC0-1.0. Source: `Authored delivery demo`; permission reference: `authored-demo-v1 / CC0-1.0`; provenance: synthetic. Use distinct titles for each record, no publisher URL, and submitted UTC semantics. Read freshly observed outputs; the authored reference labels are not guaranteed live results.
+Page navigation, filters, heatmap/industry/graph clicks, existing permitted article display and saved history. Do not click Update & Analyze, collect, Check feed, reanalyze, model preparation, key/permission editors or external-LLM controls. No new provider/model request is needed.
 
-| Cue | Text |
-|---|---|
-| p1 — fictional growth | Fictional chipmaker Aster reported a 20 percent rise in revenue and record quarterly profits. |
-| p2 — fictional paraphrase | Aster, a fictional semiconductor company, announced record quarterly profit as revenue increased by 20 percent. |
-| n3 — fictional opposing outcome | Fictional chipmaker Aster reported a 20 percent decline in revenue and a large quarterly loss. |
+## Evidence and statements
 
-After p1, show actual scores/sector evidence and saved raw count. After p2, opt into unverified-candidate summaries and confirm both originals remain in Explorer. After n3, inspect any opposing-tone warning, filter Positive and verify the opposing original remains in candidate details. Export with the filter active and verify all originals. Reset returns to raw articles. A different live result is an observation to record, never a reason to retune on challenge examples.
-
-## Frozen evaluation cue card
-
-**12/16 scorable sentiment agreement (75%); macro-F1 0.730159; two mixed/uncertain references excluded (B02/B07), all 18 outputs retained. Pairwise cosine precision 0.666667 on ten scorable selected pairs.** P02 crosses reporting quarters at 0.813457; P07 has uncertain identity/opposed outcomes and groups at 0.962896. P07/P12 event uncertainty is excluded explicitly. The selected final-group score does not validate deduplication. Opposing model tone does not validate contradiction detection. **Reviewer independence and completion attestations remain unverified.** Display the existing public results table only; no challenge rerun.
-
-## Fallback and human handover
-
-- If the host is loading/asleep/unavailable, state the observed condition and time. Use a labelled local run or a dated authored-text capture. A fallback is not evidence of hosted success; no live provider calls or mock “real” outputs.
-- Show the blank [three-human template](USABILITY_EVIDENCE_TEMPLATE.md) while actual A/B/C feedback is pending. Use an explicitly approved anonymized aggregate only after the three private records exist. Agent smoke sessions do not fill these slots.
-- Read current load/RSS fields with their scope: prepared-file model load, combined inference latency and current RSS are separate; peak memory, endurance and SLA remain unverified.
-- Close with the approved-input demonstration scope and remaining human checks: provenance attestations, actual usability, rehearsal and contribution signoff. The user confirms the official deadline; 31 October is the internal target.
+- Use the dated local screenshot pack. Preserve its files/hashes and the snapshot; new captures go into a new directory. Publisher text remains in ignored local evidence, never a public Git corpus. Yahoo RAM-only titles/summaries are excluded from saved screenshots.
+- Frozen evaluation:12/16 scorable agreement (75%), macro-F1 .730159, two exclusions; selected-pair cosine precision .666667. Reviewer independence/completion and three-human usability remain unverified. Do not rerun the consumed packet.
+- Record actual rehearsal duration and observed failures if the team rehearses. A/B/C names, speaking allocations, authorship/contributions and signatures belong to the members.
+- **2 November2026 18:00 Australia/Sydney** is the internal report handoff, readiness before noon. It is not the official deadline or a permanent development freeze. Continue local development afterward; arrange final freeze/full regression separately.

@@ -14,7 +14,7 @@ reported separately. FinBERT and ABS/NIST/SEC collection were not changed/run.
 | CNBC | Prior200 | 30 | 30 | www.cnbc.com | 2026-10-31 23:56:40 |
 | WSJ | Prior200 | 60 (one duplicate URL) | 59 | www.wsj.com | 2026-11-01 00:00:00 |
 | Yahoo Finance | Two new200s | 18 each | 19 historical | 15 www.fool.com /4 finance.yahoo.com in historical index | 2026-11-01 04:41:00 |
-| Reuters via Marketaux | Pending a new confirmed account budget | Unmeasured |0 | Unverified | Unknown |
+| Reuters via Marketaux | New200 / empty |0 |0 | No article domain returned | Unknown |
 
 The source index grew **108 →136**, adding18 Bloomberg and10 FT links. All108
 previous source/identity/URL triples remain. This is a discovery index, not136
@@ -91,7 +91,7 @@ Yahoo source from being polled. No deliberate real failure request was added.
 | FT | Applicable display scope unverified; metadata shown | Not established | Not established | Not established |
 | CNBC | Applicable display scope unverified; metadata shown | Not established | Not established | Not established |
 | WSJ | Applicable display scope unverified; metadata shown | Not established | Not established | Not established |
-| Reuters / Marketaux | New query pending; no retained text or NLP grant | Not established | Not established | Not established |
+| Reuters / Marketaux | One200/empty query; no returned text or retained-text/NLP grant | Not established | Not established | Not established |
 
 The [official Yahoo RSS clause](https://legal.yahoo.com/ca/en/yahoo/terms/otos/)
 describes supplied-feed display with attribution and links; country/entity and
@@ -132,8 +132,14 @@ hops separately from ordinary one-GET polling of a verified resolved feed URL.
 
 Reuters's one-shot preparation uses the current primary Marketaux key only,
 `domains=reuters.com`, no broad search keyword, ≤3 previews, and existing holds,
-spacing and ledgers. Old31 October budgets are not valid for1 November. No
-Reuters request has been made without a new account-budget confirmation. Its
+spacing and ledgers. Old31 October budgets are not valid for1 November. After the user verified quota and separately authorized one query, a real request
+at **2026-11-01 07:36:19 UTC** returned **HTTP200 / empty /0 raw records**.
+The current primary key was used once; no retry, alternate key or publisher-page
+request occurred. The one-query budget is consumed. This proves whitelist-query
+transport, not actual Reuters article coverage. The request receipt is
+`4f24c3223193472fb667ac9a13373ad0`; the private additive audit is
+`reports/p3b1_reuters_20261101/query.json`. Originals266, analyses232 and media
+index136 are unchanged. The old receipts and pre-query handoff snapshot remain. Its
 audit stores only API source, URL, publication domain/time and outcome; it does
 not treat syndicated URLs or a textual wire credit as direct Reuters licensing
 or independent proof of editorial originality. No repeat or key fallback occurs.
@@ -141,6 +147,6 @@ or independent proof of editorial originality. No repeat or key fallback occurs.
 Consistent pre-P3-B.1 backups, original receipt bytes, old index identities,
 266 originals,232 analyses and all171 frozen files are preserved. Full offline
 regression:631 tests, one platform skip; isolated benchmark dry run passed. Exact
-final SHA and its CI are reported at delivery. Remaining gates are the newly
-confirmed Reuters request budget, source-specific text/archive/NLP grants, and
+final SHA and its CI are reported at delivery. Remaining gates are actual Reuters article
+coverage (any further query needs a new budget), source-specific text/archive/NLP grants, and
 actual validator/304 support where a provider does not emit them.

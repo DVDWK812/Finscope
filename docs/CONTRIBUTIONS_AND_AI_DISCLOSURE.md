@@ -16,6 +16,15 @@ All-member confirmation of all three paragraphs: A **PENDING**, B **PENDING**, C
 
 ## Proposed AI assistance disclosure
 
+For the 1 November report-handoff preparation, Codex condensed the technical
+synopsis, updated the local demonstration/checklist and milestone instructions,
+verified the desktop launcher's cold-start/reuse behavior and formal real-data
+UI drill-down, and prepared dated local screenshots/snapshot/hash evidence.
+The rehearsal used retained actual outputs without new collection/inference.
+The 2 November18:00 internal handoff is not the final deadline or permanent
+feature freeze. This is technical reference preparation; the members independently
+write and verify their report, contributions and actual human evidence.
+
 The three members independently write the final academic report. Codex maintains only the concise evidence synopsis and technical documentation; it does not produce a submission-ready academic report or final-report PDF. Earlier report-draft assistance below is historical and does not assign authorship or contribution credit to any member.
 
 For the 29 October final freeze, Codex preserved the consumed challenge and original annotations, updated the report/demo/usability templates, and ran offline regression plus hosted engineering smoke checks on old authored development examples only. No challenge inference was repeated or tuned. Three-human usability records, reviewer attestations, rehearsal and member signoff remain unverified/pending; private annotation records are not published.

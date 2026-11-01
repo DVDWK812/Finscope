@@ -1,5 +1,15 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November 2026 — report handoff:** The user clarified that 2 November18:00
+Australia/Sydney is an internal technical/report baseline, readiness before
+noon, not an official deadline or permanent product freeze. Continue `local`
+development after handoff; keep main read only. Preserve the dated handoff
+commit/snapshot/screenshots and all171 frozen files. The consumed evaluation
+remains frozen; final feature freeze/regression will be arranged separately.
+Reuters budget and media text/polling grants do not block the retained-real-data
+demonstration. Codex supplies factual references, not the academic submission or
+fabricated human evidence. See [handoff](REPORT_HANDOFF_20261102.md).
+
 **1 November2026 Sydney — P3-B.1 real continuity:** Completed approved Bloomberg
 one-GET and FT two-GET(301→200) diagnostics without rewriting their old receipts.
 Added28 source links, bringing the separate index to136. Two approved Yahoo

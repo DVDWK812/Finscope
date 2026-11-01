@@ -1,257 +1,91 @@
-# FinScope — team report synopsis
+# FinScope — technical reference for the report team
 
-Evidence current: **1 November 2026 Sydney**. The three team members write the
-academic report independently. This is a concise factual reference, not a submission
-manuscript or PDF. The user confirmed there are **no required section headings**;
-the organization below is optional. No Moodle access or coursework submission.
+Evidence checked **1 November 2026 Australia/Sydney**. The three members write the academic report independently. This reference supplies verified technical facts and evidence, not a submission manuscript, claimed human participation or an academic interpretation.
 
-## Objective and current scope
+## Milestone and baseline
 
-P3-B.1 completed an approved Bloomberg GET(18 links), bounded FT301→200(10 links)
-and two actual Yahoo worker polls300.253837 seconds apart across a worker restart.
-The discovery index is136; original news266 and analysis history232 are unchanged.
-Yahoo's applicable reader scope was confirmed for RAM-only display, not storage
-or NLP. Both live rounds returned200 without validators/304; no such network
-support is claimed. Reuters still awaits a new account-budget confirmation.
-See [actual continuity and scope evidence](P3_MEDIA_CONTINUOUS_ACCEPTANCE.md).
+**2 November 2026 18:00 Australia/Sydney** is the internal report handoff; technical readiness is due before noon. It is not the official submission deadline or a permanent feature freeze. Development continues on `local`; `main` is read only. A separate final feature freeze and full regression will precede actual submission. The historical official-deadline conflict remains unresolved; the user handles it without further agent Moodle access.
 
-P3-B adds mainstream-media discovery, separately from licensed NLP. Five bounded
-feed GETs on 1 November yielded 108 distinct CNBC/WSJ/Yahoo links; FT returned 301,
-and Bloomberg's initial local indexing failure left incomplete metrics (no retry).
-No publisher-title/summary archive or new media FinBERT result is claimed. Actual
-permissions and Marketaux Reuters account coverage remain unverified. See
-[P3-B evidence](P3_MEDIA_ACCEPTANCE.md); prior P3-A results below remain unchanged.
+The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8ae`**, with [all three exact-SHA CI jobs successful](https://github.com/DVDWK812/Finscope/actions/runs/41284045331). The dated [handoff record](REPORT_HANDOFF_20261102.md) identifies the package, screenshots, local snapshot and final delivery receipt. Later development must use separate evidence directories/commits. The consumed evaluation and all 171 protected files remain frozen; historical [delivery-freeze evidence](DELIVERY_FREEZE.md) is preserved byte-for-byte, not a current permanent product-development restriction.
 
-Local P3-A verified +219 real originals (34 collector GETs, all HTTP 200),
-comprising 141 official announcements and 120 SEC filings from six issuers.
-Five existing authored development records remain separate. Source-only saving
-preserved the original 84 analyses; 148 genuine local FinBERT inferences brought
-history to 232. Current-text coverage is 148; 113 metadata-only filings are not
-applicable rather than Neutral. Repeated offline work adds no inference.
-US dictionary classification retains 244 Unclassified originals (six parent,
-nine child labels among 17 classified); all 261 remain Unclassified in CSRC's
-current English-source vocabulary. Issuer SIC is separate from news-topic
-evidence. These provisional labels are not evaluated accuracy or complete
-market coverage. Media/IR diversity, suitable narrative availability and semantic
-classification remain limited. See [P3 evidence](P3_BATCH_ACCEPTANCE.md).
-Frozen evaluation results and their qualifications below are unchanged.
+## Purpose and architecture
 
-- Inspect financial news text through sentiment, explainable sectors, original
-  evidence and possible semantic overlap; no price forecasting or market-impact claim.
-- **Latest architecture:** single-user Streamlit on localhost, persistent local
-  SQLite, `.env`/masked credentials, default pinned CPU FinBERT/MiniLM, optional
-  local LM Studio/Ollama or explicitly consented external LLM. This task now uses the
-  user-requested **local** branch; a separate task owns the web showcase on main.
-- Historical approved-input public hosting remains dated engineering evidence;
-  cloud hosting/session/cache work is not a local-product requirement.
+FinScope is a single-user, desktop-hosted financial-news/disclosure inspection tool. It supports permitted local text storage, sentiment, evidence-based industry topics and drill-down to originals. It does not forecast returns, establish causation or verify event identity.
 
-## Architecture and methods
+```mermaid
+flowchart LR
+    A[Reviewed fixed sources / permitted local import] --> B[Bounded collection and HTTP ledger]
+    B --> C[SQLite originals and content revisions]
+    C --> D[Single local worker / durable checkpoints]
+    D --> E[Preprocessing and two-level topic dictionaries]
+    E --> F[Pinned local FinBERT / optional local model]
+    F --> G[Versioned results and caches]
+    G --> H[Dashboard / Industries / Graph / Explorer]
+    R[Global media RSS discovery] --> S[Separate URL/time index]
+    S --> T[Only granted fields displayed or processed]
+```
 
-Configured, permitted fixed sources → one explicit update action → single local
-worker and durable SQLite queue → text/content versions → independent two-level
-industry classification → selected local sentiment model → versioned results.
-Dashboard, Industries, Knowledge Graph and News Explorer share filters; Settings
-retains advanced manual operations. Migration backs up the existing database.
-[Implementation/evidence](LOCAL_REDESIGN.md), [local setup](../README.md).
+The Windows desktop entry opens localhost:8511 and reuses an existing healthy instance. The launcher starts Streamlit plus one OS-locked worker. Closing the browser does not stop the worker. Durable stage/cache records prevent replay of completed work; unknown network/model outcomes require review rather than speculative retries. Local originals live in ignored `reports/finscope_local.sqlite3`; permitted SEC archive objects have local hash/index references. Credentials stay in ignored `.env` or Windows Credential Manager, not article/job payloads. [Setup](../README.md), [worker/storage acceptance](P3_BATCH_ACCEPTANCE.md).
 
-- Provider calls require explicit Fetch, current available budget, durable intent,
-  spacing and existing holds; no retries/pagination. Finnhub is ticker-specific,
-  NewsData remains manually paused and GDELT has no new route/retry. Source URLs,
-  exact published/first-seen/submitted meanings and date-only precision are preserved.
-- FinBERT supplies genuine three-class text-tone probabilities. MiniLM uses
-  attention-mask mean pooling and normalized 384-dimensional vectors. Pretrained
-  pinned/hash-verified models; no team training or fine-tuning. Preparation is explicit,
-  with local-only inference and no download/remote-code fallback.
-- Product industry topics use versioned US-BUSINESS-1 (11/56, authored business
-  topics, not GICS) or CSRC-JRT0020-2024 (official Table 2: 19/91). Literal evidence,
-  method and classification history are retained; company business is separate
-  and unverified. Macro themes are separate, not a third industry level. The old
-  five-sector evaluation rules remain unchanged. Historical cosine ≥0.80 within 72 hours
-  compares representatives and creates **unverified candidates**; order matters.
-  Exact-time absence disables temporal grouping. Raw originals remain the counting
-  basis; model history and candidate members are retained. Neither event deduplication
-  nor factual contradiction detection is validated.
-- All views share raw-article filters and latest matching model per original.
-  Heatmaps retain missing/low-sample counts. Graph links show source metadata,
-  matched sector terms, ticker-query provenance and unverified candidates; no causation.
-- LM Studio uses local loaded IDs/quantization and JSON Schema sentiment/rationale,
-  with explicit resource-checked load/unload and no downloads or tool/search calls.
-  Optional OpenAI structured labels/rationales require transmission permission and
-  explicit send consent, and have **no invented calibrated probabilities**. Ollama
-  uses installed local GGUF metadata/digests at loopback only. Keys never enter the
-  database/export/logs. Stored permissions do not themselves grant publisher rights.
+Default **Update & Analyze** chains collection and analysis. Advanced **Collect and save only** loads no model; **Analyze saved records offline** makes no news requests. Source-level policies record fields, purposes, attribution, exclusions and retention basis; narrower article restrictions win. API/RSS accessibility alone never establishes storage or NLP rights. Optional external LLMs require separate transmission consent; none is used by the default local workflow.
 
-## Verified results and qualifications
+## Data and actual acceptance denominators
 
-| Evidence | Result | Qualification |
+The current library has **266 originals: 261 real-source records plus five authored development records**. It has **232 historical analysis versions**, not 232 independently analyzed current real articles. Read-only SQL and the same current-content matching rules as the UI reproduce these figures.
+
+| Real source | Distinct originals | Retained text scope |
+|---|---:|---|
+| ABS | 80 | Reviewed official titles/date-only metadata; one retained licensed body |
+| NIST | 40 | Official supplied titles/summaries; three reviewed bodies |
+| RBA | 1 | Previously retained attributed official feed text |
+| SEC official press RSS | 20 | Official title/supplied description; no linked pages |
+| SEC EDGAR | 120 | Filing metadata from six issuers; seven suitable operating-event excerpts |
+
+Real records comprise **141 official/government announcements and 120 regulatory disclosures**, with **zero saved media-news or company-IR-release originals**. Six SEC issuers each contribute 20 filings: Microsoft, JPMorgan Chase, Caterpillar, Johnson & Johnson, Exxon Mobil and Amazon. This is a bounded convenience watchlist, not representative global-market coverage.
+
+**148 current-content FinBERT results** cover the 141 announcements and seven event excerpts. The other **113 disclosures are not applicable**, not forced Neutral. Long 10-K/10-Q filings are metadata-only; excerpt sentiment never means whole-filing sentiment. P3-A added **219 distinct real records**, using **34 collector GETs**, all HTTP 200; six responses were rejected by client schema/excerpt checks. These historical calls are not new handoff traffic. [Exact source/request/model evidence](P3_BATCH_ACCEPTANCE.md).
+
+Two-level US-BUSINESS-1 topics classify **17/261 real originals**: **six parent and nine child labels**, with **244 Unclassified**. Parents are Technology, Financials, Industrials, Healthcare, Materials and Consumer Staples. This is lexical evidence coverage, not measured classification accuracy; chip “packaging” is a known semantic ambiguity. All **261 remain Unclassified in CSRC** under the current English vocabulary. Issuer SIC is stored separately and is never the sole evidence for a news topic.
+
+## AI methods and reproducible real example
+
+| Component | Actual method / version | Limits |
 |---|---|---|
-| Frozen challenge sentiment | **12/16 scorable agreement (75%); macro-F1 0.730159** | B02/B07 mixed/uncertain excluded; all 18 outputs retained; reviewer independence/completion unverified |
-| Selected-pair cosine candidates | **Precision 0.666667**, recall 1.000000, F1 0.800000 | Ten scorable pairs: TP2/FP1/FN0/TN7; P07/P12 uncertain identity excluded; unannotated pairs are not negatives |
-| Selected final groups | TP2/FP0/FN0/TN8 on those ten | Does not validate deduplication; uncertain P07 still groups |
-| Earlier authored pilot | 12/12 sentiment agreement; group-pair precision 0.60 across 66 pairs | AI-assisted convenience labels; development evidence, not independent accuracy |
-| Local redesign regression | **233 offline tests + benchmark dry run passed** | Mocks/authored fixtures; actual provider/model/browser observations recorded separately |
-| Actual local Marketaux preview | First request HTTP 200 / three records | Second bounded request failed transport, no HTTP response observed, no retry; downstream rights remain gated |
-| Actual licensed RBA import | One attributed RSS record imported, publisher URL opened, actual FinBERT Neutral saved | RBA-authored title/summary only, reviewed CC BY 4.0 terms; no new collection or external transmission; original 14 October publication time retained |
-| Actual RBA model smoke | Positive .240000412 / Negative .010126807 / Neutral .749872804; **148.81 ms** combined inference | Excludes model loading/download; one engineering probe, not accuracy evidence |
-| Actual authored local smoke | Positive .952975631 / Negative .021392226 / Neutral .025632165; **136.73 ms**, later per-article **58.67 ms** | Two versions retained with the original; no consumed-challenge input |
-| Historical hosted checks, 29 October | p1/p2/n3 inference 170/128/119 ms; 6.944 s prepared-file cold load; 880.2 MiB current RSS | Historical approved-text checks, not peak memory/SLA/hibernation or current showcase behavior |
+| FinBERT | ProsusAI/finbert, revision `0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031`; local CPU three-class probabilities | Text tone, not correctness probability, investment signal or general accuracy |
+| MiniLM | all-MiniLM-L6-v2, revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`; attention-mask mean pooling, normalized 384-D vectors | Similarity candidates are unverified; not validated event deduplication |
+| Preprocessing | `product-lead-span-2`; normalized text, traceable leading span, character/token bounds, input fingerprint and coverage | No silent whole-document claim or automatic model download |
+| Industry topics | `evidence-dictionary-1`; US-BUSINESS-1 **11/56** and CSRC-JRT0020-2024 **19/91** catalogs | Literal matches and catalog parents; not GICS, general NER or issuer-business validation |
+| Optional local LLM | LM Studio/Ollama, explicitly selected local installed model | Separate labels/rationale/history; no invented calibrated probabilities or automatic fallback |
 
-Frozen risks: **P02** crosses Celadon quarters at cosine **0.813457**; incidental
-representative selection kept final groups apart. **P07** has uncertain identity /
-opposed Tern outcomes and groups at **0.962896**. B01/B10 Positive references and
-B08/B16 Neutral references were predicted Negative. All evaluation submission times
-were equal; publication/period extraction was not evaluated. [Frozen method/results](CHALLENGE_EVALUATION.md).
-The consumed packet, locked reference and original human evidence are unchanged;
-never rerun/tune/rescore it. [Freeze](DELIVERY_FREEZE.md).
+No team training/fine-tuning is claimed. Preparation explicitly verifies pinned local model assets; inference does not download weights or enable remote code. FinBERT weights are CC BY-NC-SA 4.0; MiniLM Apache-2.0. These licences do not grant publisher rights. [Model evidence](AI_PROTOTYPE.md).
 
-## Completed and outstanding evidence
+The retained ABS release **“Australians buying more fruit and fewer vegetables”**, original ID `2e5baa9cdbe2f1f2701cca2109b3fb75`, is the repeatable local drill-down example. It is dated **30 October 2026, date only**, attributed to ABS/Commonwealth of Australia under the reviewed CC BY 4.0 scope. The current body-matching FinBERT result is **Negative**, probabilities positive **0.0776657164**, negative **0.8981406093**, neutral **0.0241936296**; analysis ID `02734e61ed1a4b61b9b4a6351164f083`. It describes title plus **1349/1675 body characters (80.5373%)**, not the entire publication. Topic evidence maps Consumer Staples → Food and beverages, with literal “beverages” offsets 923–932 and 1138–1147.
 
-Completed: local source/permission/model interfaces, persistent originals/history,
-visual views, real authored/RBA local inference and original-link/import checks.
-M1 and the M2 compatibility repair passed both exact-commit Python 3.11 CI jobs;
-the initial M2 Streamlit-1.50 failure is preserved, not hidden. Local code commit
-`94dc5a0` also passed both exact-commit jobs and all 233 tests in [Actions
-40856308281](https://github.com/DVDWK812/Finscope/actions/runs/40856308281). [Full dated evidence and limits](LOCAL_REDESIGN.md).
+A later title-only Neutral analysis remains in history. The UI matches model results to the current content fingerprint; the latest timestamp alone does not select the correct result for a different text version. All four historical rows remain. Dashboard heatmap, Industries, Graph and News Explorer reopen the same permitted original and original link without a new fetch/inference. [Original P2 acceptance](ABS_P2_ACCEPTANCE.md), [dated handoff screenshots](REPORT_HANDOFF_20261102.md).
 
-30 October local usability check: **261 offline tests** plus dry run; actual browser RBA local import, pinned FinBERT reanalysis (Neutral), SQLite history, sector results, original URL, and heatmap/graph node clicks verified. Two originals remain two after reanalysis; no new news API or external LLM requests. Ollama service discovery unavailable; live inference remains pending. This is engineering acceptance, not accuracy or human usability evidence.
+## Mainstream media: discovery is separate from NLP
 
-30 October real-source follow-up: ABS robots/index HTTP 200 at 29 October 16:18 UTC yielded **20 new licensed headlines/date-only records**, saved and actually analyzed by pinned local FinBERT/MiniLM; one reanalysis added history, not an original. Real library: ABS 20 + existing RBA 1, 27 August–29 October; Energy 1, Financials 1, Unclassified 19 (authored development text excluded). Three classified sectors remain unmet. ACCC RSS returned 403 once and is disabled. Browser heatmap/article/sector-node clicks and ABS original verified; source text is headline-only. These checks are engineering acceptance, not an accuracy evaluation; frozen evidence remains unchanged.
+The separate index holds **136 links**: Bloomberg 18, CNBC 30, WSJ 59, FT 10, Yahoo 19. P3-B.1 added 28 Bloomberg/FT links with three authorized diagnostic GETs. FT's new literal 301 Location `/rss/home/international` led to one reviewed HTTPS FT request; the original incomplete Bloomberg/FT receipts remain.
 
-31 October local LLM check: actual `google/gemma-4-e4b` GGUF/Q4_K_M, context 2048, returned valid structured Positive labels in four authored-text requests (single, two-item batch and detail reanalysis), 1.72–2.69 s per request excluding load. SQLite retained originals and all versions; no probability invented. `qwen/qwen3.8-27b` Q4_K_M was discovered but not loaded/inferred: observed free RAM 9.10 GiB / VRAM 8.25 GiB were below the conservative 15.09 / 11.42 GiB thresholds. These are engineering checks, not accuracy evidence. No news/OpenAI requests or frozen-challenge inference occurred.
+Two additional authorized Yahoo GETs returned 200, **300.253837 seconds apart**, across a worker restart; each had 18 entries, zero new links and 18 duplicate observations. No ETag/Last-Modified/304 was received; validator/304/429 branches have offline tests, not fabricated live evidence. Yahoo's source scope permits attributed supplied-title/summary display **in RAM only**; no persistent publisher text or NLP grant is recorded. RAM may expire or disappear after exit, and the demo must not re-fetch to restore it.
 
-31 October Qwen retry, explicitly requested by the user: free RAM/VRAM had risen to 18.08/12.07 GiB immediately before load, so the unchanged safety checks permitted `qwen/qwen3.8-27b` Q4_K_M at context 2048 / 50% GPU offload, with Gemma unloaded. One actual browser-triggered request on the same authored fixture returned HTTP 200, valid structured Positive output and rationale in 15.47 s; SQLite retained 23 originals and increased history from 29 to 30 versions. Dashboard and detail displayed the Qwen result. This supersedes the earlier resource blockage for this measured attempt only, not an accuracy or sustained-load claim.
+Bloomberg/CNBC/WSJ/FT text-use scope remains unverified. After new account-budget confirmation, one `domains=reuters.com` Marketaux query at **2026-11-01 07:36:19 UTC** returned **HTTP 200 with zero records**. No retry/key fallback occurred. Query transport is verified; actual Reuters article coverage remains unverified, and the one-request budget is consumed. Marketaux/Finnhub historical HTTP-200 previews establish connection success; their publisher-content NLP remains unauthorized. **Saved mainstream-media publisher text = 0; mainstream-media FinBERT = 0.** NewsData remains manually paused pending actual subscription/multiple-key constraints and explicit resumption consent. These gates do not block the report handoff. [Per-source results and rights](P3_MEDIA_CONTINUOUS_ACCEPTANCE.md), [API evidence](P2_REAL_NEWS_ACCEPTANCE.md).
 
-Pending: Marketaux downstream rights and stable availability; NewsData resumption
-if explicitly authorized; live Ollama inference (discovery reported unavailable);
-live external API account/model verification (zero real article transmissions);
-reviewer provenance/attestations, **three actual human usability records**, rehearsal
-and team-authored contributions. Agent-operated browsers are not participants.
-Small fictional/provisional references do not estimate general news accuracy or
-calibration. Source scopes and model/publisher licences remain distinct.
+## Evaluation, engineering checks and conclusions to qualify
 
-Internal target: **31 October**. Historical Friday/Week 8 23:59 Sydney and
-10 November 00:00 remain unverified conflicting deadline information; the user
-will confirm personally. [Assessment notes](ASSESSMENT_VERIFICATION.md).
+The consumed challenge remains unchanged: **12/16 scorable sentiment agreement (75%), macro-F1 0.730159**, two mixed/uncertain exclusions. Selected-pair cosine precision **0.666667** on ten scorable pairs. P02 crosses reporting periods; uncertain/opposed-outcome P07 still groups. Reviewer independence/completion attestations remain unverified. These small provisional references do not estimate general news accuracy or calibration. [Frozen methodology/results](CHALLENGE_EVALUATION.md).
 
-## Reference suggestions
+The accepted code baseline passed **631 offline tests (one platform skip)**, isolated benchmark dry run and two Linux plus one Windows CI jobs. Mocks/authored fixtures test software; real source/model/browser evidence is recorded separately. Handoff rehearsal is read-only against retained real records, with zero new provider/model requests. Agent-operated browser checks are engineering acceptance, not three-human usability evidence.
 
-Teammates should read and format their own references; literature results are not
-FinScope validation. Primary-source details checked 29 October.
+The strongest demonstrated result is a persistent, rights-gated local source → traceable text/model result → visual drill-down workflow. Remaining limitations include a source/sector-skewed corpus, weak English dictionary classification/CSRC coverage, bounded lead excerpts, incomplete mainstream-media processing rights and unverified Reuters article coverage, no real Yahoo validators/304, no 24×7 SLA, and incomplete contract-specific expiry/deletion/backup enforcement. Human usability records, reviewer attestations, contribution signatures and the final academic interpretation remain team-owned and unverified until actually supplied.
 
-- Dogu Araci (2019), [FinBERT](https://arxiv.org/abs/1908.10063), arXiv:1908.10063 — domain sentiment background.
-- Nils Reimers and Iryna Gurevych (2019), [Sentence-BERT](https://aclanthology.org/D19-1410/), EMNLP-IJCNLP, pp. 3982–3992, DOI 10.18653/v1/D19-1410 — embeddings/cosine, not event-identity validation.
-- [Pinned FinBERT card](https://huggingface.co/ProsusAI/finbert/blob/0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031/README.md) and [pinned MiniLM card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/blob/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/README.md) — CC BY-NC-SA 4.0 / Apache-2.0 model terms and exact revisions.
-- [Local interface/licence sources](LOCAL_REDESIGN.md), [provider evidence](API_EVALUATION.md), [development log](DEVELOPMENT_LOG.md) and [AI assistance record](CONTRIBUTIONS_AND_AI_DISCLOSURE.md) — actual engineering assistance and pending human claims.
+After handoff, continue P3-B.1 source coverage, bounded incremental collection, classification quality and usability in separate commits/evidence directories. Arrange the final feature freeze/full regression separately. Do not overwrite this report baseline, alter the 171 frozen files or rerun/tune the consumed evaluation.
 
-Maintenance: update dated verified facts and preserve historical qualifications;
-the team owns academic interpretation, authorship and submission.
+## Primary references and evidence navigation
 
-31 October local P0 engineering acceptance: two explicit browser updates fetched
-21 new real originals (20 NIST, one ABS); the real library is ABS 21 / NIST 20 /
-RBA one, dated 29 June–30 October. Three actions used eight bounded collector GETs,
-separate from parsed-record counts. ABS successfully supplied one licensed body
-(1,675 characters); analysis used a traceable leading 1,349-character excerpt.
-NIST supplied permitted RSS summaries, but its first body extraction failed on
-changed markup. Summary fallback and the existing failure-day hold remained;
-the selector repair was checked offline against actual browser-observed DOM,
-not claimed as a second successful body fetch. No news API/OpenAI dispatch.
+These are reference suggestions, not citations written on the team's behalf; authors should inspect and format their own references. Model/publication facts below retain their earlier verification dates.
 
-At the user's request Qwen was unloaded and Gemma selected. Fifty real Gemma
-HTTP-200/schema-valid versions were added (including one explicit body reanalysis),
-covering 40 current real originals; two older originals remain pending. No LLM
-probabilities were invented. Dictionary classification currently evidences three
-primary/four secondary topics across seven originals; 35 are unclassified.
-This is limited official/research coverage, not broad US-equity coverage or an
-independent accuracy evaluation. Optional local LLM classification has mock
-validation only. All prior database rows and 171 frozen files are unchanged.
-
-The worker continued while the only app tab was closed; reopening showed the
-same advancing job. Actual graph, word-cloud and date/sector heatmap clicks
-opened matching originals. A graph-detail insertion could move and blank the
-cloud iframe: a failing-before regression now verifies stable host positions.
-370 offline tests and benchmark dry run pass; no external calls occur from
-view/filter/refresh actions. Browser operation is engineering evidence, not
-three independent human usability participation.
-
-31 October P1 presentation acceptance: local pages adapt the read-only main
-`f2fade9` dark palette, icon navigation and chart cards. A shared accessible
-article-row picker/details component is used by Explorer, Industries, graph,
-cloud and heatmap; keyword snippets highlight literal body/summary matches.
-Date/model/catalog/page/article-focus preferences survive reload without new
-jobs. Missing CSRC classifications are explicitly pending, not evidence of no
-relevant news. Desktop, 820px tablet and 390px mobile checks use the existing real
-library; no new collection, inference or accuracy evaluation. 384 offline tests
-and benchmark dry run pass; all protected data and frozen evidence are unchanged.
-
-31 October P1.1: persistent dark/light and English/Chinese presentation covers
-five local pages, advanced controls and chart iframes, preserving original news
-and model outputs. 400 offline tests and dry run pass; browser assertions cover
-60 page/mode/viewport combinations. Native framework English calendar/auxiliary
-labels and Codex-preload MutationObserver exceptions qualify browser acceptance.
-No new news collection, model inference or evaluation was performed.
-
-31 October settings/runtime refinement: three settings tabs, conditional source
-and key editors, offline drafts and separate run checks reduce duplicate controls.
-Actual browser startup restored installed LM Studio on 127.0.0.1:1234; refresh
-reused the process and showed both downloaded models unloaded. DeepSeek has a
-separate capped authored-text test with strict JSON/history validation, but no
-local key or live request; mock success is not real inference evidence. All 442
-offline tests pass on Streamlit 1.50 and 1.66.1, plus dry run. Protected news,
-history, jobs and frozen evidence are unchanged. A test initially wrote a dummy
-Marketaux vault entry; it was removed and tests isolated. The .env is unchanged;
-any previously different vault value cannot be reconstructed (development log).
-
-31 October 21:33 Sydney: DeepSeek's actual `deepseek-flash` alias passed three
-explicitly confirmed authored-text HTTP/schema/usage/SQLite-history checks (584
-tokens; no retries). Browser details, model filtering and refresh persistence
-worked; 42 real originals remain excluded from these tests. No fixed weight
-revision or accuracy claim follows. Prior rows and 171 frozen hashes are intact;
-443 offline tests and dry run pass after isolating credential diagnostics from
-the user's vault. Earlier no-key status above describes the preparation checkpoint.
-
-31 October credential incident closure: centralized native adapter and shared
-facade; mandatory temporary credentials/data for unittest/AppTest and Python
-children. Missing mocks fail before native credential calls; Windows marshalling
-is checked with mocks and a Windows CI job retains both Linux compatibility jobs.
-466 offline tests and isolated dry run pass locally, including directory-relative
-Linux cleanup and Windows URI regressions. Production credential access,
-news/model requests: zero; 16 data tables and 171 frozen files remain unchanged.
-No claim of restoring a previously different Marketaux vault key is made; only
-the user can re-save it through the local masked editor if needed.
-
-31 October news multi-key refinement: named primary/backups for three news APIs,
-protected UUID credential versions, legacy compatibility and task-pinned nonsecret
-references; quota and all provider/study holds remain shared. Offline browser
-checks used six fake keys, four simulated dispatches and the retained NewsData
-pause. No real key changes or news/model requests. 496 offline tests (one POSIX-only
-skip on Windows) plus isolated dry run pass; 16 existing data tables and 171 frozen
-hashes remain unchanged. Descriptor-relative temporary cleanup is also guarded.
-Provider authentication is not established by these offline checks.
-
-1 November 2026 Sydney: source cards now separate dated local-save evidence,
-exact-key-version API verification, role and last use. Preview and automatic NLP
-readiness differ; partial draft updates require explicit ready-source scope and
-never silently use the old pipeline. 519 offline tests (one POSIX-only Windows
-skip), dry run and isolated browser checks pass, including 390px layout and two
-isolated one-response simulations with no replay. Real inspection used only nonsecret metadata:
-no credential access or live news/model request. All 20 current production tables
-(heartbeat excluded) and 171 frozen hashes remain unchanged. Actual provider
-authentication for the new key slots remains untested.
-
-
-1 November 2026 Sydney follow-up: conditional Settings modules remove cross-page source warnings; updates require an explicit runnable-source/model review before submission. Formal localhost:8511 personal-preview checks used one authorized request each: Marketaux HTTP 200 (3 returned/3 previewed, 15:48:17 UTC), Finnhub NVDA HTTP 200 (250 returned/3 previewed, 15:49:00 UTC), both 31 October UTC. NewsData remained paused. No API article was retained or model-analyzed; downstream rights remain unconfirmed. 524 offline tests (one Windows skip), dry run, 12 Settings language/theme/module combinations and 390px source-layout checks passed. A URL-less browser MutationObserver exception was observed once and not reproduced in instrumented follow-up; no zero-console-error claim. All 47 originals, 83 analyses, old seven request rows, model-request tables and 171 frozen hashes were preserved; only two authorized requests and nonsecret configuration/evidence metadata were added.
-
-
-1 November 2026 Sydney, P2 follow-up: a selected retained API preview can now enter the existing local FinBERT worker without a new fetch, with explicit article storage/NLP rights and narrowed text scope. This is offline software verification, not completed real-news acceptance: Marketaux/Finnhub retained/classified/analyzed article counts remain zero. Existing HTTP-200 evidence is unchanged; original session availability and formal Dashboard/News Explorer checks remain unverified after the browser tool stopped. Current NewsData terms prohibit multiple API Keys; its manual pause remains. See [P2 evidence](P2_REAL_NEWS_ACCEPTANCE.md).
-
-
-1 November 2026 Sydney, P2 follow-up: actual control of the formal 8511 tab is available; the current Marketaux/Finnhub managers show historical receipts but no retained previews. Fresh account allowance/one-capture confirmation and local article/field/rights selection remain pending, so no new API-news analysis or drill-down is claimed. The NewsData adapter now distinguishes summary defaults from explicitly evidenced paid API-body access; its manual pause remains. The official paid/trial in-account multiple-Key feature qualifies the earlier blanket interpretation of its restrictive terms. Details and primary sources are in [P2 follow-up](P2_REAL_NEWS_ACCEPTANCE.md).
-
-
-1 November 2026 Sydney, subsequent explicit single-capture consent: formal localhost:8511 made one new Marketaux request at 2026-10-31 17:27:04 UTC, HTTP 200, three returned/three retained session previews. The attested UTC-day total of two is consumed. Article selection and field-specific storage/NLP permission remain pending: zero new API originals, classifications or actual FinBERT analyses. Existing data and 171 frozen files remain unchanged; current formal processing controls are not rendered. See [the dated capture checkpoint](P2_REAL_NEWS_ACCEPTANCE.md#authorized-single-capture--1-november-2026-sydney).
-
-
-1 November 2026 Sydney, third-preview follow-up: the selected actual API preview remains available, but the formal process predates the processing controls and source watching is disabled; exact loaded Git SHA is unverified. No refresh/restart/fetch occurred. The selected publisher's terms address AI operation and content caching, so API-field retention/NLP rights remain unresolved without an applicable basis. Local FinBERT asset/runtime/resource preflight passed without inference. Real API analysis and Dashboard acceptance remain pending; data and 171 frozen files remain intact. See [runtime and rights evidence](P2_REAL_NEWS_ACCEPTANCE.md#third-preview-selection-and-runtime-diagnosis--1-november-2026-sydney).
-
-
-1 November 2026 Sydney, licensed ABS acceptance: one previously retained official release completed genuine pinned FinBERT processing, idempotent SQLite save and formal Dashboard heatmap/News Explorer drill-down without new collection. Consumer Staples → Food and beverages evidence matches the current content version and actual-text recomputation. Actual excerpt result: Negative (0.8981406093), 1349/1675 body characters plus title; no accuracy claim. Originals remain 47; histories rise from 83 to 84; repeat processing reuses the result. Source-policy field/use/retention/attribution records now cover reviewed ABS releases, while other policy migrations/contract expiry remain qualified follow-up. Marketaux connection success and unapproved API-content NLP remain separate states. All prior data/ledgers and 171 frozen files are preserved. See [ABS evidence and limits](ABS_P2_ACCEPTANCE.md).
+- Araci (2019), [FinBERT](https://arxiv.org/abs/1908.10063); Reimers and Gurevych (2019), [Sentence-BERT](https://aclanthology.org/D19-1410/).
+- Pinned [FinBERT model card](https://huggingface.co/ProsusAI/finbert/blob/0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031/README.md) and [MiniLM model card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/blob/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/README.md).
+- [P3 source policies/official SEC references](P3_BATCH_ACCEPTANCE.md#policies-and-browserverification-evidence), [ABS policy evidence](ABS_P2_ACCEPTANCE.md), [media rights/transport evidence](P3_MEDIA_CONTINUOUS_ACCEPTANCE.md).
+- [Handoff record](REPORT_HANDOFF_20261102.md), [6:15 local demo](DEMO_SCRIPT.md), [operator checklist](DEMO_CHECKLIST.md), [development log](DEVELOPMENT_LOG.md), [AI assistance](CONTRIBUTIONS_AND_AI_DISCLOSURE.md).
