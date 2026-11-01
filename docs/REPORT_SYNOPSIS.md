@@ -15,9 +15,11 @@ an explicit source-level choice between licence evidence, private research with
 unresolved applicability, and concrete restrictions. Finite API/RSS titles and
 actual summaries use an expiring SQLite partition and the existing offline
 classification/FinBERT queue; this is separate from the sealed handoff snapshot.
-Engineering fixtures verify retention/cache/restart/batch behaviour. New actual
-media text persistence and FinBERT remain **0** pending a fresh user scope and
-account-budget choice; neither URL discoveries nor ABS results fill that gap.
+Engineering fixtures verify retention/cache/restart/batch behaviour. A subsequent
+explicitly confirmed private API batch completed actual local FinBERT; its
+content, operational receipt and semantic results remain in ignored finite local
+storage. This is private research acceptance, with third-party applicability
+unverified; it is not publisher-licensed NLP or permission for group/public demos.
 No publisher permission is inferred from user research confirmation.
 
 FinScope is a single-user, desktop-hosted financial-news/disclosure inspection tool. It supports permitted local text storage, sentiment, evidence-based industry topics and drill-down to originals. It does not forecast returns, establish causation or verify event identity.

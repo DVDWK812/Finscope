@@ -2,6 +2,18 @@
 
 ## Finite media engineering — 2 November 2026 Sydney
 
+Later runtime acceptance used one fresh, explicitly confirmed private Finnhub
+batch, with actual source-supplied titles/summaries retained for seven days.
+After the user freed RAM, an initial three-record FinBERT pilot completed and
+the rest ran offline from that same response; the pilot was cached. No article
+page, external LLM or second news request was used. Records/results remain local
+and unshared, under `research_unverified`, not publisher permission. Finnhub's
+returned links are supplier redirects; original publication domains/editorial
+originality were not independently established. The first RAM pause exposed a
+`python -m` exception-class identity bug; ResourceBlocked now uses the shared
+ModelError base, so BatchRunner records a resource pause correctly across entry
+points. A regression reproduces the separate module identity with authored data.
+
 Checked remote `local` at `f054fa5`, instructions, parallel edits and idle 8511
 processes. Implemented three distinct source-use states, explicit article/GET
 budgets, bounded Marketaux pages and reuse of one Finnhub multi-record response.

@@ -126,6 +126,16 @@ class FiniteMediaTests(unittest.TestCase):
         self.assertEqual(self.q.get()['status'],'blocked');self.assertEqual(len(self.data.news()),1)
         self.q.resume(self.q.get()['id']);w.resources=lambda *a,**k:None;w.run_one()
         self.assertEqual(len(self.data.analyses()),1)
+    def test_cli_module_resource_exception_is_a_resource_pause(self):
+        import runpy
+        with __import__('warnings').catch_warnings():
+            __import__('warnings').simplefilter('ignore',RuntimeWarning)
+            entry=runpy.run_module('finscope.local_worker',run_name='worker_entry_fixture')
+        n,_,_=self.data.save(self.item());self.q.submit_batch('analyze',self.config(),confirmed=True,article_ids=[n.article_id])
+        def blocked(*args,**kwargs):raise entry['ResourceBlocked']('Authored entry-point RAM shortage')
+        Worker(self.store,infer=self.prediction,resources=blocked).run_one()
+        self.assertEqual(self.q.get()['status'],'blocked');self.assertEqual(len(self.data.news()),1)
+        self.assertFalse(self.data.analyses())
     def test_budget_is_explicit_dated_and_cannot_be_renewed_implicitly(self):
         d=self.config()['media_batch'];preflight(self.store,d)
         d['utc_day']=(self.now-timedelta(days=1)).date().isoformat()

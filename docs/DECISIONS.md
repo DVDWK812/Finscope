@@ -13,6 +13,9 @@ text-free and all original ledgers/frozen evidence intact. Article/GET limits an
 current UTC-day budgets are explicit, never auto-renewed. At this checkpoint real
 new media HTTP/persistence/NLP are all zero pending the single fresh batch choice;
 engineering fixtures, URL indexes and ABS reanalysis do not replace acceptance.
+Subsequently the user confirmed a new finite private API batch, which completed
+actual local FinBERT after freeing RAM. Its content/results and detailed receipt
+are local only; this does not establish publisher permission or redistribution.
 
 **1 November 2026 — report handoff:** The user clarified that 2 November18:00
 Australia/Sydney is an internal technical/report baseline, readiness before

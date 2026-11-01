@@ -16,7 +16,9 @@ from .text_processing import prepare,VERSION
 from .model_providers import ModelError
 
 
-class ResourceBlocked(ValueError):pass
+# ModelError comes from a shared imported module even under `python -m`.
+# BatchRunner must also catch the entry-point module's resource exception.
+class ResourceBlocked(ModelError):pass
 
 
 def resource_check(mode,*,loading=False):
