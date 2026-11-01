@@ -24,6 +24,7 @@ class MediaTests(unittest.TestCase):
         self.store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);TaskQueue(self.store);self.now=NOW;self.calls=[]
         def get(url,headers):self.calls.append((url,headers));return 200,{'ETag':'"fixture"','Last-Modified':'Sun, 01 Nov 2026 04:30:00 GMT'},XML
         self.monitor=MediaMonitor(self.store,get=get,clock=lambda:self.now)
+        for source in FEEDS:self.monitor.configure(source,budget_day=NOW.date().isoformat(),budget_reference='Authored fixture HTTP allowance')
     def advance(self):self.now+=timedelta(minutes=16)
     def test_realistic_store_and_offline_replay_without_copied_text(self):
         r,visible=self.monitor.check('cnbc',explicit=True)
@@ -88,6 +89,15 @@ class MediaTests(unittest.TestCase):
         self.monitor.configure('yahoo',grant=GRANT)
         rows,_=parse_feed(XML,'yahoo');self.monitor.replay('yahoo',rows)
         self.assertEqual(self.monitor.promote('yahoo')['new'],1)
+    def test_display_only_titles_use_ram_and304_renews_without_disk_archive(self):
+        self.monitor.configure('cnbc',grant={**GRANT,'purposes':['display','poll'],'fields':['title']})
+        self.monitor.check('cnbc',explicit=True)
+        self.assertIn('title',self.monitor.preview('cnbc')[0]);self.assertNotIn('title',self.monitor.index('cnbc')[0])
+        self.advance();self.assertEqual(self.monitor.preview('cnbc'),[])
+        self.monitor.get=lambda *a:(304,{},b'');self.monitor.check('cnbc',explicit=True)
+        self.assertIn('title',self.monitor.preview('cnbc')[0]);self.assertNotIn('title',self.monitor.index('cnbc')[0])
+        self.monitor.configure('cnbc');self.assertEqual(self.monitor.preview('cnbc'),[])
+        self.assertEqual(self.store.list_analyses(),[])
     def test_revisions_and_late_arrivals_not_dropped_by_watermark(self):
         self.monitor.check('wsj',explicit=True);self.advance()
         changed=XML.replace(b'grows',b'declines').replace(b'04:30:00',b'04:00:00')
@@ -149,7 +159,7 @@ class MediaTests(unittest.TestCase):
         result=fetch_provider('marketaux','technology',api_key='test-only',marketaux_filters=MarketauxFilters(('reuters.com',)),transport=lambda *a:payload)
         self.assertFalse(result.articles);self.assertIn('Outside-whitelist',result.note)
     def test_bounds_and_policies_reject_broadening(self):
-        for kwargs in ({'interval':4},{'interval':16},{'daily_cap':289}):
+        for kwargs in ({'interval':4},{'interval':1441},{'daily_cap':1001}):
             with self.assertRaises(ValueError):self.monitor.configure('ft',**kwargs)
         for g in ({**GRANT,'fields':['body']},{**GRANT,'basis':''},{**GRANT,'purposes':['nlp']},{**GRANT,'expires_at':'yesterday'}):
             with self.assertRaises(ValueError):policy(g)

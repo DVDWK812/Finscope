@@ -1,5 +1,33 @@
 # Development log
 
+## P3-B.1 continuity and coverage correction —1 November2026 Sydney
+
+Started clean at57738a6 and checked remote/local instructions/processes. Backed
+up SQLite before changes. Retained all prior receipt/index/original/model evidence.
+Added one-shot authorization-ledger diagnostics with literal safe headers/hashes
+before indexing and separately counted, reviewed HTTPS FT RSS redirects. With
+explicit user approval, actual Bloomberg1 GET returned200/18 entries; FT2 GETs
+returned301(`/rss/home/international`) then200/10 entries. Old missing Bloomberg
+metrics/hold and the old header-less FT301 record were not rewritten or restored.
+
+Corrected source intervals/budgets:5–1440 minutes, UTC-day attestation, full-day
+capacity validation, bounded-window estimates, no silent next-day renewal.
+The user confirmed Yahoo RSS applicability,2 GETs at5-minute intervals and
+RAM-only supplied-feed display. Actual starts06:56:08.670114/07:01:08.923951 UTC;
+spacing300.253837s, both200/18 duplicate observations/zero new or revised articles.
+No Yahoo validators or304 were emitted. Restarted only the verified worker
+between rounds; budget/next_due/validator state and request count survived;
+the second call occurred on schedule and the3/3 UTC-day cap stopped further calls.
+
+Added bounded Windows RAM reader buffers for permitted display fields, source
+rights review dimensions, actual source/domain evidence and budget status in
+the existing monitor. No disk headline/summary cache, original save, FinBERT
+change/inference, other official-source expansion, publisher-page fetch or
+external LLM call. Source-link index108→136;266 originals/232 analyses and171
+frozen files preserved. Reuters one-shot construction/audit is prepared but its
+new account-budget approval is still pending.631 offline tests(one skip) and
+isolated dry run passed; exact final local SHA/CI are reported separately.
+
 ## P3-B global media discovery — 1 November 2026 Sydney
 
 Started clean at bdbd3fd, fetched the latest remote and inspected local instructions,

@@ -7,6 +7,14 @@ the organization below is optional. No Moodle access or coursework submission.
 
 ## Objective and current scope
 
+P3-B.1 completed an approved Bloomberg GET(18 links), bounded FT301→200(10 links)
+and two actual Yahoo worker polls300.253837 seconds apart across a worker restart.
+The discovery index is136; original news266 and analysis history232 are unchanged.
+Yahoo's applicable reader scope was confirmed for RAM-only display, not storage
+or NLP. Both live rounds returned200 without validators/304; no such network
+support is claimed. Reuters still awaits a new account-budget confirmation.
+See [actual continuity and scope evidence](P3_MEDIA_CONTINUOUS_ACCEPTANCE.md).
+
 P3-B adds mainstream-media discovery, separately from licensed NLP. Five bounded
 feed GETs on 1 November yielded 108 distinct CNBC/WSJ/Yahoo links; FT returned 301,
 and Bloomberg's initial local indexing failure left incomplete metrics (no retry).

@@ -52,13 +52,21 @@ results and 113 not-applicable metadata records**. See
 [P3 acceptance, exact denominators and remaining limits](docs/P3_BATCH_ACCEPTANCE.md).
 
 **Global media monitor** adds the five fixed Bloomberg/CNBC/WSJ/FT/Yahoo feeds,
-separate discovery and licensed-analysis counts, opt-in 5–15-minute worker polling,
+separate discovery and licensed-analysis counts, opt-in bounded worker polling,
 conditional HTTP and durable deduplication/holds. Actual P3-B checks discovered
 108 distinct CNBC/WSJ/Yahoo links; FT returned 301 and Bloomberg's initial client
 indexing failure left incomplete evidence. No publisher titles/descriptions were
 cached or analyzed without an applicable grant. Six-domain Marketaux filters can
 be configured offline; actual API budgets remain unchanged. See
 [per-media results, rights and remaining gates](docs/P3_MEDIA_ACCEPTANCE.md).
+
+P3-B.1 adds current UTC-day budget confirmation,5–1440-minute intervals and
+explicit coverage/exhaustion:15-minute all-day polling needs96 GETs/source/day;
+the former12-request default is a short window, or120-minute all-day spacing.
+Actual approved validation added18 Bloomberg and10 FT links, and performed two
+real Yahoo rounds five minutes apart across a worker restart. Approved Yahoo
+reader fields display in RAM only; media NLP remains0. See
+[continuous-polling evidence and remaining Reuters/rights gate](docs/P3_MEDIA_CONTINUOUS_ACCEPTANCE.md).
 
 ```powershell
 # Explicitly submit to the separately running local worker; no external LLM.

@@ -1,5 +1,15 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November2026 Sydney — P3-B.1 real continuity:** Completed approved Bloomberg
+one-GET and FT two-GET(301→200) diagnostics without rewriting their old receipts.
+Added28 source links, bringing the separate index to136. Two approved Yahoo
+worker calls300.253837 seconds apart survived a worker restart, returned200 with
+18 duplicate observations each and stopped at the total3/3 UTC-day cap. The feed
+emitted no validators/304. Source-reviewed supplied fields display only in RAM;
+disk text/NLP remain0. Require daily budget attestation and distinguish bounded
+coverage from96/288-GET full-day schedules. Reuters still needs its new account
+budget. See [P3-B.1 actual evidence](P3_MEDIA_CONTINUOUS_ACCEPTANCE.md).
+
 **1 November 2026 Sydney — P3-B media discovery:** Keep the fixed public RSS
 monitor separate from licensed originals/NLP. Five actual bounded GETs produced
 108 distinct CNBC/WSJ/Yahoo links; FT stopped on 301 and Bloomberg's first client

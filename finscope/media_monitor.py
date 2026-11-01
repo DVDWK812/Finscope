@@ -159,21 +159,48 @@ class MediaMonitor:
         return {k:json.loads(rows[k]) if k in rows else dict(enabled=False,interval=15,daily_cap=12,
             etag='',modified='',watermark='',last_success='',last_check='',next_due='',hold='',failures=0,
             inflight='',policy=policy(),last_report={}) for k in FEEDS}
-    def configure(self,source,*,enabled=False,interval=15,daily_cap=12,grant=None):
-        if source not in FEEDS or type(interval) is not int or not 5<=interval<=15 or type(daily_cap) is not int or not 1<=daily_cap<=288 or type(enabled) is not bool:raise ValueError('Invalid bounded monitor scope')
+    def configure(self,source,*,enabled=False,interval=15,daily_cap=12,grant=None,
+                  budget_day=None,budget_reference=None,coverage_mode='bounded_window'):
+        from .media_schedule import validate_schedule
+        if source not in FEEDS or type(enabled) is not bool:raise ValueError('Invalid bounded monitor scope')
+        validate_schedule(interval,daily_cap,coverage_mode)
         p=policy(grant)
         from .news_keys import NewsKeyRegistry
         NewsKeyRegistry(self.store).reject_secret_text(json.dumps(p))
         if enabled and ('poll' not in p['purposes'] or not active_policy(p,self.clock())):raise ValueError('Scheduling requires applicable feed polling evidence')
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
-            s=self._state(db,source);s.update(enabled=enabled,interval=interval,daily_cap=daily_cap,policy=p)
+            s=self._state(db,source)
+            day=s.get('budget_day','') if budget_day is None else budget_day
+            reference=s.get('budget_reference','') if budget_reference is None else budget_reference
+            if not isinstance(day,str) or not isinstance(reference,str) or len(reference)>500:raise ValueError('Invalid budget attestation')
+            if day:
+                try:datetime.strptime(day,'%Y-%m-%d')
+                except ValueError:raise ValueError('Budget day must be a UTC calendar date') from None
+            if enabled and (day!=iso(self.clock())[:10] or not reference.strip()):raise ValueError('Confirm the current UTC-day HTTP budget and its basis before polling')
+            NewsKeyRegistry(self.store).reject_secret_text(reference)
+            # A successful new diagnostic plus an explicitly enabled, licensed
+            # budget may resolve only the known old client/redirect guard.
+            # The original unknown metrics and receipt remain in history.
+            probe=s.get('probe_report',{});prior=s.get('last_report',{})
+            if enabled and (s['hold'] or s['inflight']) and probe.get('diagnostic_state')=='completed' and probe.get('http_status')==200:
+                known=(source=='ft' and prior.get('http_status')==301 or source=='bloomberg' and prior.get('outcome')=='persistence_failed')
+                if s['inflight']:
+                    row=db.execute('SELECT status,http_status FROM media_requests WHERE id=?',(s['inflight'],)).fetchone()
+                    known=known and row==('persistence_failed',200)
+                if not known:raise ValueError('An unknown/provider hold cannot be resolved by this source configuration')
+                s.setdefault('retained_prior_checkpoints',[]).append(dict(inflight=s['inflight'],hold=s['hold'],report=prior))
+                s.update(inflight='',hold='')
+            s.update(enabled=enabled,interval=interval,daily_cap=daily_cap,policy=p,
+                     budget_day=day,budget_reference=reference,coverage_mode=coverage_mode)
             for identity,payload in db.execute('SELECT identity,payload FROM media_seen WHERE source=?',(source,)).fetchall():
                 saved=json.loads(payload)
                 url=db.execute('SELECT url FROM media_seen WHERE source=? AND identity=?',(source,identity)).fetchone()[0]
                 kept={k:v for k,v in saved.items() if k=='wire_credit' or 'retain' in p['purposes'] and k in p['fields'] and active_policy(p,self.clock()) and publisher_covered(source,url,p)}
                 db.execute('UPDATE media_seen SET payload=?,policy=? WHERE source=? AND identity=?',(json.dumps(kept),json.dumps(p),source,identity))
             self._put(db,source,s);db.commit()
+        from .media_preview import publish
+        publish(self.store,source,[],iso(self.clock()))
         # Revocation/narrowing wins over previously promoted article grants.
         from .product_storage import ProductStorage
         from dataclasses import replace
@@ -186,6 +213,19 @@ class MediaMonitor:
         row=db.execute('SELECT payload FROM media_sources WHERE source=?',(source,)).fetchone()
         return json.loads(row[0]) if row else self.states()[source]
     def _put(self,db,source,state):db.execute('INSERT OR REPLACE INTO media_sources VALUES (?,?)',(source,json.dumps(state)))
+    def capacity(self,source):
+        from .media_schedule import capacity
+        now=self.clock()
+        with closing(self.store.connect()) as db:
+            used=db.execute('SELECT count(*) FROM media_requests WHERE source=? AND substr(started,1,10)=?',(source,iso(now)[:10])).fetchone()[0]
+        return capacity(self.states()[source],used,now)
+    def evidence(self,source):
+        s=self.states()[source];reports=[s.get('last_report',{}),s.get('probe_report',{})]
+        return max(reports,key=lambda r:r.get('checked_at',''))
+    def success_at(self,source):
+        with closing(self.store.connect()) as db:
+            row=db.execute("SELECT MAX(started) FROM media_requests WHERE source=? AND status IN ('ok','metadata_recovered') AND http_status IN (200,304)",(source,)).fetchone()
+        return row[0] or ''
     def check(self,source,*,explicit=False):
         if source not in FEEDS:raise ValueError('Unknown feed')
         now=self.clock();rid=uuid4().hex
@@ -193,6 +233,7 @@ class MediaMonitor:
             db.execute('BEGIN IMMEDIATE');s=self._state(db,source)
             if s['inflight'] or s['hold']:raise ValueError(s['hold'] or 'Previous dispatch outcome unknown; review required')
             if not explicit and (not s['enabled'] or 'poll' not in s['policy']['purposes'] or not active_policy(s['policy'],now)):return None
+            if s.get('budget_day')!=iso(now)[:10] or not s.get('budget_reference','').strip():raise ValueError('Current UTC-day HTTP budget is unconfirmed or expired; no request')
             if s['next_due'] and s['next_due']>iso(now):raise ValueError('Source interval/backoff has not elapsed')
             used=db.execute('SELECT count(*) FROM media_requests WHERE source=? AND substr(started,1,10)=?',(source,iso(now)[:10])).fetchone()[0]
             if used>=s['daily_cap']:raise ValueError('Source UTC-day request cap reached')
@@ -201,12 +242,30 @@ class MediaMonitor:
         headers={'User-Agent':'FinScope-local-feed-reader/1.0','Accept':'application/rss+xml, application/atom+xml, application/xml, text/xml'}
         for k,v in [('If-None-Match',s['etag']),('If-Modified-Since',s['modified'])]:
             if v:headers[k]=v
-        started=time.perf_counter();status=None;meta={};rows=[];response_headers={};size=0
+        request_url=FEEDS[source].url
+        if source=='ft' and s.get('resolved_url'):
+            from .media_probe import reviewed_ft_url
+            request_url=reviewed_ft_url(s['resolved_url'],request_url)
+        validator_url=s.get('validator_url',FEEDS[source].url)
+        if validator_url!=request_url:
+            headers.pop('If-None-Match',None);headers.pop('If-Modified-Since',None)
+        # A new display grant/full restart cannot reconstruct titles from a304.
+        # If only metadata survived, initialize the permitted representation
+        # with this same one approved GET, rather than spending another request.
+        representation=True
+        p=s['policy']
+        if 'display' in p['purposes'] and p['fields']:
+            from .media_preview import read
+            candidates=read(self.store,source,iso(now),allow_expired=True) or self.index(source)
+            representation=any(any(k in r for k in p['fields']) for r in candidates)
+            if not representation:
+                headers.pop('If-None-Match',None);headers.pop('If-Modified-Since',None)
+        started=time.perf_counter();status=None;meta={};rows=[];response_headers={};size=0;body=b''
         try:
-            status,response_headers,body=self.get(FEEDS[source].url,headers);size=len(body)
+            status,response_headers,body=self.get(request_url,headers);size=len(body)
             if status==200:rows,meta=parse_feed(body,source)
             elif status==304:
-                if not s['last_success']:raise ValueError('Unexpected 304 without an earlier valid feed')
+                if not s['last_success'] or not any(k in headers for k in ('If-None-Match','If-Modified-Since')):raise ValueError('Unexpected 304 without an earlier valid feed and conditional headers')
                 meta={'format':s['last_report'].get('format',''),'valid_items':0,'latest_published':s['watermark']}
             else:meta={'reason':'HTTP '+str(status)+'; no redirect or alternative URL attempted'}
         except requests.RequestException:meta={'reason':'Transport outcome unknown; no automatic retry'}
@@ -215,6 +274,9 @@ class MediaMonitor:
         report={**meta,'request_id':rid,'source':source,'http_status':status,'checked_at':iso(now),
                 'latency_ms':round((time.perf_counter()-started)*1000,2),'response_bytes':size,
                 'new':0,'duplicates':0,'changed':0,'processable':0,'stored':0,'nlp_completed':0}
+        from .media_probe import response_headers as safe_headers
+        report.update(request_url=request_url,request_validators={k:v for k,v in headers.items() if k in {'If-None-Match','If-Modified-Since'}},
+                      response_headers=safe_headers(response_headers),response_sha256=hashlib.sha256(body).hexdigest() if body else '',reusable_display_representation=representation)
         if rows:report['explicit_reuters_credits']=sum(bool(r['wire_credit']) for r in rows)
         checkpoint=[{k:r[k] for k in ('identity','url','published','fingerprint','publisher','wire_credit')} for r in rows]
         ok=status in {200,304} and 'reason' not in meta
@@ -233,6 +295,7 @@ class MediaMonitor:
                 for key,header in [('etag','ETag'),('modified','Last-Modified')]:
                     value=next((v for k,v in response_headers.items() if k.lower()==header.lower()),'')
                     if value and len(value)<=500 and not re.search(r'[\r\n]',value):s[key]=value
+                s['validator_url']=request_url
                 s['next_due']=iso(now+timedelta(minutes=s['interval']))
             else:
                 s['failures']+=1
@@ -244,6 +307,8 @@ class MediaMonitor:
                 else:s['hold']=meta.get('reason','Review required')
             # A concurrent stop/policy edit must not be overwritten by this response.
             s.update(enabled=current['enabled'],interval=current['interval'],daily_cap=current['daily_cap'],policy=current['policy'],inflight='',last_report=report)
+            for key in ('budget_day','budget_reference','coverage_mode'):s[key]=current.get(key,'')
+            if ok:s['next_due']=iso(now+timedelta(minutes=current['interval']))
             self._put(db,source,s)
             db.execute('UPDATE media_requests SET finished=?,status=?,http_status=?,report=? WHERE id=?',
                        (iso(self.clock()),'ok' if ok else 'failed',status,json.dumps(report),rid));db.commit()
@@ -254,6 +319,11 @@ class MediaMonitor:
             entry={k:v for k,v in row.items() if k in {'url','published','wire_credit'} or covered and k in p['fields']}
             entry.update(feed_provider=FEEDS[source].name,publishing_domain=urlsplit(row['url']).hostname)
             visible.append(entry)
+        from .media_preview import publish,read
+        if status==304 and ok:
+            candidates=read(self.store,source,iso(now),allow_expired=True)
+            visible=[{k:v for k,v in row.items() if k not in {'title','summary'} or allow and k in p['fields'] and publisher_covered(source,row['url'],p)} for row in candidates]
+        publish(self.store,source,visible,iso(now+timedelta(minutes=min(s['interval'],15))))
         return report,visible
     def _ingest(self,db,source,rows,now,p):
         counts=dict(new=0,duplicates=0,changed=0,processable=0,stored=0)
@@ -335,6 +405,8 @@ class MediaMonitor:
         now=iso(self.clock())
         for source,s in self.states().items():
             if not s['enabled'] or s['hold'] or s['inflight'] or s['next_due'] and s['next_due']>now:continue
+            cap=self.capacity(source)
+            if not cap['budget_attested'] or not cap['remaining_gets']:continue
             try:
                 result=self.check(source)
                 grant=self.states()[source]['policy']
@@ -373,3 +445,8 @@ class MediaMonitor:
             credit=json.loads(payload).get('wire_credit','Not captured in initial receipt')
             result.append(dict(feed_provider=FEEDS[source].name,publishing_domain=urlsplit(url).hostname,url=url,published=published,first_seen=first,last_seen=last,wire_credit=credit,**text))
         return result
+    def preview(self,source):
+        from .media_preview import read
+        rows=read(self.store,source,iso(self.clock()));p=self.states()[source]['policy']
+        allow=active_policy(p,self.clock()) and 'display' in p['purposes']
+        return [{k:v for k,v in row.items() if k not in {'title','summary'} or allow and k in p['fields'] and publisher_covered(source,row['url'],p)} for row in rows]

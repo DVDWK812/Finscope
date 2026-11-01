@@ -336,7 +336,7 @@ class LocalIngestionService:
             db.commit()  # Durable intent before dispatch, including transport failures.
         return request_id, now
 
-    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False, newsdata_text_access=None):
+    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False, newsdata_text_access=None, marketaux_filters=None):
         if explicit is not True:
             raise FetchBlocked("An explicit Fetch action is required")
         if provider not in {"marketaux", "newsdata", "finnhub"}:
@@ -353,10 +353,12 @@ class LocalIngestionService:
         # Validate inputs before consuming a reservation.
         from .api_sources import build_request
         access_options={'newsdata_text_access':newsdata_text_access} if newsdata_text_access is not None else {}
+        if marketaux_filters is not None and provider!='marketaux':raise FetchBlocked('Marketaux filters apply only to Marketaux')
         if provider=='marketaux':
             from .api_sources import MarketauxFilters
             filters=self.store.setting('marketaux_media_filters')
-            if filters:access_options['marketaux_filters']=MarketauxFilters(**filters)
+            if marketaux_filters is not None:access_options['marketaux_filters']=marketaux_filters
+            elif filters:access_options['marketaux_filters']=MarketauxFilters(**filters)
         build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol,**access_options)
         def resolve(db,identity):
             nonlocal api_key
