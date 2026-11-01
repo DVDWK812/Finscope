@@ -102,6 +102,16 @@ def source_readiness(store,provider,config,*,target='pipeline',service=None):
 
 
 def source_plan(store,config,*,service=None):
+    if config.get('media_batch'):
+        from .media_batch import preflight,existing_collection
+        from .media_use import validate,enforce_decision
+        d=config['media_batch'];source=d['source']
+        try:
+            validate(d['scope']);enforce_decision(store,d['scope'])
+            if not existing_collection(store,d['batch_id']):preflight(store,d,service=service,ignore_spacing=True)
+            return [source],{}
+        except ValueError as error:
+            return [],{source:dict(missing=['hold'],complete=[],hold_reason=str(error))}
     from .local_collectors import SOURCES
     ready=[];blocked={}
     for provider in config.get('sources',[]):

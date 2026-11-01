@@ -24,6 +24,7 @@ PAGES=['Dashboard','Industries','Knowledge Graph','News Explorer','Settings']
 
 @st.fragment(run_every=2)
 def task_progress(store,show_diagnostics=True):
+    if ProductStorage(store).expire():st.rerun()
     from .ui_preferences import bootstrap
     bootstrap(store)
     q=TaskQueue(store);task=q.get()
@@ -56,7 +57,8 @@ def update_button(q):
     from .news_source_ui import conditions
     expected=editable(q);c=saved(q) or q.config();task=q.get()
     from .batch_ui import saved_config
-    batch=saved_config(q)
+    from .media_batch_ui import saved as saved_media
+    batch=saved_media(q.store) or saved_config(q)
     if batch:expected=batch;c=batch
     unsaved=not batch and st.session_state.get('_settings_edit',expected)!=expected
     if unsaved:st.caption('Unsaved changes')
@@ -78,7 +80,7 @@ def update_button(q):
             if st.button('Confirm update and analysis',key='product_confirm_update',disabled=not review['ready'] or not model_ready or unsaved or bool(task and task['status'] in ACTIVE)):
                 try:
                     if batch:
-                        if saved_config(q)!=config:raise ValueError('Batch settings changed; review again')
+                        if (saved_media(q.store) or saved_config(q))!=config:raise ValueError('Batch settings changed; review again')
                         ready,_=source_plan(q.store,config)
                         if ready!=review['ready']:raise ValueError('Source readiness changed; review again')
                         q.submit_batch('update',{**config,'sources':ready},confirmed=True)
@@ -106,6 +108,12 @@ def reanalyze(item,store,prefix='product'):
 def details(item,result,store,classifications,catalog,context='product',keyword=None):
     from html import escape
     c=classifications.get(item.article_id,{})
+    from .media_use import scope_of,authorize as media_authorize
+    scope=scope_of(item)
+    if scope:
+        try:media_authorize(item,('local_display',))
+        except ValueError:st.info('Media text expired or its use scope is blocked.');return
+        st.caption(('Recorded licence evidence' if scope['status']=='licensed' else 'User research use · applicability unverified · not publisher permission')+' · expires UTC '+scope['expires_at'])
     from .batch_records import eligibility,source_type,TYPES
     st.caption(TYPES[source_type(item)]+(' · '+item.document_type if item.document_type else ''))
     eligible,reason=eligibility(item)
@@ -265,10 +273,10 @@ def main():
         st.info(f"{missing}/{len(news)} originals have no saved classification for {mode}; industry relevance is not yet determined.")
     news=project_news(news,classes,catalog)
     current={n.article_id:n for n in news}
-    analyses=[a for a in store.list_analyses() if a.article_id in current and (not current[a.article_id].content_version or a.provenance.get('content_sha256')==current[a.article_id].content_version)]
+    analyses=[a for a in data.analyses() if a.article_id in current and (not current[a.article_id].content_version or a.provenance.get('content_sha256')==current[a.article_id].content_version)]
     parent_names=[node_label(n) for n in catalog['nodes'] if n['parent_id'] is None]+['Unclassified']
     from .local_analytics import result_models
-    choices=result_models(store.list_analyses())
+    choices=result_models(data.analyses())
     preferred=st.session_state.get('product_preferred_model') or c.get('result_model_key')
     if preferred and preferred not in choices:choices.append(preferred)
     if preferred and 'local_result_model' not in st.session_state and 'local_result_model' not in st.session_state.get('filter_preferences',{}):

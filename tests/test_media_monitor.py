@@ -17,11 +17,12 @@ XML=b'''<rss version="2.0"><channel><title>Authored fixture</title><item>
 <title>The fictional chip company grows in revenue</title><link>https://example.com/authored/one</link>
 <pubDate>Sun, 01 Nov 2026 04:30:00 GMT</pubDate><description>Authored financial test summary.</description>
 <author>Reuters</author><encoded>DO NOT RETAIN BODY</encoded></item></channel></rss>'''
-GRANT=dict(basis='Authored fixture; test-only rights',fields=['title','summary'],purposes=['display','retain','nlp','poll'],retention='no_fixed_expiry',expires_at='',publisher_domains=['example.com'])
+GRANT=dict(basis='Authored fixture; test-only rights',fields=['title','summary'],purposes=['display','retain','nlp','poll'],retention='no_fixed_expiry',expires_at='',publisher_domains=['example.com'],exception_reference='Authored test content owned by fixture author; no publisher text')
 
 class MediaTests(unittest.TestCase):
     def setUp(self):
         self.store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);TaskQueue(self.store);self.now=NOW;self.calls=[]
+        clock=patch('finscope.media_use.utcnow',side_effect=lambda:self.now);clock.start();self.addCleanup(clock.stop)
         def get(url,headers):self.calls.append((url,headers));return 200,{'ETag':'"fixture"','Last-Modified':'Sun, 01 Nov 2026 04:30:00 GMT'},XML
         self.monitor=MediaMonitor(self.store,get=get,clock=lambda:self.now)
         for source in FEEDS:self.monitor.configure(source,budget_day=NOW.date().isoformat(),budget_reference='Authored fixture HTTP allowance')
@@ -113,8 +114,12 @@ class MediaTests(unittest.TestCase):
         self.monitor.check('ft',explicit=True)
         with self.assertRaises(ValueError):self.monitor.promote('ft')
         self.monitor.configure('ft',grant={**GRANT,'retention':'30 days','expires_at':'2026-12-01T00:00:00Z'})
-        with self.assertRaises(ValueError):self.monitor.promote('ft')
-        self.assertFalse(ProductStorage(self.store).news())
+        self.advance()
+        self.monitor.check('ft',explicit=True)
+        self.assertEqual(self.monitor.promote('ft')['duplicates'],1)
+        self.assertEqual(len(ProductStorage(self.store).news()),1)
+        self.assertEqual(self.store.list_news(),[])
+        self.assertFalse(self.store.list_news())
     def test_policy_expiry_hides_text_and_disallows_promote(self):
         self.monitor.configure('wsj',grant={**GRANT,'expires_at':'2026-11-01T05:05:00Z'})
         self.monitor.check('wsj',explicit=True);self.assertIn('title',self.monitor.index('wsj')[0]);self.advance()

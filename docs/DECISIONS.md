@@ -1,5 +1,19 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**2 November 2026 — finite media research:** Record licence coverage, user-chosen
+private research with unresolved applicability, and concrete restrictions as
+different states. User consent is not publisher permission; lack of a separate
+NLP email is not the sole universal refusal reason. Specific restrictions require
+a specific applicable exception. API titles/actual summaries may enter a finite
+SQLite partition under an explicit source scope; preprocessing, evidence and
+FinBERT results expire together. No training, external model, article-page fetch
+or corpus export. Finnhub sharing/derived-result restrictions and subscription-end
+deletion remain distinct from personal-use scope. Keep permanent task checkpoints
+text-free and all original ledgers/frozen evidence intact. Article/GET limits and
+current UTC-day budgets are explicit, never auto-renewed. At this checkpoint real
+new media HTTP/persistence/NLP are all zero pending the single fresh batch choice;
+engineering fixtures, URL indexes and ABS reanalysis do not replace acceptance.
+
 **1 November 2026 — report handoff:** The user clarified that 2 November18:00
 Australia/Sydney is an internal technical/report baseline, readiness before
 noon, not an official deadline or permanent product freeze. Continue `local`

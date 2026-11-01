@@ -54,6 +54,8 @@ def controls(store):
                 if result:st.session_state['media_preview_'+source]=result[1]
                 st.rerun()
             except ValueError as error:st.info(str(error))
+        from .media_monitor import active_policy,stamp
+        if not active_policy(s['policy'],stamp()):st.session_state.pop('media_preview_'+source,None)
         visible=st.session_state.get('media_preview_'+source) or monitor.preview(source) or monitor.index(source)
         if visible:
             p=s['policy']
@@ -77,7 +79,10 @@ def controls(store):
             st.json(review(source,s['policy']),expanded=False)
             with st.form('media_policy_'+source):
                 p=s['policy']
+                statuses=['licensed','research_unverified','restricted']
+                basis_status=st.selectbox('Source use basis status',statuses,index=statuses.index(p.get('basis_status','licensed')))
                 basis=st.text_area('Actual source licence / legal basis',value=p['basis'],max_chars=1500)
+                exception_reference=st.text_input('Specific exception to an identified restriction',value=p.get('exception_reference',''),max_chars=1500)
                 fields=st.multiselect('Covered RSS text fields',['title','summary'],default=p['fields'])
                 purposes=st.multiselect('Covered operations',['display','retain','nlp','poll'],default=p['purposes'])
                 retention=st.text_input('Retention basis (no_fixed_expiry only if the actual licence allows it)',value=p['retention'])
@@ -95,6 +100,7 @@ def controls(store):
                     monitor.configure(source,enabled=enabled,interval=interval,daily_cap=cap,
                         budget_day=budget_day,budget_reference=budget_reference,coverage_mode=coverage,
                         grant=dict(basis=basis,fields=fields,purposes=purposes,retention=retention,expires_at=expiry,
+                                   basis_status=basis_status,exception_reference=exception_reference,
                                    publisher_domains=[d.strip().lower() for d in publishers.split(',') if d.strip()]))
                     st.session_state.pop('media_preview_'+source,None);st.rerun()
                 except ValueError as error:st.error(str(error))
@@ -116,7 +122,7 @@ def controls(store):
             for label in labels:distribution[label['id']]=distribution.get(label['id'],0)+1
         from .batch_config import finbert_cache_key
         current_nlp=sum(bool(data.cached(n,finbert_cache_key())) and n.rights.analyze for n in items)
-        st.caption(f'{len(items)} licensed saved originals · {current_nlp} current FinBERT results · '+(json.dumps(distribution) if distribution else 'No saved industry assignments'))
+        st.caption(f'{len(items)} scope-covered saved originals · {current_nlp} current FinBERT results · '+(json.dumps(distribution) if distribution else 'No saved industry assignments'))
         st.caption('Reuters: actual API source/domain observations are shown below; direct Reuters/LSEG licensing and editorial originality are not established.' if reuters.get('state')=='completed' else 'Reuters: Marketaux filters are ready; actual account coverage still needs the confirmed one-request budget. No direct Reuters/LSEG licence is assumed.')
         if reuters:
             with st.expander('Reuters via Marketaux actual evidence',expanded=False):st.json(reuters,expanded=False)

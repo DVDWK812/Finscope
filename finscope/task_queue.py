@@ -91,10 +91,15 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options'}
+    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
+    if 'media_batch' in c:
+        from .media_batch import validate
+        c['media_batch']=validate(c['media_batch'])
+        if c.get('model')!='Local FinBERT' or c.get('classifier_llm') or c.get('force_reanalysis'):
+            raise ValueError('Finite media batches use fixed local FinBERT and cached results only')
     batch=c.get('operation') in {'collect','analyze','update'}
     if 'operation' in c and not batch:raise ValueError('Invalid batch operation')
     if 'sec_options' in c:
@@ -216,7 +221,9 @@ class TaskQueue:
         if confirmed is not True:raise ValueError('Confirm the import licence scope')
         if not 1<=len(items)<=300:raise ValueError('Import 1–300 records')
         from .source_policies import authorize
-        for item in items:authorize(item,('retain','local_display'))
+        for item in items:
+            evidence=authorize(item,('retain','local_display'))
+            if evidence.get('policy',{}).get('expires_at'):raise ValueError('Finite imports cannot use permanent preview checkpoints; use the finite API/RSS text flow')
         c=validate_config(dict(sources=[],article_ids=[n.article_id for n in items],operation='collect',
             model='Local FinBERT',model_id='',taxonomy=taxonomy,limit=300,budgets={},source_permissions={}))
         return self._enqueue(c,preview_items=items)
@@ -227,6 +234,13 @@ class TaskQueue:
         from .source_policies import authorize
         item=next((n for n in ProductStorage(self.store).news() if n.article_id==article_id),None)
         if item is None:raise ValueError('Saved original not found')
+        from .media_use import scope_of
+        if scope_of(item):
+            if force_reanalysis:raise ValueError('Finite media uses cached fixed-model analysis only')
+            from .media_batch_ui import saved
+            config=saved(self.store)
+            if not config:raise ValueError('Use the retained-media offline batch controls')
+            return self.submit_batch('analyze',config,confirmed=True,article_ids=[article_id])
         evidence=authorize(item,('retain','local_classification','local_sentiment','local_display'))
         provenance=json.loads(item.provenance);provenance['automatic_use_policy']=evidence
         item=replace(item,rights=replace(item.rights,external=False),provenance=json.dumps(provenance,ensure_ascii=False))
@@ -254,13 +268,30 @@ class TaskQueue:
         registry=NewsKeyRegistry(self.store) if (set(c['sources'])|set(c.get('source_permissions',{}))) & set(NEWS_PROVIDERS) else None
         if registry:registry.reject_secret_text(json.dumps(c))
         preview_payload=None
+        from .media_use import scope_of
+        if any(scope_of(n) for n in (preview_items or ([preview_item] if preview_item else []))):
+            raise ValueError('Finite media text must use the ID-only batch queue, never a permanent preview checkpoint')
         if preview_item is not None or preview_items is not None:
             preview_payload=json.dumps([asdict(n) for n in (preview_items if preview_items is not None else [preview_item])])
             if registry:registry.reject_secret_text(preview_payload)
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
+            completed_collection=None
+            if c.get('media_batch') and c.get('operation')!='analyze':
+                nonce=c['media_batch']['batch_id']
+                for old_id,snapshot in db.execute('SELECT id,snapshot FROM product_tasks ORDER BY rowid DESC'):
+                    previous=json.loads(snapshot)
+                    if previous.get('media_batch',{}).get('batch_id')!=nonce:continue
+                    if previous.get('operation')=='analyze':continue
+                    if c.get('operation')=='collect' or previous.get('operation')!='collect':return old_id,False
+                    completed_collection=db.execute("SELECT status,payload FROM product_steps WHERE task_id=? AND step='phase:collection'",(old_id,)).fetchone()
+                    if not completed_collection or completed_collection[0]!='ok':return old_id,False
+                    break
             row=db.execute("SELECT id FROM product_tasks WHERE status IN ('queued','running')").fetchone()
             if row:return row[0],False
+            if c.get('media_batch') and c.get('operation')!='analyze' and not completed_collection:
+                from .media_batch import preflight
+                preflight(self.store,c['media_batch'],ignore_spacing=True)
             if registry:c['news_key_slots']=registry.pin(c['sources'],db)
             identity=uuid4().hex;stamp=now()
             db.execute('INSERT INTO product_tasks(id,status,snapshot,stage,counts,created,updated) VALUES (?,?,?,?,?,?,?)',
@@ -270,6 +301,8 @@ class TaskQueue:
                 # checkpoint: a crash cannot leave a job that fetches again.
                 db.execute('INSERT INTO product_steps VALUES (?,?,?,?)',
                            (identity,'fetch:saved_originals','ok',preview_payload))
+            if completed_collection:
+                db.execute('INSERT INTO product_steps VALUES (?,?,?,?)',(identity,'phase:collection','ok',completed_collection[1]))
             db.commit();return identity,True
     def get(self,identity=None):
         with closing(self.store.connect()) as db:

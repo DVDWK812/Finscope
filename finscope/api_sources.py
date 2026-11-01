@@ -299,9 +299,14 @@ def normalize(provider: str, payload: Any, *, newsdata_text_access=None) -> tupl
 
 
 def build_request(provider: str, topic: str, now: datetime, days: int, limit: int, key: str | None,
-                  *, symbol: str | None = None, newsdata_text_access=None, marketaux_filters=None):
+                  *, symbol: str | None = None, newsdata_text_access=None, marketaux_filters=None,
+                  marketaux_plan_limit=3, marketaux_page=None, marketaux_before=None):
     """Return (url, params, headers, query_mode, note). No network operation."""
     access=_newsdata_access(provider,newsdata_text_access)
+    if type(marketaux_plan_limit) is not int or marketaux_plan_limit not in (3,20,50,100):raise ValueError('Use the verified Marketaux plan article cap')
+    if marketaux_page is not None and (type(marketaux_page) is not int or not 1<=marketaux_page<=6666):raise ValueError('Invalid bounded Marketaux page')
+    if marketaux_before is not None:
+        if not _published_datetime(marketaux_before):raise ValueError('Invalid Marketaux publication bound')
     if marketaux_filters is not None and (provider!='marketaux' or not isinstance(marketaux_filters,MarketauxFilters)):
         raise ValueError('Marketaux filters apply only to Marketaux')
     if topic not in TOPICS:
@@ -327,14 +332,16 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
         )
     if provider == "marketaux":
         params={"api_token":key,"language":"en","published_after":earlier.strftime('%Y-%m-%dT%H:%M'),
-                "limit":min(limit,3),"group_similar":"false"}
+                "limit":min(limit,marketaux_plan_limit),"group_similar":"false"}
+        if marketaux_page is not None:params['page']=marketaux_page
+        if marketaux_before is not None:params['published_before']=datetime.fromisoformat(_published_datetime(marketaux_before)).strftime('%Y-%m-%dT%H:%M:%S')
         if marketaux_filters is not None:params.update(marketaux_filters.parameters())
         else:params['search']=keyword  # Historical benchmark remains reproducible.
         return (
             "https://api.marketaux.com/v1/news/all",
             params,
             headers, "media_entity_filters" if marketaux_filters is not None else "keyword",
-            "Free tier currently caps 3 articles/request; group_similar=false to measure our own deduplication.",
+            f"Recorded plan cap {marketaux_plan_limit} articles/request (default free: 3); group_similar=false.",
         )
     if provider == "newsdata":
         # Latest covers approximately 48 hours; archive is typically gated by plan.
@@ -374,6 +381,9 @@ def fetch_provider(
     symbol: str | None = None,
     newsdata_text_access: NewsDataTextAccess | None = None,
     marketaux_filters: MarketauxFilters | None = None,
+    marketaux_plan_limit: int = 3,
+    marketaux_page: int | None = None,
+    marketaux_before: str | None = None,
 ) -> QueryResult:
     _newsdata_access(provider,newsdata_text_access)
     if days < 1 or limit < 1 or timeout <= 0:
@@ -387,7 +397,7 @@ def fetch_provider(
     if env_key and not key:
         return QueryResult(provider, topic, "not_run", "skipped", [],
                            note=f"Missing {env_key} in local .env", outcome="missing_credentials")
-    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol,newsdata_text_access=newsdata_text_access,marketaux_filters=marketaux_filters)
+    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol,newsdata_text_access=newsdata_text_access,marketaux_filters=marketaux_filters,marketaux_plan_limit=marketaux_plan_limit,marketaux_page=marketaux_page,marketaux_before=marketaux_before)
     started = time.perf_counter()
     http_status = None
     rate_headers = {}

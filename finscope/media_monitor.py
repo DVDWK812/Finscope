@@ -107,7 +107,7 @@ def policy(value=None):
     """User-supplied actual source licence only. Defaults never grant NLP."""
     p=value or dict(basis='',fields=[],purposes=[],retention='',expires_at='')
     required={'basis','fields','purposes','retention','expires_at'}
-    if not required<=set(p) or set(p)-required-{'publisher_domains'}:raise ValueError('Invalid media policy')
+    if not required<=set(p) or set(p)-required-{'publisher_domains','basis_status','exception_reference'}:raise ValueError('Invalid media policy')
     p={**p,'publisher_domains':p.get('publisher_domains',[])}
     domains=p['publisher_domains']
     if not isinstance(domains,list) or len(domains)>20 or any(not isinstance(d,str) or not re.fullmatch(r'[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z]{2,}',d) for d in domains):raise ValueError('Invalid covered publisher domains')
@@ -120,6 +120,9 @@ def policy(value=None):
     if 'retain' in p['purposes'] and p['retention']!='no_fixed_expiry' and not p['expires_at']:raise ValueError('Finite retention needs an enforceable expiry timestamp')
     if 'nlp' in p['purposes'] and not {'retain','display'}<=set(p['purposes']):raise ValueError('NLP needs covered storage/display')
     if p['expires_at'] and not date(p['expires_at']):raise ValueError('Invalid policy expiry')
+    if p.get('basis_status','licensed') not in {'licensed','research_unverified','restricted'}:raise ValueError('Invalid use basis status')
+    if p.get('basis_status')=='research_unverified' and 'retain' in p['purposes'] and not p['expires_at']:raise ValueError('Unverified research storage needs a finite expiry')
+    if not isinstance(p.get('exception_reference',''),str) or len(p.get('exception_reference',''))>1500:raise ValueError('Invalid exception evidence')
     return p
 
 def active_policy(p,now):return not p['expires_at'] or date(p['expires_at'])>iso(now)
@@ -165,6 +168,10 @@ class MediaMonitor:
         if source not in FEEDS or type(enabled) is not bool:raise ValueError('Invalid bounded monitor scope')
         validate_schedule(interval,daily_cap,coverage_mode)
         p=policy(grant)
+        if p['expires_at'] and 'retain' in p['purposes']:
+            from .media_use import validate as validate_scope
+            validate_scope(dict(source='rss:'+source,status=p.get('basis_status','licensed'),reference=p['basis'],fields=p['fields'],
+                expires_at=p['expires_at'],confirmed=True,exception_reference=p.get('exception_reference',''),domains=[]),now=self.clock())
         from .news_keys import NewsKeyRegistry
         NewsKeyRegistry(self.store).reject_secret_text(json.dumps(p))
         if enabled and ('poll' not in p['purposes'] or not active_policy(p,self.clock())):raise ValueError('Scheduling requires applicable feed polling evidence')
@@ -196,16 +203,21 @@ class MediaMonitor:
             for identity,payload in db.execute('SELECT identity,payload FROM media_seen WHERE source=?',(source,)).fetchall():
                 saved=json.loads(payload)
                 url=db.execute('SELECT url FROM media_seen WHERE source=? AND identity=?',(source,identity)).fetchone()[0]
-                kept={k:v for k,v in saved.items() if k=='wire_credit' or 'retain' in p['purposes'] and k in p['fields'] and active_policy(p,self.clock()) and publisher_covered(source,url,p)}
+                kept={k:v for k,v in saved.items() if k=='wire_credit' or not p['expires_at'] and 'retain' in p['purposes'] and k in p['fields'] and active_policy(p,self.clock()) and publisher_covered(source,url,p)}
                 db.execute('UPDATE media_seen SET payload=?,policy=? WHERE source=? AND identity=?',(json.dumps(kept),json.dumps(p),source,identity))
             self._put(db,source,s);db.commit()
         from .media_preview import publish
         publish(self.store,source,[],iso(self.clock()))
+        from .expiring_media import partition
+        finite=partition(self.store)
+        if finite:finite.narrow_feed_scope(source,p)
         # Revocation/narrowing wins over previously promoted article grants.
         from .product_storage import ProductStorage
         from dataclasses import replace
         for item in ProductStorage(self.store).news():
             if item.provider!='media_rss' or item.source!=FEEDS[source].name:continue
+            from .media_use import scope_of
+            if scope_of(item):continue  # Current feed scope is checked before sidecar reads/writes.
             if ('nlp' not in p['purposes'] or not active_policy(p,self.clock()) or
                 'title' not in p['fields'] or item.summary and 'summary' not in p['fields'] or not publisher_covered(source,item.url,p)):
                 self.store.update_rights(item.article_id,replace(item.rights,analyze=False,external=False))
@@ -323,7 +335,9 @@ class MediaMonitor:
         if status==304 and ok:
             candidates=read(self.store,source,iso(now),allow_expired=True)
             visible=[{k:v for k,v in row.items() if k not in {'title','summary'} or allow and k in p['fields'] and publisher_covered(source,row['url'],p)} for row in candidates]
-        publish(self.store,source,visible,iso(now+timedelta(minutes=min(s['interval'],15))))
+        preview_end=iso(now+timedelta(minutes=min(s['interval'],15)))
+        if p['expires_at']:preview_end=min(preview_end,date(p['expires_at']))
+        publish(self.store,source,visible,preview_end)
         return report,visible
     def _ingest(self,db,source,rows,now,p):
         counts=dict(new=0,duplicates=0,changed=0,processable=0,stored=0)
@@ -332,7 +346,14 @@ class MediaMonitor:
             counts['new' if not old else 'duplicates' if old[0]==r['fingerprint'] else 'changed']+=1
             keep=active_policy(p,now) and 'retain' in p['purposes'] and publisher_covered(source,r['url'],p)
             keep=keep and 'title' in r
+            if keep and p['expires_at']:
+                # Commit finite text outside the backed-up permanent index.
+                from .product_storage import ProductStorage
+                from .text_processing import prepare
+                n=self._finite_item(source,r,p,now)
+                n,_,_=ProductStorage(self.store).save(prepare(n)[0],require_analysis=False)
             payload={k:r[k] for k in p['fields'] if k in r} if keep else {}
+            if p['expires_at']:payload={}
             payload['wire_credit']=r['wire_credit']  # Factual explicit credit, never an inferred licence.
             if keep:counts['stored']+=1
             if keep and 'nlp' in p['purposes']:counts['processable']+=1
@@ -367,18 +388,20 @@ class MediaMonitor:
             db.execute('BEGIN IMMEDIATE');result=self._ingest(db,source,rows,self.clock(),self._state(db,source)['policy']);db.commit()
         return result
     def promote(self,source):
-        """Copy only licensed text into the existing source-free analysis queue.
-
-        The legacy append-only library has no deletion scheduler: finite-term
-        grants remain in the discovery index, not in permanent news/history.
-        """
+        """Reuse saved finite text or promote an indefinite covered index entry."""
         from .source_policies import SourcePolicy,FIELDS
         from .local_news import NewsItem,ContentRights
         from .product_storage import ProductStorage
         from .text_processing import prepare
         p=self.states()[source]['policy']
         if not active_policy(p,self.clock()) or not {'retain','display','nlp'}<=set(p['purposes']):raise ValueError('No applicable storage/display/local NLP grant')
-        if p['expires_at'] or p['retention']!='no_fixed_expiry':raise ValueError('Finite-term grants cannot enter the permanent append-only library')
+        from .media_use import RESTRICTIONS
+        if 'rss:'+source in RESTRICTIONS and (p.get('basis_status','licensed')!='licensed' or not p.get('exception_reference','').strip()):
+            raise ValueError('Specific applicable exception required: '+RESTRICTIONS['rss:'+source])
+        if p['expires_at']:
+            items=[n for n in ProductStorage(self.store).news() if n.provider=='media_rss' and n.source==FEEDS[source].name]
+            return dict(new=0,changed=0,duplicates=len(items))
+        if p['retention']!='no_fixed_expiry':raise ValueError('Finite retention requires an explicit expiry')
         scoped=SourcePolicy('user-reviewed-media-'+source,VERSION,'media_rss',p['basis'],FEEDS[source].terms,
             iso(self.clock()),tuple([f for f in FIELDS if f not in {'title','summary','body'}]+p['fields']),
             ('preview','retain','local_display','local_classification','local_sentiment'),p['retention'],FEEDS[source].name,
@@ -410,7 +433,7 @@ class MediaMonitor:
             try:
                 result=self.check(source)
                 grant=self.states()[source]['policy']
-                if result and result[0]['http_status'] in {200,304} and {'retain','display','nlp'}<=set(grant['purposes']) and grant['retention']=='no_fixed_expiry' and not grant['expires_at']:
+                if result and result[0]['http_status'] in {200,304} and {'retain','display','nlp'}<=set(grant['purposes']):
                     self.promote(source)
                     from .task_queue import TaskQueue,ACTIVE
                     from .product_storage import ProductStorage
@@ -425,6 +448,8 @@ class MediaMonitor:
         return None
     def expire(self):
         """Finite RSS caches only; no legacy originals/history are deleted."""
+        from .product_storage import ProductStorage
+        ProductStorage(self.store).expire()
         with closing(self.store.connect()) as db:
             rows=db.execute('SELECT source,identity,payload,policy FROM media_seen WHERE payload!=?',('{}',)).fetchall()
             for source,identity,payload,p in rows:
@@ -432,19 +457,39 @@ class MediaMonitor:
                     data=json.loads(payload);kept={k:v for k,v in data.items() if k=='wire_credit'}
                     if kept!=data:db.execute('UPDATE media_seen SET payload=? WHERE source=? AND identity=?',(json.dumps(kept),source,identity))
             db.commit()
+        from .media_preview import publish
+        for source,s in self.states().items():
+            if not active_policy(s['policy'],self.clock()):publish(self.store,source,[],iso(self.clock()))
     def index(self,source):
         self.expire()
         with closing(self.store.connect()) as db:
             rows=db.execute('SELECT url,published,first_seen,last_seen,payload,policy FROM media_seen WHERE source=? ORDER BY published DESC',(source,)).fetchall()
         result=[]
+        from .product_storage import ProductStorage
+        retained={n.url:n for n in ProductStorage(self.store).news() if n.provider=='media_rss' and n.source==FEEDS[source].name}
         for url,published,first,last,payload,p in rows:
             grant=json.loads(p);current=self.states()[source]['policy']
             # Archived grants do not outrank present revocation/expiry.
             text=json.loads(payload) if active_policy(grant,self.clock()) and active_policy(current,self.clock()) and 'display' in current['purposes'] and publisher_covered(source,url,current) else {}
             text={k:v for k,v in text.items() if k in current['fields']}
+            if url in retained and grant.get('expires_at'):
+                n=retained[url]
+                text={k:getattr(n,k) for k in ('title','summary') if k in current['fields']}
             credit=json.loads(payload).get('wire_credit','Not captured in initial receipt')
             result.append(dict(feed_provider=FEEDS[source].name,publishing_domain=urlsplit(url).hostname,url=url,published=published,first_seen=first,last_seen=last,wire_credit=credit,**text))
         return result
+    def _finite_item(self,source,row,p,now):
+        from .local_news import NewsItem,ContentRights
+        from .media_use import apply
+        from dataclasses import replace
+        scope=dict(source='rss:'+source,status=p.get('basis_status','licensed'),reference=p['basis'],fields=p['fields'],
+            expires_at=p['expires_at'],confirmed=True,exception_reference=p.get('exception_reference',''),domains=[])
+        n=NewsItem(row['identity'][:32],'media_rss',row['title'],FEEDS[source].name,row['url'],row.get('summary',''),row['published'],
+            'published',iso(now),(),ContentRights(),source_type='media_news',
+            provenance=json.dumps(dict(source_id=source,feed_url=FEEDS[source].url,wire_credit=row.get('wire_credit',''),
+                capture_request_id=row['identity']+':'+iso(now))))
+        n=apply(n,scope)
+        return replace(n,rights=replace(n.rights,analyze='nlp' in p['purposes']))
     def preview(self,source):
         from .media_preview import read
         rows=read(self.store,source,iso(self.clock()));p=self.states()[source]['policy']

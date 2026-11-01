@@ -256,7 +256,7 @@ class LocalIngestionService:
         self.store, self.cooldown_path, self.study_path = store, Path(cooldown_path), Path(study_path)
         self.transport, self.clock = transport, clock
 
-    def _check_holds(self, provider, now, local_rows):
+    def _check_holds(self, provider, now, local_rows, *, daily_cap=3):
         """Shared read-only guard for status and transactional reservation."""
         now = now.astimezone(timezone.utc)
         try:
@@ -297,8 +297,9 @@ class LocalIngestionService:
                 raise FetchBlocked("A provider failure stopped further requests for this UTC day")
             if start.date() == now.astimezone(timezone.utc).date():
                 today += 1
-        if today >= 3:
-            raise FetchBlocked("Local safety cap reached: 3 requests/provider/UTC day")
+        if type(daily_cap) is not int or not 1<=daily_cap<=10000:raise FetchBlocked('Confirm an explicit application safety budget')
+        if today >= daily_cap:
+            raise FetchBlocked(f"Local safety cap reached: {daily_cap} requests/provider/UTC day")
 
     def source_status(self, provider, *, configured):
         """No probe or reservation. Historical failures are not permanent outages."""
@@ -321,7 +322,7 @@ class LocalIngestionService:
             return SourceStatus("Available", "Last request succeeded; this is not a live connection probe", False, stamp, outcome)
         return SourceStatus("Untested", "Configured; no current successful connection check", False, stamp, outcome)
 
-    def _reserve(self, provider, remaining, *, credential_resolver=None):
+    def _reserve(self, provider, remaining, *, credential_resolver=None, daily_cap=3):
         now = self.clock()
         if type(remaining) is not int or not 1 <= remaining <= 10000:
             raise FetchBlocked("Confirm a positive remaining account quota before Fetch")
@@ -329,14 +330,14 @@ class LocalIngestionService:
         with closing(self.store.connect()) as db:
             db.execute("BEGIN IMMEDIATE")
             local_rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
-            self._check_holds(provider, now, local_rows)
+            self._check_holds(provider, now, local_rows,daily_cap=daily_cap)
             if credential_resolver is not None:credential_resolver(db,request_id)
             db.execute("INSERT INTO local_requests(id,provider,reserved_at,status) VALUES (?,?,?,?)",
                        (request_id, provider, now.isoformat(), "pending"))
             db.commit()  # Durable intent before dispatch, including transport failures.
         return request_id, now
 
-    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False, newsdata_text_access=None, marketaux_filters=None):
+    def fetch(self, provider, topic, *, api_key=None, credential_resolver=None, rights, remaining, days=2, symbol=None, explicit=False, newsdata_text_access=None, marketaux_filters=None,limit=3,application_daily_cap=3,marketaux_plan_limit=3,marketaux_page=None,marketaux_before=None):
         if explicit is not True:
             raise FetchBlocked("An explicit Fetch action is required")
         if provider not in {"marketaux", "newsdata", "finnhub"}:
@@ -344,6 +345,9 @@ class LocalIngestionService:
         if provider == "newsdata":
             raise FetchBlocked("NewsData.io remains manually paused; no request was made")
         rights.require("preview")
+        if type(limit) is not int or not 1<=limit<=300:raise FetchBlocked('Choose an explicit bounded record count')
+        if type(application_daily_cap) is not int or not 1<=application_daily_cap<=10000:raise FetchBlocked('Confirm an explicit application safety budget')
+        if provider=='marketaux' and limit>marketaux_plan_limit:raise FetchBlocked('Requested records exceed the recorded Marketaux plan cap')
         if credential_resolver is not None and api_key is not None:
             raise FetchBlocked('Choose one credential source for this request')
         if credential_resolver is None and (not isinstance(api_key, str) or not api_key.strip() or len(api_key) > 500):
@@ -353,13 +357,14 @@ class LocalIngestionService:
         # Validate inputs before consuming a reservation.
         from .api_sources import build_request
         access_options={'newsdata_text_access':newsdata_text_access} if newsdata_text_access is not None else {}
+        if provider=='marketaux':access_options.update(marketaux_plan_limit=marketaux_plan_limit,marketaux_page=marketaux_page,marketaux_before=marketaux_before)
         if marketaux_filters is not None and provider!='marketaux':raise FetchBlocked('Marketaux filters apply only to Marketaux')
         if provider=='marketaux':
             from .api_sources import MarketauxFilters
             filters=self.store.setting('marketaux_media_filters')
             if marketaux_filters is not None:access_options['marketaux_filters']=marketaux_filters
             elif filters:access_options['marketaux_filters']=MarketauxFilters(**filters)
-        build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol,**access_options)
+        build_request(provider, topic, self.clock(), days, limit, api_key or 'preflight-only', symbol=symbol,**access_options)
         def resolve(db,identity):
             nonlocal api_key
             from .news_keys import NewsKeyError
@@ -367,8 +372,8 @@ class LocalIngestionService:
             except NewsKeyError as error:raise FetchBlocked(str(error)) from None
             if not isinstance(api_key,str) or not api_key.strip() or len(api_key)>500:
                 raise FetchBlocked('Primary news credential is missing; this source was skipped')
-        request_id, now = self._reserve(provider, remaining,credential_resolver=resolve if credential_resolver is not None else None)
-        result = fetch_provider(provider, topic, now=now, days=days, limit=3, timeout=15,
+        request_id, now = self._reserve(provider, remaining,credential_resolver=resolve if credential_resolver is not None else None,daily_cap=application_daily_cap)
+        result = fetch_provider(provider, topic, now=now, days=days, limit=limit, timeout=15,
                                 api_key=api_key, symbol=symbol, transport=self.transport,**access_options)
         # A malicious/upstream echo must never become a preview, SQL row or log.
         if any(api_key in value for a in result.articles for value in asdict(a).values()):

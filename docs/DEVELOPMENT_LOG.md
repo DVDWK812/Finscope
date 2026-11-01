@@ -1,5 +1,30 @@
 # Development log
 
+## Finite media engineering — 2 November 2026 Sydney
+
+Checked remote `local` at `f054fa5`, instructions, parallel edits and idle 8511
+processes. Implemented three distinct source-use states, explicit article/GET
+budgets, bounded Marketaux pages and reuse of one Finnhub multi-record response.
+Reused BatchRunner/ProductStorage/classification/FinBERT and the existing pages.
+An independent finite SQLite partition holds text, preprocessing, classification
+quotes, model versions and caches; permanent queue checkpoints contain IDs only.
+Expiry/revocation checks include reads and inference commits. Application backups
+and exports exclude finite text; stale captures cannot restore deleted text.
+Subscription-end deletion is available. No permanent permission is required for
+the finite path; uncertain research is never labelled publisher permission.
+
+Official terms/API references reviewed: Marketaux, Finnhub and NBCUniversal.
+Finnhub's personal-use, subscription-end deletion and data/derived-result sharing
+restrictions remain explicit; third-party copyright applicability stays distinct.
+No new news request or external model call was authorized/executed at this
+checkpoint. Real-media saved/analyzed counts remain zero pending the single
+fresh source/batch/account-budget choice. Offline fixtures are engineering checks.
+The existing desktop launcher restarted idle 8511; its browser shows new controls,
+unchecked research confirmation and a zero default budget. Ignored preservation
+evidence confirms 266 originals, 232 analyses and all 171 frozen hashes unchanged.
+Initial full regression: 643 tests, one skip; final regression adds lifecycle and
+budget boundary checks. Isolated benchmark dry run passed without network/keys.
+
 ## P3-B.1 continuity and coverage correction —1 November2026 Sydney
 
 Started clean at57738a6 and checked remote/local instructions/processes. Backed

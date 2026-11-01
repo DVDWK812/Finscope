@@ -13,6 +13,24 @@ def decode(payload):
 
 class ProductStorage:
     def __init__(self,store):self.store=store
+    def _partition(self,create=False):
+        from .expiring_media import partition
+        value=partition(self.store,create=create)
+        return ProductStorage(value) if value else None
+    def _route(self,item,purposes=()):
+        from .media_use import scope_of,enforce_decision
+        if scope_of(item) and not getattr(self.store,'is_expiring_media',False):enforce_decision(self.store,scope_of(item),purposes)
+        return self._partition(True) if scope_of(item) else None
+    def expire(self):
+        other=self._partition()
+        return other.store.purged_count+other.store.purge() if other else 0
+    def analyses(self):
+        rows=self.store.list_analyses()
+        other=self._partition()
+        if other:
+            ids={n.article_id for n in self.news()}
+            rows += [a for a in other.analyses() if a.article_id in ids]
+        return sorted(rows,key=lambda a:(a.analyzed_at,a.analysis_id))
     def apply_permissions(self,item):
         """Explicit article-level edits outrank subsequent source-level grants."""
         from dataclasses import replace
@@ -60,6 +78,13 @@ class ProductStorage:
             return replace(item,body=old.body,summary=item.summary or old.summary,provenance=json.dumps(combined,ensure_ascii=False))
         return item
     def save(self,item,*,require_analysis=True):
+        other=self._route(item,('local_classification','local_sentiment') if require_analysis else ())
+        if other:return other.save(item,require_analysis=require_analysis)
+        if not getattr(self.store,'is_expiring_media',False):
+            try:origin=json.loads(item.provenance)
+            except (TypeError,ValueError):origin={}
+            if any(origin.get(k,{}).get('expires_at') for k in ('import_policy','media_policy')):
+                raise ValueError('Finite text cannot enter the permanent library; use a supported finite media scope')
         item=self.apply_permissions(item)
         item.rights.require('retain');item.rights.require('preview')
         if require_analysis:item.rights.require('analyze')
@@ -72,6 +97,7 @@ class ProductStorage:
                 if item.url and old['source']==item.source and canonical_url(old['url'])==canonical_url(item.url):
                     from dataclasses import replace
                     item=replace(item,article_id=key);break
+            if getattr(self.store,'is_expiring_media',False):self.store.bind(db,item)
             fresh=not db.execute('SELECT 1 FROM local_news WHERE id=?',(item.article_id,)).fetchone()
             db.execute('INSERT OR IGNORE INTO local_news VALUES (?,?)',(item.article_id,json.dumps(asdict(item))))
             changed=db.execute('INSERT OR IGNORE INTO product_content VALUES (?,?,?,?)',
@@ -80,13 +106,21 @@ class ProductStorage:
             db.commit()
         return item,fresh,bool(changed)
     def state(self,item,status,reason='',*,download='saved'):
+        other=self._route(item)
+        if other:return other.state(item,status,reason,download=download)
+        if getattr(self.store,'is_expiring_media',False):self.store.check(item)
         with closing(self.store.connect()) as db:
+            db.execute('BEGIN IMMEDIATE')
+            if getattr(self.store,'is_expiring_media',False):self.store.check(item,db)
             db.execute('INSERT OR REPLACE INTO product_record_state VALUES (?,?,?,?,?,?)',
                 (item.article_id,item.content_version,download,status,reason,now()));db.commit()
     def states(self):
         with closing(self.store.connect()) as db:
-            return {(r[0],r[1]):dict(download=r[2],analysis=r[3],reason=r[4],updated=r[5])
+            result={(r[0],r[1]):dict(download=r[2],analysis=r[3],reason=r[4],updated=r[5])
                     for r in db.execute('SELECT * FROM product_record_state')}
+        other=self._partition()
+        if other:result.update(other.states())
+        return result
     def news(self):
         originals={n.article_id:n for n in self.store.list_news()}
         with closing(self.store.connect()) as db:
@@ -101,14 +135,41 @@ class ProductStorage:
                 item=decode(payload)
                 if item.article_id in edited and item.article_id in originals:item=replace(item,rights=originals[item.article_id].rights)
                 originals[item.article_id]=item
+        other=self._partition()
+        if other:
+            from .media_use import enforce_decision,scope_of
+            for item in other.news():
+                try:
+                    enforce_decision(self.store,scope_of(item))
+                    try:enforce_decision(self.store,scope_of(item),('local_classification','local_sentiment'))
+                    except ValueError:
+                        from dataclasses import replace
+                        item=replace(item,rights=replace(item.rights,analyze=False))
+                    originals[item.article_id]=item
+                except ValueError:pass
+        if getattr(self.store,'is_expiring_media',False):
+            from .media_use import authorize
+            valid={}
+            for key,item in originals.items():
+                try:authorize(item,('retain','local_display'));valid[key]=item
+                except ValueError:pass
+            originals=valid
         return list(originals.values())
     def classification(self,item,key):
+        other=self._route(item)
+        if other:return other.classification(item,key)
+        if getattr(self.store,'is_expiring_media',False):self.store.check(item)
         with closing(self.store.connect()) as db:
             row=db.execute('SELECT payload FROM product_classifications WHERE article_id=? AND content_version=? AND cache_key=?',
                 (item.article_id,item.content_version,key)).fetchone()
         return json.loads(row[0]) if row else None
     def save_classification(self,item,key,result):
+        other=self._route(item,('local_classification',))
+        if other:return other.save_classification(item,key,result)
+        if getattr(self.store,'is_expiring_media',False):self.store.check(item)
         with closing(self.store.connect()) as db:
+            db.execute('BEGIN IMMEDIATE')
+            if getattr(self.store,'is_expiring_media',False):self.store.check(item,db)
             db.execute('INSERT OR IGNORE INTO product_classifications VALUES (?,?,?,?,?)',(item.article_id,item.content_version,key,json.dumps(result),now()));db.commit()
     def classifications(self,taxonomy):
         result={}
@@ -117,20 +178,32 @@ class ProductStorage:
             for article,version,payload in db.execute('SELECT article_id,content_version,payload FROM product_classifications ORDER BY created,rowid'):
                 data=json.loads(payload)
                 if data['taxonomy']==taxonomy and current.get(article)==version:result[article]=data
+        other=self._partition()
+        if other:result.update({k:v for k,v in other.classifications(taxonomy).items() if k in current})
         return result
     def classification_history(self,article_id,taxonomy):
         with closing(self.store.connect()) as db:
             rows=db.execute('SELECT content_version,cache_key,created,payload FROM product_classifications WHERE article_id=? ORDER BY created,rowid',(article_id,)).fetchall()
-        return [{'content_version':v,'classifier_cache_key':k,'created_utc':t,'classification':json.loads(p)} for v,k,t,p in rows if json.loads(p)['taxonomy']==taxonomy]
+        result=[{'content_version':v,'classifier_cache_key':k,'created_utc':t,'classification':json.loads(p)} for v,k,t,p in rows if json.loads(p)['taxonomy']==taxonomy]
+        other=self._partition()
+        if other and article_id in {n.article_id for n in self.news()}:result+=other.classification_history(article_id,taxonomy)
+        return result
     def cached(self,item,key):
+        other=self._route(item)
+        if other:return other.cached(item,key)
+        if getattr(self.store,'is_expiring_media',False):self.store.check(item)
         with closing(self.store.connect()) as db:
             row=db.execute('SELECT analysis_id FROM product_analysis_cache WHERE article_id=? AND content_version=? AND cache_key=?',
                 (item.article_id,item.content_version,key)).fetchone()
         return row[0] if row else None
     def analysis(self,item,key,result):
+        other=self._route(item,('local_sentiment',))
+        if other:return other.analysis(item,key,result)
+        if getattr(self.store,'is_expiring_media',False):self.store.check(item)
         # Commit the version and cache marker together: a restart cannot repeat a
         # successfully persisted inference after a separate cache-write crash.
         with closing(self.store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
+            if getattr(self.store,'is_expiring_media',False):self.store.check(item,db)
             db.execute('INSERT INTO local_analyses VALUES (?,?,?,?)',(result.analysis_id,result.article_id,result.analyzed_at,json.dumps(asdict(result))))
             db.execute('INSERT OR REPLACE INTO product_analysis_cache VALUES (?,?,?,?)',(item.article_id,item.content_version,key,result.analysis_id));db.commit()

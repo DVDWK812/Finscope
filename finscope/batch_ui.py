@@ -24,6 +24,10 @@ def controls(q):
     task=q.get();active=bool(task and task['status'] in ACTIVE)
     with st.expander('Batch collection and offline analysis',expanded=False):
         st.caption('Collection and analysis are independent durable stages. Closing this tab does not stop the worker. No external LLM or API-key rotation.')
+        from .media_batch_ui import controls as media_controls
+        media_controls(q,active)
+        st.divider()
+        st.caption('Existing official-source batches and local imports')
         c=deepcopy(saved_config(q) or DEFAULT)
         c['sources']=st.multiselect('Reviewed batch sources',list(SOURCE_LABELS),default=c['sources'],format_func=lambda k:Verbatim(SOURCE_LABELS[k]),key='batch_sources')
         c['limit']=int(st.number_input('Maximum records per source',1,300,c['limit'],key='batch_limit'))

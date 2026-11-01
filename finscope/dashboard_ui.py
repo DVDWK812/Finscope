@@ -232,6 +232,11 @@ def related_articles(news, results, store, *, context,background=False):
 
 
 def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None,allow_reanalysis=True):
+    from .media_use import scope_of,authorize as media_authorize
+    finite=scope_of(item)
+    if finite:
+        try:media_authorize(item,('local_display',))
+        except ValueError:return
     st.subheader(Verbatim(item.title))
     st.caption(Verbatim(f"{item.source} · {publication_label(item)}"))
     if item.provider=='authored_synthetic':
@@ -267,11 +272,15 @@ def article_details(item, result, store, *, context="explorer",background=False,
                   "provenance": item.provenance, "permissions": asdict(item.rights)})
         if result:
             st.write({"output_provenance":result.provenance})
-        history = [a for a in store.list_analyses() if a.article_id == item.article_id]
+        from .product_storage import ProductStorage
+        history = [a for a in ProductStorage(store).analyses() if a.article_id == item.article_id]
         if history:
             st.dataframe(pd.DataFrame([{"Model": model_key(a), "Label": a.label, "Analyzed": a.analyzed_at,
                                         "Result ID": a.analysis_id} for a in history]), hide_index=True, width="stretch")
     prefix=context+"_"+item.article_id
+    if finite:
+        st.caption('Finite research text: source scope governs use; export, external transmission and per-article permission broadening are disabled.')
+        return
     with st.expander("Update usage permissions",expanded=False):
         from dataclasses import replace
         reference=st.text_input("Permission reference",value=item.rights.reference,max_chars=300,key=prefix+"_rights_ref")

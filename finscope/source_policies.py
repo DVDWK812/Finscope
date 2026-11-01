@@ -71,6 +71,8 @@ POLICIES={'abs_html':ABS,'abs_archive':ABS,'nist_rss':NIST,'rba_rss':RBA,'rba_ht
 
 def authorize(item,purposes):
     """Return auditable evidence, never broaden an article's existing rights."""
+    from .media_use import scope_of,authorize as media_authorize
+    if scope_of(item):return media_authorize(item,purposes)
     policy=POLICIES.get(item.provider)
     if item.provider in {'local_import','media_rss'}:
         try:

@@ -42,12 +42,19 @@ class BatchRunner:
                 except ValueError:
                     once('batch_rejected:'+raw.article_id,'skipped');errors.append('Record outside reviewed storage policy; not retained')
                 self.queue.update(identity,counts=counts)
+                return item.article_id if 'item' in locals() and item.article_id in selected else None
             collected=self.queue.step(identity,'phase:collection')
             if collected:
                 selected=collected[1]['article_ids'];errors.extend(collected[1].get('errors',[]))
             elif c['operation']=='analyze':
                 selected=c['article_ids']
                 self.queue.save_step(identity,'phase:collection','ok',dict(article_ids=selected,network=False))
+            elif c.get('media_batch'):
+                from .media_batch import collect
+                selected,media_errors=collect(self.worker,task,persist,check)
+                errors.extend(media_errors)
+                counts['failed']+=len(media_errors)
+                self.queue.save_step(identity,'phase:collection','ok',dict(article_ids=selected,errors=errors))
             else:
                 preview=self.queue.step(identity,'fetch:saved_originals')
                 if preview:
@@ -117,6 +124,10 @@ class BatchRunner:
                     self.data.state(item,'completed','Cached current text/model result');continue
                 stage('sentiment: saved originals')
                 infer_key='batch_infer:'+item.article_id+':'+item.content_version+':'+hashlib.sha256(model_key.encode()).hexdigest()
+                from .media_use import scope_of
+                if scope_of(item):
+                    from .expiring_media import partition
+                    infer_key+=':finite-epoch:'+str(partition(self.store).epoch(item))
                 with closing(self.store.connect()) as db:
                     previous=db.execute('SELECT status FROM product_steps WHERE step=? ORDER BY rowid DESC LIMIT 1',(infer_key,)).fetchone()
                 if previous:
@@ -132,6 +143,8 @@ class BatchRunner:
                     extraction={k:origin[k] for k in ('input_text_type','extraction_version','document_characters','document_span_start','document_span_end','document_coverage','event_section') if k in origin}
                     result=replace(result,provenance={**result.provenance,**coverage,**extraction,'source_policy':policy,
                         'text_basis':'selected_'+item.text_basis+'_excerpt','task_id':identity,'language':item.language,
+                        'input_fields':['title','body'] if item.body else ['title','summary'] if item.summary else ['title'],
+                        'input_characters':len(item.analysis_text),'input_sha256':hashlib.sha256(item.analysis_text.encode()).hexdigest(),
                         'source_type':item.source_type,'document_type':item.document_type})
                     self.data.analysis(item,model_key,result)
                     self.queue.save_step(identity,infer_key,'ok',dict(analysis_id=result.analysis_id))

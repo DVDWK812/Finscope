@@ -1,5 +1,34 @@
 # FinScope
 
+### Finite media text batches (local)
+
+In **Batch collection and offline analysis → Media API text and local analysis**,
+record one source-level basis: licence evidence, personal research with unresolved
+applicability, or a concrete restriction. Research confirmation is not publisher
+permission and cannot waive a known restriction. Choose actual returned fields,
+finite expiry, article count and a verified current UTC-day account/application
+budget. Saving makes no request. **Update & Analyze** saves before classification
+and fixed FinBERT; **Save media text only** and **Analyze retained media offline**
+separate the stages. The same saved batch never downloads again. Explicitly save
+a new batch to confirm a new collection. Existing quota, 60-second spacing,
+Retry-After, unknown-outcome and primary-key safeguards remain.
+
+Marketaux defaults to its three-article free-plan limit; larger limits must match
+the actual subscription. Finnhub reuses the selected number from one company-news
+response. The dated application safety budget never renews automatically.
+
+Finite originals, preprocessing, classification quotes, model history and caches
+use `reports/finscope_local.sqlite3.expiring/live.sqlite3`, excluded from application
+backups and exports. Permanent checkpoints contain IDs and response metrics only.
+Reads and inference commits check expiry; the UI checks every two seconds.
+Cleanup pauses when FinScope is closed and runs before the next startup read.
+Delete the source's finite text/results immediately if its subscription or scope
+ends sooner. This does not promise forensic erasure of OS/browser memory or user
+backups. Finite RSS uses the same partition; finite local-file imports are rejected
+before permanent checkpointing. No article-page fetch, training, external LLM or
+corpus export is enabled. Group sharing/derived-result publication needs separate
+scope review. Authored-fixture tests do not establish real-media NLP acceptance.
+
 Local-first financial news intelligence. Run Streamlit on your own computer, fetch and preview news, analyze permitted text with pinned CPU FinBERT and MiniLM, and keep originals/results in local SQLite.
 
 The **2 November 2026 18:00 Australia/Sydney report handoff** is an internal
