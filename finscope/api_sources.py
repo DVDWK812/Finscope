@@ -29,6 +29,7 @@ TOPICS: dict[str, dict[str, str]] = {
 }
 
 PROVIDERS = ("gdelt", "marketaux", "newsdata", "finnhub")
+DEFAULT_MARKETAUX_DOMAINS=('reuters.com','bloomberg.com','cnbc.com','wsj.com','finance.yahoo.com','ft.com')
 ENV_KEYS = {
     "gdelt": None,
     "marketaux": "MARKETAUX_API_KEY",
@@ -84,6 +85,34 @@ class NewsDataTextAccess:
                                   or not self.body_permission_reference.strip()):
             raise ValueError('NewsData body access needs verified paid-plan and content permission references')
         return self
+
+
+@dataclass(frozen=True)
+class MarketauxFilters:
+    """Documented source/entity filters; no entitlement or source coverage claim."""
+    domains: tuple[str, ...] = ()
+    symbols: tuple[str, ...] = ()
+    industries: tuple[str, ...] = ()
+    published_after: str = ''
+
+    def parameters(self):
+        patterns={'domains':r'[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z]{2,}',
+                  'symbols':r'[A-Z][A-Z0-9.\-]{0,14}',
+                  'industries':r'[A-Za-z][A-Za-z &\-]{0,59}'}
+        result={}
+        for name,pattern in patterns.items():
+            values=getattr(self,name)
+            if not isinstance(values,(tuple,list)) or len(values)>20 or any(not isinstance(v,str) or not re.fullmatch(pattern,v) for v in values):
+                raise ValueError('Invalid Marketaux '+name)
+            if values:result[name]=','.join(dict.fromkeys(values))
+        if not self.domains:raise ValueError('Select a Marketaux media domain whitelist')
+        if self.published_after:
+            try:
+                stamp=datetime.fromisoformat(self.published_after.replace('Z','+00:00'))
+                if stamp.tzinfo is None:raise ValueError()
+            except (TypeError,ValueError):raise ValueError('Marketaux published_after needs a timezone-aware ISO date/time') from None
+            result['published_after']=stamp.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')
+        return result
 
 
 def _newsdata_access(provider,access):
@@ -270,9 +299,11 @@ def normalize(provider: str, payload: Any, *, newsdata_text_access=None) -> tupl
 
 
 def build_request(provider: str, topic: str, now: datetime, days: int, limit: int, key: str | None,
-                  *, symbol: str | None = None, newsdata_text_access=None):
+                  *, symbol: str | None = None, newsdata_text_access=None, marketaux_filters=None):
     """Return (url, params, headers, query_mode, note). No network operation."""
     access=_newsdata_access(provider,newsdata_text_access)
+    if marketaux_filters is not None and (provider!='marketaux' or not isinstance(marketaux_filters,MarketauxFilters)):
+        raise ValueError('Marketaux filters apply only to Marketaux')
     if topic not in TOPICS:
         raise ValueError(f"Unsupported topic: {topic}")
     if provider not in PROVIDERS:
@@ -295,12 +326,14 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
             "GDELT seendate is first-seen time, not confirmed publication time; titles/URLs, typically no summaries.",
         )
     if provider == "marketaux":
+        params={"api_token":key,"language":"en","published_after":earlier.strftime('%Y-%m-%dT%H:%M'),
+                "limit":min(limit,3),"group_similar":"false"}
+        if marketaux_filters is not None:params.update(marketaux_filters.parameters())
+        else:params['search']=keyword  # Historical benchmark remains reproducible.
         return (
             "https://api.marketaux.com/v1/news/all",
-            {"api_token": key, "search": keyword, "language": "en",
-             "published_after": earlier.strftime("%Y-%m-%dT%H:%M"),
-             "limit": min(limit, 3), "group_similar": "false"},
-            headers, "keyword",
+            params,
+            headers, "media_entity_filters" if marketaux_filters is not None else "keyword",
             "Free tier currently caps 3 articles/request; group_similar=false to measure our own deduplication.",
         )
     if provider == "newsdata":
@@ -340,6 +373,7 @@ def fetch_provider(
     api_key: str | None | object = _LOCAL_CREDENTIALS,
     symbol: str | None = None,
     newsdata_text_access: NewsDataTextAccess | None = None,
+    marketaux_filters: MarketauxFilters | None = None,
 ) -> QueryResult:
     _newsdata_access(provider,newsdata_text_access)
     if days < 1 or limit < 1 or timeout <= 0:
@@ -353,7 +387,7 @@ def fetch_provider(
     if env_key and not key:
         return QueryResult(provider, topic, "not_run", "skipped", [],
                            note=f"Missing {env_key} in local .env", outcome="missing_credentials")
-    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol,newsdata_text_access=newsdata_text_access)
+    url, params, headers, query_mode, note = build_request(provider, topic, now, days, limit, key, symbol=symbol,newsdata_text_access=newsdata_text_access,marketaux_filters=marketaux_filters)
     started = time.perf_counter()
     http_status = None
     rate_headers = {}
@@ -364,6 +398,14 @@ def fetch_provider(
             rate_headers = payload.rate_limit_headers
             payload = payload.payload
         items, raw_count = normalize(provider, payload,newsdata_text_access=newsdata_text_access)
+        if provider=='marketaux' and marketaux_filters is not None:
+            domains=marketaux_filters.domains
+            def matches(article):
+                host=(urlsplit(article.url).hostname or '').lower()
+                return any(host==d or host.endswith('.'+d) for d in domains)
+            kept=[a for a in items if matches(a)]
+            if len(kept)!=len(items):note+=' Outside-whitelist publication URLs withheld; wire credits never establish direct-source access.'
+            items=kept
     except APIError as exc:
         return QueryResult(provider, topic, query_mode, "failed", [],
                            latency_ms=round((time.perf_counter()-started)*1000, 1),

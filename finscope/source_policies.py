@@ -72,11 +72,11 @@ POLICIES={'abs_html':ABS,'abs_archive':ABS,'nist_rss':NIST,'rba_rss':RBA,'rba_ht
 def authorize(item,purposes):
     """Return auditable evidence, never broaden an article's existing rights."""
     policy=POLICIES.get(item.provider)
-    if item.provider=='local_import':
+    if item.provider in {'local_import','media_rss'}:
         try:
-            supplied=json.loads(item.provenance)['import_policy']
+            supplied=json.loads(item.provenance)['import_policy' if item.provider=='local_import' else 'media_policy']
             policy=SourcePolicy(**supplied)
-            if policy.provider!='local_import' or not policy.basis or not policy.retention or not policy.attribution:
+            if policy.provider!=item.provider or not policy.basis or not policy.retention or not policy.attribution:
                 raise ValueError()
         except (TypeError,KeyError,ValueError):raise PolicyBlocked('Import requires explicit field/use/retention/attribution evidence') from None
     if policy is None:raise PolicyBlocked('No reviewed automatic-use policy for this source')
@@ -94,6 +94,13 @@ def authorize(item,purposes):
     except (TypeError,ValueError):raise PolicyBlocked('Source provenance needs review') from None
     if not isinstance(origin,dict):raise PolicyBlocked('Source provenance needs review')
     url=urlsplit(item.url)
+    if item.provider=='media_rss':
+        from .media_monitor import FEEDS
+        feed=FEEDS.get(origin.get('source_id'))
+        if (feed is None or origin.get('feed_url')!=feed.url or item.source!=feed.name or item.body
+                or item.source_type!='media_news' or policy.retention!='no_fixed_expiry'
+                or set(policy.allowed_fields)-set(FIELDS) or 'body' in policy.allowed_fields):
+            raise PolicyBlocked('Outside the reviewed RSS field/use scope')
     if item.provider=='abs_html' and (item.source!='Australian Bureau of Statistics' or url.scheme!='https' or
             url.hostname!='www.abs.gov.au' or url.username or url.password or
             not url.path.startswith('/media-centre/media-releases/') or

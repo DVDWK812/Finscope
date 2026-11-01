@@ -1,5 +1,36 @@
 # Development log
 
+## P3-B global media discovery — 1 November 2026 Sydney
+
+Started clean at bdbd3fd, fetched the latest remote and inspected local instructions,
+tests, database and formal 8511/worker processes. Added a fixed-feed RSS/Atom parser,
+atomic per-source reservations, conditional validators, bounded opt-in 5–15-minute
+polling, UTC-day caps, dedup/version fingerprints, watermarks, 429 backoff and
+failure isolation. Received metadata checkpoints precede indexing; unknown outcomes
+cannot silently retry. Separate source field/use/retention grants gate display,
+cache, permanent storage and the existing source-free FinBERT queue. No external
+LLM/key rotation or publisher-page fetching. Main and frozen evaluation untouched.
+
+Actual single-GET checks: CNBC 200/30 distinct links; WSJ 200/60 valid/59 distinct;
+Yahoo 200/19 distinct; FT 301/stopped. Bloomberg reached HTTP200 parsing but an
+initial INSERT placeholder error lost the unpersisted response metrics. Corrected
+the bug and retained its original incomplete/held request without a repeat. Local
+replays of the three completed real responses added zero links. Default index
+contains no publisher titles/descriptions; licensed media originals/NLP remain0.
+Official source terms/account entitlements remain qualified, not invented.
+
+Added documented Marketaux domains/symbols/industries/published_after request
+construction and returned-publication-domain validation. Saved all six requested
+media domains through the formal UI without spending budget; historical benchmark
+keywords remain reproducible. Extended the existing workspace with one collapsed
+monitor and source-specific operational/industry counts. Restarted only the idle
+formal local instance because source watching is disabled; existing SQLite state
+survived. Actual browser inspection and ignored p3b evidence accompany the delivery.
+All original 266 news/232 analyses/13 API reservations/46 collector receipts and
+old content/classification/cache rows hash-match; all171 frozen files unchanged.
+Full offline tests:612, skipped1; isolated benchmark dry run passed. Exact pushed
+local SHA/CI are reported separately. See [P3-B acceptance](P3_MEDIA_ACCEPTANCE.md).
+
 ## P3-A batch local product — 1 November 2026 Sydney
 
 Added independent collect/save and source-free local analysis phases, additive

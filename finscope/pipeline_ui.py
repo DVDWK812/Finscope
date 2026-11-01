@@ -250,6 +250,8 @@ def main():
     update_button(q)
     from .batch_ui import controls
     controls(q)
+    from .media_ui import controls as media_controls
+    media_controls(store)
     kpis=st.container(key='product_kpis') if page=='Dashboard' else None
     c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
     catalog=load_taxonomy(mode);classes=data.classifications(mode)

@@ -170,7 +170,11 @@ class LocalNewsStore:
 
     def set_setting(self, name, value):
         # Only product preferences. Credentials can never enter this table.
-        if name not in {"guide_completed"} or type(value) is not bool:
+        if name=='marketaux_media_filters':
+            from .api_sources import MarketauxFilters
+            if not isinstance(value,dict):raise ValueError('Invalid Marketaux filters')
+            MarketauxFilters(**value).parameters()
+        elif name not in {"guide_completed"} or type(value) is not bool:
             raise ValueError("Unsupported local preference")
         with closing(self.connect()) as db:
             db.execute("INSERT OR REPLACE INTO local_settings VALUES (?,?)", (name, json.dumps(value)))
@@ -349,6 +353,10 @@ class LocalIngestionService:
         # Validate inputs before consuming a reservation.
         from .api_sources import build_request
         access_options={'newsdata_text_access':newsdata_text_access} if newsdata_text_access is not None else {}
+        if provider=='marketaux':
+            from .api_sources import MarketauxFilters
+            filters=self.store.setting('marketaux_media_filters')
+            if filters:access_options['marketaux_filters']=MarketauxFilters(**filters)
         build_request(provider, topic, self.clock(), days, 3, api_key or 'preflight-only', symbol=symbol,**access_options)
         def resolve(db,identity):
             nonlocal api_key

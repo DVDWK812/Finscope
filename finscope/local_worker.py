@@ -218,14 +218,21 @@ def main(argv=None):
     try:
         with ProcessLock(str(store.path)+'.worker.lock'):
             worker=Worker(store);worker.queue.interrupt_orphans()
+            from .media_monitor import MediaMonitor
+            monitor=MediaMonitor(store)
             stop=threading.Event()
             def heartbeat():
                 while not stop.is_set():worker.queue.heartbeat();stop.wait(2)
             pulse=threading.Thread(target=heartbeat,daemon=True);pulse.start()
             try:
                 while True:
-                    worker.run_one()
+                    busy=worker.run_one()
                     if args.once:break
+                    if not busy:
+                        # Opt-in fixed feeds only. A failure in a feed must not
+                        # terminate the worker or affect the commercial ledgers.
+                        try:monitor.tick()
+                        except Exception:pass
                     stop.wait(.5)
             finally:stop.set();pulse.join(5)
     except RuntimeError:

@@ -1,5 +1,13 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**1 November 2026 Sydney — P3-B media discovery:** Keep the fixed public RSS
+monitor separate from licensed originals/NLP. Five actual bounded GETs produced
+108 distinct CNBC/WSJ/Yahoo links; FT stopped on 301 and Bloomberg's first client
+indexing error left incomplete metrics, with no repeat. Default persistence is
+URL/date/hash/receipt metadata only; actual media NLP remains zero. Add opt-in
+conditional polling and official Marketaux source/entity filters without new
+commercial API calls or rights assumptions. See [acceptance](P3_MEDIA_ACCEPTANCE.md).
+
 **1 November 2026 Sydney — P3-A independent stages:** Adopt a model-free
 collection/save stage followed by a source-free local analysis stage; retain
 source/record policy restrictions, versioned text and caches. With the user's

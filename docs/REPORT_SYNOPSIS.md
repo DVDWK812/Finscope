@@ -7,6 +7,13 @@ the organization below is optional. No Moodle access or coursework submission.
 
 ## Objective and current scope
 
+P3-B adds mainstream-media discovery, separately from licensed NLP. Five bounded
+feed GETs on 1 November yielded 108 distinct CNBC/WSJ/Yahoo links; FT returned 301,
+and Bloomberg's initial local indexing failure left incomplete metrics (no retry).
+No publisher-title/summary archive or new media FinBERT result is claimed. Actual
+permissions and Marketaux Reuters account coverage remain unverified. See
+[P3-B evidence](P3_MEDIA_ACCEPTANCE.md); prior P3-A results below remain unchanged.
+
 Local P3-A verified +219 real originals (34 collector GETs, all HTTP 200),
 comprising 141 official announcements and 120 SEC filings from six issuers.
 Five existing authored development records remain separate. Source-only saving

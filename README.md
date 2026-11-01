@@ -51,6 +51,15 @@ article bodies. Actual P3 evidence: **+219 real originals; 261 current records
 results and 113 not-applicable metadata records**. See
 [P3 acceptance, exact denominators and remaining limits](docs/P3_BATCH_ACCEPTANCE.md).
 
+**Global media monitor** adds the five fixed Bloomberg/CNBC/WSJ/FT/Yahoo feeds,
+separate discovery and licensed-analysis counts, opt-in 5–15-minute worker polling,
+conditional HTTP and durable deduplication/holds. Actual P3-B checks discovered
+108 distinct CNBC/WSJ/Yahoo links; FT returned 301 and Bloomberg's initial client
+indexing failure left incomplete evidence. No publisher titles/descriptions were
+cached or analyzed without an applicable grant. Six-domain Marketaux filters can
+be configured offline; actual API budgets remain unchanged. See
+[per-media results, rights and remaining gates](docs/P3_MEDIA_ACCEPTANCE.md).
+
 ```powershell
 # Explicitly submit to the separately running local worker; no external LLM.
 .venv-ai/Scripts/python.exe -m finscope.batch_cli collect --sources abs_archive --limit 100 --confirm
