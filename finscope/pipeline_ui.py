@@ -108,6 +108,8 @@ def reanalyze(item,store,prefix='product'):
 def details(item,result,store,classifications,catalog,context='product',keyword=None):
     from html import escape
     c=classifications.get(item.article_id,{})
+    if c.get('classifier_version','').startswith('semantic-'):
+        st.caption('Topic classifier: '+c['classifier_version']+' · '+c.get('status','')+(' · '+c['unclassified_reason'] if c.get('unclassified_reason') else ''))
     from .media_use import scope_of,authorize as media_authorize
     scope=scope_of(item)
     if scope:
@@ -141,6 +143,13 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
     article_details(item,result,store,context=context,background=True,content_renderer=text)
     with st.expander('Classification evidence'):
         st.json({'current':c,'history':ProductStorage(store).classification_history(item.article_id,catalog['id'])})
+        if scope:
+            from .expiring_media import partition
+            part=partition(store)
+            with closing(part.connect()) as db:
+                part.check(item,db)
+                reviews=[json.loads(row[0]) for row in db.execute('SELECT payload FROM product_classification_reviews WHERE article_id=? AND cache_key=? ORDER BY created',(item.article_id,c.get('cache_key','')))]
+            if reviews:st.json({'engineering_diagnosis_not_independent_labels':reviews})
 
 
 def article_list(news,results,store,classes,catalog,context,keyword=None):
@@ -266,6 +275,17 @@ def main():
     kpis=st.container(key='product_kpis') if page=='Dashboard' else None
     c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
     catalog=load_taxonomy(mode);classes=data.classifications(mode)
+    from .classification_scheme import selected as selected_scheme,cache_key as classifier_key
+    scheme=selected_scheme(store) if mode=='US-BUSINESS-1' else None
+    signature=classifier_key(scheme) if scheme else 'legacy-rules'
+    if st.session_state.get('_classification_view_key')!=signature:
+        for key in ('product_children','local_sectors','graph_selected','industry_selected','heatmap_selected'):
+            st.session_state.pop(key,None)
+            st.session_state.get('_ui_mirrors',{}).pop(key,None)
+            for presentation in list(st.session_state):
+                if presentation.startswith(key+'__'):st.session_state.pop(presentation,None)
+        st.session_state['_classification_view_key']=signature
+    if scheme:st.caption('Finite-media classification version: '+signature+' · sentiment history unchanged')
     news=data.news()
     all_record_count=len(news)
     with st.expander('Development records',expanded=False):include_dev=st.checkbox('Include synthetic development records',value=False,key='product_include_dev')

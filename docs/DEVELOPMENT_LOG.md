@@ -1,5 +1,39 @@
 # Development log
 
+## P3-C local topic classification — 2 November 2026 Sydney
+
+- Started from clean local/origin cce295e1476de4d96425a05f4f7518a4116845f3;
+  main remained read only. Reused 30 retained Finnhub records and their original
+  research scope/expiry; no news, publisher-page or external LLM request and no
+  additional FinBERT inference. Original/content/lifetime/sentiment and HTTP-ledger
+  hashes remain unchanged. The handoff snapshot and frozen evaluation were not used.
+- Added independent MiniLM recall and local semantic decision/support review,
+  classification-only worker actions, finite model-call/review checkpoints,
+  versioned selected-view/cache integration and separate classifier controls in
+  the existing advanced batch panel. Future normal media batches use the selected
+  classifier while sentiment retains its independent fixed-model cache.
+- Loaded the already installed Gemma variant with 4096 context/full GPU after
+  unchanged resource guards passed; no model download. Disabled local prompt/token
+  logging before real text processing. CPU MiniLM subprocesses release Torch
+  memory. Safe resource pauses retained completed stages; no failed/unknown model
+  dispatch was automatically replayed.
+- Real before/after: 2 to 10 parent-labeled records, 2 to 6 child-labeled records;
+  final 17 no-sector-evidence and 3 classifier-output failures. Twenty finite
+  engineering diagnosis notes cover additions, ambiguity, reasonable unknowns
+  and failures. They are not independent human labels or general accuracy evidence.
+  Calls across development runs: MiniLM 33, local Gemma 59; final validation-only
+  refinements and a 30-record repeated task added zero dispatches. All original
+  results remain until the existing expiry. No raw evidence or model outputs in Git.
+- Formal 8511 checked the current shared semantic version, Industries parent/child
+  filtering, Dashboard filtering, hardware graph-node drilldown and Explorer
+  original/evidence/history. Reload read retained records without source requests.
+  Full offline regression and isolated dry run accompany the exact-SHA delivery;
+  the sealed report-handoff evidence remains a separate historical baseline.
+- Final local regression: 665 tests passed with one platform skip (135.475 s);
+  isolated benchmark dry run passed. All 171 frozen-file hashes matched. Finite
+  title/summary match checks found none in the permanent database, source/docs
+  or latest LM Studio server log. Final SHA and exact-SHA CI are delivery receipts.
+
 ## Finite media engineering — 2 November 2026 Sydney
 
 Later runtime acceptance used one fresh, explicitly confirmed private Finnhub

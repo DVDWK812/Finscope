@@ -91,17 +91,25 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch'}
+    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch','classifier_options'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
+    if 'classifier_options' in c:
+        from .classification_scheme import validate
+        c['classifier_options']=validate(c['classifier_options'])
+        if c.get('taxonomy')!='US-BUSINESS-1' or c.get('classifier_llm') or c.get('force_reanalysis'):
+            raise ValueError('Independent semantic classifier supports US-BUSINESS-1 and cached classification only')
     if 'media_batch' in c:
         from .media_batch import validate
         c['media_batch']=validate(c['media_batch'])
         if c.get('model')!='Local FinBERT' or c.get('classifier_llm') or c.get('force_reanalysis'):
             raise ValueError('Finite media batches use fixed local FinBERT and cached results only')
-    batch=c.get('operation') in {'collect','analyze','update'}
+    batch=c.get('operation') in {'collect','analyze','update','reclassify'}
     if 'operation' in c and not batch:raise ValueError('Invalid batch operation')
+    if c.get('operation')=='reclassify' and (not c.get('classifier_options') or c.get('sources') or not c.get('article_ids')
+            or c.get('budgets') or c.get('source_permissions') or c.get('media_batch')):
+        raise ValueError('Classification-only tasks require saved IDs and an independent scheme, without source requests')
     if 'sec_options' in c:
         from .sec_sources import validate_options
         c['sec_options']=validate_options(c['sec_options'])
@@ -198,6 +206,10 @@ class TaskQueue:
         """Independent advanced actions; never inherit a draft API source list."""
         if confirmed is not True:raise ValueError('Confirm the bounded batch scope')
         c={**config,'operation':operation,'force_reanalysis':False}
+        if c.get('media_batch') and c['taxonomy']=='US-BUSINESS-1' and not c.get('classifier_options'):
+            from .classification_scheme import selected
+            options=selected(self.store)
+            if options:c['classifier_options']=options
         if operation=='analyze':
             from .product_storage import ProductStorage
             data=ProductStorage(self.store)
@@ -216,6 +228,19 @@ class TaskQueue:
                 ids=[n.article_id for n in items]
             if not ids:raise ValueError('No saved originals selected')
             c.update(sources=[],article_ids=list(dict.fromkeys(ids))[:300],budgets={},source_permissions={})
+        return self._enqueue(validate_config(c))
+    def submit_reclassify(self,*,article_ids=None,options=None,confirmed=False):
+        if confirmed is not True:raise ValueError('Confirm classification-only use of retained media')
+        from .classification_scheme import selected
+        from .product_storage import ProductStorage
+        from .media_use import scope_of,authorize
+        opts=options or selected(self.store)
+        if not opts:raise ValueError('Select the independent local classifier scheme first')
+        items=[n for n in ProductStorage(self.store).news() if scope_of(n) and (article_ids is None or n.article_id in article_ids)]
+        if not items:raise ValueError('No current finite media selected')
+        for n in items:authorize(n,('retain','local_display','local_classification'))
+        c=dict(sources=[],article_ids=[n.article_id for n in items][:300],operation='reclassify',model='Local FinBERT',model_id='',
+            taxonomy='US-BUSINESS-1',limit=300,classifier_llm=False,classifier_options=opts,budgets={},source_permissions={})
         return self._enqueue(validate_config(c))
     def submit_import(self,items,*,confirmed=False,taxonomy='US-BUSINESS-1'):
         if confirmed is not True:raise ValueError('Confirm the import licence scope')

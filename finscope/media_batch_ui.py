@@ -12,7 +12,12 @@ SETTING='media_batch_pipeline'
 def saved(store):
     with closing(store.connect()) as db:
         r=db.execute('SELECT payload FROM product_settings WHERE name=?',(SETTING,)).fetchone()
-    return json.loads(r[0]) if r else None
+    c=json.loads(r[0]) if r else None
+    if c and c.get('taxonomy')=='US-BUSINESS-1':
+        from .classification_scheme import selected
+        options=selected(store)
+        if options:c['classifier_options']=options
+    return c
 
 
 def controls(q,active):

@@ -203,21 +203,25 @@ def cli_model_key(model,runner):
         raise ModelError('CLI model/variant could not be matched uniquely to the local API catalog; select and load the exact file in LM Studio',kind='invalid_registry') from None
 
 
-def load_model(model,*,explicit=False,runner=run_lms,resources=system_resources):
+def load_model(model,*,explicit=False,runner=run_lms,resources=system_resources,context_length=CONTEXT_LENGTH,gpu_offload=None):
     if explicit is not True:
         raise ModelError('Loading needs an explicit Load selected model action')
+    if type(context_length) is not int or not 2048<=context_length<=8192:raise ModelError('Use a bounded local context length')
     key=cli_model_key(model,runner)
-    ratio=gpu_ratio(model)
+    ratio=gpu_ratio(model) if gpu_offload is None else str(gpu_offload)
+    try:
+        if not 0<=float(ratio)<=1:raise ValueError()
+    except (TypeError,ValueError):raise ModelError('Use a bounded GPU offload ratio') from None
     # GGUF does not support vLLM engine configuration/CWD options, including
     # their --no-* forms. Supply neither; no engine script or tools are used.
-    args=['load',key,'--context-length',str(CONTEXT_LENGTH),'--gpu',ratio,'--parallel','1','--yes']
+    args=['load',key,'--context-length',str(context_length),'--gpu',ratio,'--parallel','1','--yes']
     output=runner([*args,'--estimate-only'],30)
     gpu=re.search(r'Estimated GPU Memory:\s*([\d.]+) GiB',output)
     total=re.search(r'Estimated Total Memory:\s*([\d.]+) GiB',output)
     if (not gpu or not total or re.search(r'(?:cannot|may not|not enough|insufficient)',output,re.I)
             or float(total[1])*GIB<model['size_bytes'] or float(gpu[1])>float(total[1])):
         raise ModelError('LM Studio did not provide a safe resource estimate; load was stopped',kind='resource_limit')
-    estimate={'gpu_bytes':float(gpu[1])*GIB,'total_bytes':float(total[1])*GIB,'context_length':CONTEXT_LENGTH,'gpu_ratio':ratio}
+    estimate={'gpu_bytes':float(gpu[1])*GIB,'total_bytes':float(total[1])*GIB,'context_length':context_length,'gpu_ratio':ratio}
     snapshot=resources();check_resources(estimate,snapshot)
     runner([*args,'--identifier',model['key'],'--ttl','1800'],180)
     return {'model_key':model['key'],'estimate':estimate,'resources_before_load':snapshot}

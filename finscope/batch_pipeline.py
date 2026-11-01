@@ -96,9 +96,16 @@ class BatchRunner:
                 self.queue.update(identity,status='partial_failed' if errors else 'completed',stage='collection saved; no model loaded',counts=counts,error='; '.join(dict.fromkeys(errors))[:1500]);return True
             from .industry_classifier import IndustryClassifier
             classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
+            legacy_classifier=classifier
+            semantic=None
+            if c.get('classifier_options'):
+                from .semantic_classifier import SemanticIndustryClassifier
+                semantic=SemanticIndustryClassifier(self.store,c['classifier_options'],check=check)
             model_key=None
             for raw in self.data.news():
                 if raw.article_id not in selected:continue
+                from .media_use import scope_of
+                classifier=semantic if semantic and scope_of(raw) else legacy_classifier
                 stage('classification: saved originals')
                 try:policy=authorize(raw,('retain','local_classification','local_sentiment','local_display'))
                 except ValueError:
@@ -113,6 +120,10 @@ class BatchRunner:
                         once('batch_class:'+item.article_id+':'+item.content_version+':'+c['taxonomy'],'classified')
                     except Exception:
                         self.data.state(item,'failed','Classification evidence validation failed');errors.append('Classification failed; original retained');counts['failed']+=1;continue
+                current_classification=self.data.classification(item,classifier.cache_key)
+                if current_classification and current_classification.get('status')=='failed':
+                    once('batch_classifier_failed:'+item.article_id+':'+classifier.cache_key,'failed')
+                    errors.append('Topic classifier failed; sentiment uses its independent text/model cache')
                 eligible,reason=eligibility(item)
                 if not eligible:
                     self.data.state(item,'not_applicable',reason);once('batch_na:'+item.article_id+':'+item.content_version,'skipped');continue

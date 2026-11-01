@@ -12,7 +12,8 @@ import sqlite3
 from .media_use import utcnow, deadline, scope_of, authorize
 
 TEXT_TABLES = ('local_news', 'local_analyses', 'product_content', 'product_classifications',
-               'product_analysis_cache', 'product_current_content', 'product_record_state')
+               'product_analysis_cache', 'product_current_content', 'product_record_state',
+               'product_classifier_calls','product_classification_reviews')
 
 
 class ExpiringMediaStore:
@@ -37,6 +38,8 @@ class ExpiringMediaStore:
               CREATE TABLE IF NOT EXISTS product_analysis_cache(article_id TEXT,content_version TEXT,cache_key TEXT,analysis_id TEXT,PRIMARY KEY(article_id,content_version,cache_key));
               CREATE TABLE IF NOT EXISTS product_current_content(article_id TEXT PRIMARY KEY,version TEXT,updated TEXT);
               CREATE TABLE IF NOT EXISTS product_record_state(article_id TEXT,content_version TEXT,download TEXT,analysis TEXT,reason TEXT,updated TEXT,PRIMARY KEY(article_id,content_version));
+              CREATE TABLE IF NOT EXISTS product_classifier_calls(id TEXT PRIMARY KEY,article_id TEXT,content_version TEXT,cache_key TEXT,stage TEXT,status TEXT,model_id TEXT,revision TEXT,started TEXT,finished TEXT,payload TEXT,UNIQUE(article_id,content_version,cache_key,stage));
+              CREATE TABLE IF NOT EXISTS product_classification_reviews(id TEXT PRIMARY KEY,article_id TEXT,cache_key TEXT,created TEXT,payload TEXT);
             ''')
             self.purged_count = self._purge(db)
 

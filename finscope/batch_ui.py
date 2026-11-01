@@ -26,6 +26,8 @@ def controls(q):
         st.caption('Collection and analysis are independent durable stages. Closing this tab does not stop the worker. No external LLM or API-key rotation.')
         from .media_batch_ui import controls as media_controls
         media_controls(q,active)
+        from .classification_ui import controls as topic_controls
+        topic_controls(q,active)
         st.divider()
         st.caption('Existing official-source batches and local imports')
         c=deepcopy(saved_config(q) or DEFAULT)

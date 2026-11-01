@@ -1,5 +1,38 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**2 November 2026 — independent media topic classification:** US-BUSINESS-1 now
+has dictionary evidence, independent pinned MiniLM candidate recall and an
+installed loopback LM Studio semantic decision/support review. FinBERT is a
+separate sentiment component. Only current finite media use the selected semantic
+scheme; permanent historical classifications and CSRC are unchanged. Candidate
+cosines and local-model judgments are not calibrated probabilities. Legal IDs,
+independent per-label quotes/justifications, parent-only outcomes and explicit
+unknown/failure reasons are required. Company reputation, query ticker, valuation
+and customer relationships alone cannot establish business activities. Short
+quotes retain exact surrounding input; an invalid label cannot validate another.
+
+The classification-only queue carries IDs/configuration/counters, never news or
+model text. Raw decisions, embedding vectors, evidence, old classifier versions
+and engineering reviews share the original finite sidecar expiry and backup
+exclusion. Prompt/response and incoming-token logging must be disabled before
+finite inference. MiniLM executes in a bounded short-lived CPU subprocess so its
+Torch allocation does not persist beside the GPU classifier. Existing RAM/VRAM
+guards remain; loading context/GPU placement is explicit and bounded. No new
+news request, FinBERT inference, weight download or external LLM was used.
+
+Real development diagnosis reused the existing 30 records. Parent-labeled
+records changed 2 to 10; child-labeled records 2 to 6. Seventeen final records
+remain without sector evidence and three fail output validation. Twenty records
+received Codex engineering review, not independent human reference labels; known
+supplier/operator and broad-domain/child specificity ambiguities remain. This is
+not an accuracy estimate or frozen evaluation. Repeating the selected scheme
+skipped all 30 with zero additional model dispatches. Actual calls across pilots
+and refinements were 33 MiniLM forwards (three catalog batches, 30 documents)
+and 59 local Gemma calls (33 decisions, 26 support reviews); all transport calls
+completed, while some semantic outputs failed validation. Final refinements reused
+saved outputs rather than repeating inference. No sample text or per-article
+model evidence is included here.
+
 **2 November 2026 — finite media research:** Record licence coverage, user-chosen
 private research with unresolved applicability, and concrete restrictions as
 different states. User consent is not publisher permission; lack of a separate

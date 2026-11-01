@@ -2,6 +2,18 @@
 
 ### Finite media text batches (local)
 
+For US-BUSINESS-1, **Industry classification** in the same advanced batch panel
+selects an installed LM Studio classifier independently of FinBERT. Inspect/load
+the exact local variant, disable LM Studio prompt/response and token logging, then
+select the scheme. **Reclassify retained media only** reuses saved text and
+sentiment; it makes no news request. MiniLM retrieves taxonomy candidates even
+without dictionary hits, and a separate local semantic decision/support review
+can retain a parent alone or leave an explicit unknown/failure reason. Similarity
+is a retrieval score, not calibrated confidence. Model/resource guards still apply;
+no new weights are downloaded. Future media batches adopt the selected scheme.
+All four views use that version; earlier classifications, model-call checkpoints
+and engineering notes remain only in the finite sidecar until the original expiry.
+
 In **Batch collection and offline analysis → Media API text and local analysis**,
 record one source-level basis: licence evidence, personal research with unresolved
 applicability, or a concrete restriction. Research confirmation is not publisher

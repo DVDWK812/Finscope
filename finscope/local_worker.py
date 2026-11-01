@@ -112,6 +112,9 @@ class Worker:
     def run_one(self):
         task=self.queue.get()
         if not task or task['status']!='queued':return False
+        if task['snapshot'].get('operation')=='reclassify':
+            from .classification_scheme import run_reclassification
+            return run_reclassification(self,task)
         if task['snapshot'].get('operation'):
             from .batch_pipeline import BatchRunner
             return BatchRunner(self).run(task)

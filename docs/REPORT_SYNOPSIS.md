@@ -22,6 +22,15 @@ storage. This is private research acceptance, with third-party applicability
 unverified; it is not publisher-licensed NLP or permission for group/public demos.
 No publisher permission is inferred from user research confirmation.
 
+**P3-C continuation, 2 November:** Classification is now independently selectable
+from sentiment: pinned MiniLM taxonomy recall plus an installed local semantic
+classifier/support review for finite media. A 30-record development diagnosis
+completed with explicit unknown/failure outcomes, versioned caches and evidence
+under the original finite expiry. It provides engineering observations, no
+independent accuracy estimate; FinBERT and the frozen evaluation were not rerun.
+See [dated engineering decisions](DECISIONS.md). The sealed handoff figures below
+remain the historical report baseline, separate from private research evidence.
+
 FinScope is a single-user, desktop-hosted financial-news/disclosure inspection tool. It supports permitted local text storage, sentiment, evidence-based industry topics and drill-down to originals. It does not forecast returns, establish causation or verify event identity.
 
 ```mermaid

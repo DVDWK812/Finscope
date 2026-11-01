@@ -171,15 +171,21 @@ class ProductStorage:
             db.execute('BEGIN IMMEDIATE')
             if getattr(self.store,'is_expiring_media',False):self.store.check(item,db)
             db.execute('INSERT OR IGNORE INTO product_classifications VALUES (?,?,?,?,?)',(item.article_id,item.content_version,key,json.dumps(result),now()));db.commit()
-    def classifications(self,taxonomy):
+    def classifications(self,taxonomy,cache_key=None):
         result={}
         current={n.article_id:n.content_version for n in self.news()}
         with closing(self.store.connect()) as db:
-            for article,version,payload in db.execute('SELECT article_id,content_version,payload FROM product_classifications ORDER BY created,rowid'):
+            for article,version,payload,key in db.execute('SELECT article_id,content_version,payload,cache_key FROM product_classifications ORDER BY created,rowid'):
                 data=json.loads(payload)
-                if data['taxonomy']==taxonomy and current.get(article)==version:result[article]=data
+                if data['taxonomy']==taxonomy and current.get(article)==version and (cache_key is None or key==cache_key):result[article]=data
         other=self._partition()
-        if other:result.update({k:v for k,v in other.classifications(taxonomy).items() if k in current})
+        if other:
+            key=cache_key
+            if key is None and taxonomy=='US-BUSINESS-1':
+                from .classification_scheme import selected,cache_key as scheme_key
+                scheme=selected(self.store)
+                if scheme:key=scheme_key(scheme)
+            result.update({k:v for k,v in other.classifications(taxonomy,key).items() if k in current})
         return result
     def classification_history(self,article_id,taxonomy):
         with closing(self.store.connect()) as db:
