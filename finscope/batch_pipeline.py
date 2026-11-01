@@ -72,6 +72,8 @@ class BatchRunner:
                                 from .sec_sources import SECCollector
                                 collector=SECCollector(self.store,self.queue,identity,c.get('sec_options',{}),check)
                                 collector.collect(source,c['limit'],on_items=lambda rows:[persist(n) for n in rows])
+                                if collector.failures:
+                                    errors.extend(collector.failures);counts['failed']+=len(collector.failures)
                             else:
                                 for raw in self.worker.fetch(source,{**c,'limit':min(c['limit'],100 if source=='abs_archive' else 50)},check):persist(raw)
                                 if source in self.worker.source_warnings:errors.append(source+': '+self.worker.source_warnings[source])

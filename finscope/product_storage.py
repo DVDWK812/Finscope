@@ -45,6 +45,7 @@ class ProductStorage:
             old=decode(payload)
             if (old.provider!=item.provider or old.source!=item.source or not old.body or old.title!=item.title
                     or old.timestamp!=item.timestamp or old.publication_date!=item.publication_date
+                    or old.filed_date!=item.filed_date
                     or canonical_url(old.url)!=canonical_url(item.url)):continue
             from .source_policies import authorize
             try:authorize(old,('retain','local_display'))

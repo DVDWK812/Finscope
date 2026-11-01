@@ -1,181 +1,186 @@
 # P3-A: bounded collection and independent local analysis
 
-Verified 1 November 2026 Australia/Sydney, starting at local commit
-`5df7ae1dee84f9089fb21daa5f6ba21809c8425b`. This is a partial P3-A closeout:
-real local growth and FinBERT/browser acceptance succeeded; live SEC collection
-requires the user's truthful contact identity. SEC mock coverage is not live
-SEC ingestion evidence. No issuer/SEC industry-diversity target is claimed met.
+Verified 1 November 2026 Australia/Sydney. Baseline:
+`5df7ae1dee84f9089fb21daa5f6ba21809c8425b`. Real official-source collection,
+local persistence, independent FinBERT and formal 8511 drill-down were executed.
+The first implementation commit was `f789488c504d82ee496fb1e72aaff2ada6f688c0`
+with all three CI jobs passing. After the user supplied an actual SEC contact,
+additional live SEC acceptance exposed and repaired two client boundaries; the
+final delivery SHA/CI includes these repairs and the results below.
 
-## Actual local data
+## Actual data and separate denominators
 
-| Source | Before | Added distinct originals | Current | Permitted text |
+| Source | Before | Added distinct originals | Current | Covered text |
 |---|---:|---:|---:|---|
-| ABS | 21 | 59 | 80 | Official release title/date; one previously reviewed body retained |
-| NIST | 20 | 20 | 40 | Official RSS title/description; three reviewed bodies |
+| ABS | 21 | 59 | 80 | Official title/date; one retained reviewed body |
+| NIST | 20 | 20 | 40 | RSS title/description; three reviewed bodies |
 | RBA | 1 | 0 | 1 | Previously retained official release feed text |
-| SEC | 0 | 0 | 0 | Adapter implemented; requests wait for actual User-Agent/contact |
+| SEC official press RSS | 0 | 20 | 20 | Official title and supplied description; no linked pages |
+| SEC EDGAR | 0 | 120 | 120 | Structured filing metadata; seven eligible event excerpts |
 
-SQLite contains **126 originals: 121 real official announcements and five
-pre-existing authored development records**. There are zero media-news,
-company-press-release or regulatory-disclosure originals in this accepted corpus.
-The official announcements include science/macro topics; their count does not
-establish 121 company financial-news items or comprehensive market coverage.
+**266 originals: 261 real records plus five pre-existing authored development
+records.** Real records comprise 141 government/official announcements and 120
+regulatory disclosures, with zero media-news/company-IR-release originals.
+The corpus grew from 42 to 261 real originals (+219), within the 100–300-record
+target. Scientific/macro announcements and corporate filings are not presented
+as one media-news coverage metric.
 
-The real corpus grew from 42 to 121 distinct originals (+79). The numerical
-100–300-record engineering target is reached for official announcements, while
-corporate disclosure diversity and six-industry coverage remain incomplete.
-Publication dates span 2025-12-22 through 2026-10-30. ABS date-only evidence is
-never converted to an invented publication timestamp.
+Six issuers each contribute 20 filings: Microsoft, JPMorgan Chase, Caterpillar,
+Johnson & Johnson, Exxon Mobil and Amazon. CIK, ticker, issuer name and SIC come
+from the returned SEC metadata. Issuer SIC is retained separately and never used
+as the sole news-topic evidence. The generated issuer/form/date display title
+is excluded from SEC topic matching. Publication, calendar filing date, SEC
+acceptance/disclosure time and collection time have separate fields/precision;
+a filing day is not an invented publication timestamp.
 
-## Real requests and analysis
+## Real requests, scope and corrections
 
-Three explicitly submitted collection actions returned 140 selected records:
-79 new and 61 duplicate originals. They made **13 collector GETs, all HTTP 200**:
-five NIST requests; three ABS current-index/body requests; five ABS archive
-requests (robots, current index, three actually linked numbered index pages).
-Minimum observed within-action request spacing was 1.175277 seconds. Bounds
-were NIST ≤5 GETs, ABS current ≤3, ABS archive ≤5. There were no retries,
-alternate-key attempts, SEC requests, Marketaux/Finnhub/NewsData requests or
-external-LLM requests. Browser assets/health checks and official terms research
-are separate from this collector ledger count.
+The initial ABS/NIST stages selected 140 records: 79 new and 61 duplicates,
+using 13 GETs (five NIST; three ABS current; five ABS archive), all HTTP 200.
+The archive follows only the next three actually linked numbered ABS index
+pages, with no bodies. Minimum observed public-source spacing: 1.175277 seconds.
 
-The source-only actions retained data while the analysis-history count stayed
-84. A separate source-free task then performed **121 actual local FinBERT
-inferences**, with no mock/fallback and no model downloads. Model:
-`ProsusAI/finbert`, revision
-`0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031`; preprocessing
-`product-lead-span-2`. All outputs record genuine three-class probabilities,
-input fingerprint, excerpt spans/coverage, task ID and reviewed source policy.
-Current text bases: 79 titles, 38 summaries and four bodies. These are selected
-text/excerpt sentiment results, not publication-wide or market-return claims.
+After the user explicitly provided an actual SEC contact identity, a two-GET
+pilot saved five Microsoft filings and one event excerpt. FinBERT genuinely
+analyzed that excerpt; the other four records remained not applicable. A
+six-issuer expansion was bounded at 18 further GETs / 12 new document requests.
+It stopped after four GETs when the older 10,000-row guard rejected JPMorgan's
+large, HTTP-200 recent-history response. The request receipt was preserved;
+no article was fabricated from it. A corrected continuation used at most the
+remaining 14 GETs, including one explicit re-retrieval of that known HTTP-200
+schema failure. It did not reissue unknown requests, clear a ledger or use a
+new key. All six issuers now have 20 persisted originals. One additional bounded
+GET selected 20 SEC official press-feed records without fetching linked pages.
 
-History is append-only: **84 → 205 analyses**. During incremental acceptance an
-index-only refresh exposed an existing-body downgrade. The repair retains a
-previously reviewed body for unchanged title/publication metadata and stores a
-separate current-revision pointer. Both text/analysis versions remain in history;
-no result was removed to conceal the issue. The ABS P2 body/current result is
-again selected. New body restrictions or a changed title/date prevent this reuse.
+**Total new collector HTTP: 34 GETs, all HTTP 200 (13 public-source + 21 SEC).**
+SEC spacing is at least 1.5 seconds and its ledger shares timing across tasks.
+Six SEC HTTP-200 responses were rejected by the client: the initial JPMorgan
+schema failure and five current-report bodies without a suitable operating-event
+excerpt. These are distinct from HTTP/network failures. The latter records keep
+permitted filing metadata and no fabricated sentiment. Completed primary-document
+bodies are reused; metadata refreshes are explicit bounded operations. Failed
+and unknown request checkpoints never automatically resend.
 
-After that repair, an independent offline rerun completed with zero new
-inferences. A CSRC classification pass added 121 classification records with
-zero new inferences. The formal UI's **Analyze saved records offline** action
-was also submitted and completed with zero downloads, new originals or
-inferences. The current 121 originals each have a matching-text FinBERT result.
+The large-history parser is still bounded at 8 MiB / 100,000 column rows, and
+selects only the configured 20 relevant filings/company. One failed issuer no
+longer prevents the remaining watchlist from being processed. Rejected-response
+hashes and safe schema diagnostics are retained without copying unselected body
+text or request headers. The actual contact identity is local only, absent from
+Git, job snapshots, reports and screenshots.
 
-US-BUSINESS-1 has evidence-backed dictionary assignments for 14 originals and
-107 Unclassified originals: five parent labels (technology, healthcare,
-industrials, materials, consumer staples) and seven child labels. Multi-label
-counts are not summed as distinct articles. Labels remain provisional lexical
-topic assignments; for example chip “packaging” is an ambiguity requiring
-semantic review, not validated packaging-industry coverage. The six-parent
-target is not met. CSRC-JRT0020-2024 retains all 121 English-source originals
-Unclassified under its current vocabulary; nothing is forced into S/91.
+Marketaux/Finnhub/NewsData requests, alternate-key attempts and external-LLM calls
+were **zero**. Their ledgers/holds remain intact; NewsData is still manually
+paused. Existing API HTTP-200 receipts remain separate connection evidence.
+Browser assets/health checks and official-documentation research are separate
+from these 34 collector GETs.
 
-## User workflow and durability
+## Actual analysis and evidence
 
-Dashboard/Industries/Graph/Explorer → **Batch collection and offline analysis**:
+The store-only actions left prior inference history untouched. Source-free jobs
+performed **148 actual local FinBERT inferences** during the round, bringing
+analysis history from **84 to 232**. The current 261-record corpus has **148
+matching-text FinBERT results and 113 not-applicable filing metadata records**:
+141 official announcements plus seven operating-event excerpts are analyzable.
+No missing/unsuitable disclosure is forced into Neutral.
 
-1. Review the bounded sources, CIK watchlist, form types, HTTP/document caps,
-   minimum spacing and local model. Save the batch settings. This supplies the
-   default **Update & Analyze** scope; the existing review/confirmation remains.
-2. **Collect and save only** saves permitted text without model inventory,
-   resource checks, loading or inference. **Analyze saved records offline**
-   selects local originals independently of incomplete API drafts and never
-   invokes a news collector. Pinned FinBERT prioritizes uncached/new/changed rows
-   beyond the first 300 records. Each explicit offline batch is bounded at 300.
-3. Closing the browser does not terminate the separate OS-locked worker. Batch
-   work interrupted by a worker restart returns to its durable checkpoints.
-   Successful content/model caches are reused; failed or unknown HTTP/model
-   dispatches are never automatically repeated. A model/resource block retains
-   downloads and can be explicitly resumed. Legacy non-batch interruption rules
-   remain unchanged.
-4. JSONL/CSV import is local only. Required fields are `title`, `source`, `url`;
-   optional fields are `id`, `summary`, `body`, `source_type`, `document_type`,
-   `company`, `ticker`, `cik`, `publication_date`, `timestamp`. Supply an actual
-   permission/legal basis, covered text fields/uses, retention, attribution and
-   expiry where applicable. Narrow-field/expired/invalid imports are rejected;
-   import does not confer publisher rights or become an API response. The parser
-   bound is 5 MiB / 300 records; the existing Streamlit upload limit is 1 MiB.
+Model: `ProsusAI/finbert`, revision
+`0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031`, preprocessing
+`product-lead-span-2`. Genuine probabilities, input fingerprints, selected spans,
+coverage, model/policy/task versions and prior results are retained. There is no
+mock output, automatic weight download or external fallback. Long 10-K/10-Q
+records remain metadata only; current-report results describe their selected
+operating-event excerpt, never whole-filing sentiment.
 
-Canonical publisher/URL identity preserves independent reporting. SEC accession
-identity survives a corrected primary-document filename. Content revisions,
-classification caches, per-version download/analysis state and current revision
-pointers use the existing SQLite library. Covered SEC response data/event text
-uses one content-addressed ignored checkpoint archive, with hashes and SQL
-indexes; no article corpus, contact identity or credential is committed.
-Generic source dispatches interrupted before their completed-source checkpoint
-require review rather than speculative replay. SEC has finer per-URL checkpoints.
+The first index refresh exposed an existing-body downgrade. The repair retains
+a previously reviewed body for unchanged title/filing/publication metadata and
+stores a separate current-version pointer. Every old text/result version remains;
+no result was deleted to conceal the issue. Changed titles/dates or new body
+restrictions prevent reuse. The ABS P2 body/result remains current.
 
-## SEC policy, configuration and remaining live gate
+Repeated source-free work reuses current text/model caches with zero new
+inferences or HTTP. Both taxonomies are run independently of source collection.
+US-BUSINESS-1 currently has 17 classified originals and 244 Unclassified, spanning
+six parent and nine child dictionary labels. Multi-label memberships are not
+summed as distinct articles. These are provisional lexical topic assignments;
+chip "packaging" is a known semantic ambiguity, not validated materials-industry
+coverage. CSRC-JRT0020-2024 retains these English-source records Unclassified
+under the current vocabulary, without forcing S/91. Fixed dictionaries, literal
+issuer-name evidence and article keywords are limited entity/topic extraction,
+not a high-recall general NER system.
 
-Reviewed official sources:
+## Independent user workflow and durability
 
-- [SEC APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
-  describe submissions metadata and update behavior.
-- [SEC RSS](https://www.sec.gov/about/rss-feeds) documents official feeds.
-- [Website dissemination](https://www.sec.gov/about/privacy-information#dissemination)
-  permits copying/distribution of covered SEC-hosted public information with
-  attribution; seals, logos, trademarks and external websites are excluded.
-- [Fair Access](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data)
-  requires a declared contact identity and moderated access. FinScope defaults
-  to ≥1.5 seconds between SEC requests, not the published maximum request rate.
+In Dashboard/Industries/Graph/Explorer, expand **Batch collection and offline
+analysis**. Save a reviewed, bounded source/model/watchlist scope; this supplies
+the default **Update & Analyze** action and its existing review/confirmation.
+**Collect and save only** performs no model inventory, resource checks, loading
+or inference. **Analyze saved records offline** reads local originals independently
+of incomplete API drafts and never invokes a news collector. Pinned FinBERT
+prioritizes uncached/new/changed rows beyond the first 300; each explicit offline
+batch is bounded at 300 records.
+
+Closing the browser does not terminate the OS-locked worker. Interrupted batch
+work returns to durable checkpoints on worker restart. Successful caches are
+reused; failed/unknown HTTP/model dispatches are never automatically repeated.
+Model/resource blocks retain downloaded records for explicit offline continuation.
+Generic source interruption before its completed-source checkpoint requires
+review rather than speculative replay; SEC has finer per-URL/company checkpoints.
+Legacy interruption rules remain unchanged.
+
+JSONL/CSV import is local only. Required: `title`, `source`, `url`; optional:
+`id`, `summary`, `body`, `source_type`, `document_type`, `company`, `ticker`, `cik`,
+`publication_date`, `timestamp`. Supply actual licence/legal evidence, covered
+fields/uses, retention, attribution and expiry where applicable. Narrow-field,
+expired or invalid imports fail closed. Imported text is not an API response.
+The parser cap is 5 MiB / 300 records; the existing Streamlit upload cap is 1 MiB.
+No production import or authored text is counted as real-source acceptance.
+
+Canonical publisher/URL identities keep independent reporting separate. SEC
+accession identity survives corrected primary filenames. Content revisions,
+current pointers, classification/model caches and per-version download/analysis
+states use SQLite. Covered SEC checkpoint data uses a content-addressed ignored
+archive with hashes and SQL references; no news corpus is committed.
+
+## Policies and browser/verification evidence
 
 `SECSourcePolicy` records fields, local purposes, retention basis, attribution,
-exclusions and version. The watchlist starts with six CIKs for Microsoft,
-JPMorgan Chase, Caterpillar, Johnson & Johnson, Exxon Mobil and Amazon; returned
-SEC identity/ticker/SIC metadata is retained as evidence, not silently guessed
-from these display names. Users can configure up to 20 CIKs. The initial bounds
-are 20 filings/company, 12 current-report documents shared across companies,
-20 SEC requests/task and 120 selected records/source. No bulk ZIP, historic-file
-pagination, exhibits, arbitrary URLs, external issuer sites or attachments.
+exclusions and version. It covers reviewed SEC-hosted public factual text, not
+external issuer/publisher websites, exhibits, copyrighted/specially restricted
+material, seals, logos or media. Official policy and endpoint references:
+[APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces),
+[RSS](https://www.sec.gov/about/rss-feeds),
+[dissemination](https://www.sec.gov/about/privacy-information#dissemination),
+[Fair Access](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data).
+Defaults use conservative 1.5-second spacing rather than the published maximum.
+HTTP 401/403/429 or unknown dispatch stops subsequent automatic SEC access;
+other licensed sources continue. No account/key rotation bypasses a hold.
 
-8-K/6-K extract an identified operating-event narrative with document offsets
-and coverage. Unsuitable or specially restricted bodies remain metadata only;
-10-K/10-Q are never ordinary-news whole-document sentiment inputs. Issuer SIC
-is separate from literal news-topic evidence. Fixed dictionaries, literal issuer
-name evidence and article keywords provide limited entity/topic extraction;
-this is not a high-recall general NER system.
+Other reviewed bases:
+[ABS](https://www.abs.gov.au/website-privacy-copyright-and-disclaimer),
+[NIST](https://www.nist.gov/copyrights-disclaimers),
+[RBA](https://www.rba.gov.au/copyright/). Record restrictions always win. Expired
+grants stop processing; automatic deletion of historical/backup text and
+contract-specific retention enforcement remain outside this delivery. Company
+IR automation needs its own source review; SEC policy never licenses arbitrary
+externally linked press articles.
 
-**The user has not supplied an actual SEC contact identity.** No email was
-invented or inferred from unrelated accounts. Enter a truthful contact-bearing
-User-Agent in the advanced batch control and save, or set local
-`FINSCOPE_SEC_USER_AGENT`. Then explicitly start a bounded SEC batch. First-live
-SEC schema/access/body acceptance and issuer diversification remain pending.
-HTTP 401/403/429 or an unknown dispatch stops subsequent automatic SEC access;
-other licensed sources continue. No rotation or alternative route bypasses it.
-
-Company IR press-release automation also needs individually reviewed source
-rights; SEC policy never licenses arbitrary externally linked press articles.
-Marketaux/Finnhub HTTP-200 receipts remain connection evidence only. NewsData
-remains manually paused, with its subscription/multiple-key ambiguity unresolved.
-
-ABS, NIST and retained RBA policy bases:
-[ABS terms](https://www.abs.gov.au/website-privacy-copyright-and-disclaimer),
-[NIST terms](https://www.nist.gov/copyrights-disclaimers),
-[RBA terms](https://www.rba.gov.au/copyright/). Record-level restrictions always
-win. Expired grants stop processing; this delivery does not automatically delete
-historical/backup text or implement contract-specific legal retention workflows.
-
-## Browser, offline validation and preservation
-
-Formal localhost:8511 was updated while no task was running. Dashboard and
-Explorer were checked on the real SQLite corpus, with publication-date/model
-filters and source/analysis-state controls. Source-type counts are separate;
-mixed selections use one explicitly labelled source-type chart denominator.
-Original links, permitted text, two-level topic evidence, probabilities and
-historical versions remain inspectable. Screenshots and exact task/HTTP/model
-metadata are ignored local evidence under `reports/p3_*`.
+Formal localhost:8511 uses the real SQLite corpus. Dashboard/Explorer drill-down
+checks include a newly collected NIST release and an actual SEC 8-K, selected
+model probabilities/revision, permitted text, source/filing/acceptance evidence,
+issuer-versus-topic distinction and original URLs. Source types/status filters
+keep denominators separate; mixed libraries use an explicitly selected source-type
+chart cohort. Exact screenshots, task IDs, HTTP/model metadata and preservation
+hashes are ignored local `reports/p3_*` evidence.
 
 Offline tests cover independent phases, unavailable models, cache reuse,
-incremental revisions, current-body preservation, restart/unknown dispatch,
-request/rate/URL bounds, publisher separation, policy expiry/revocation, imports,
-issuer-versus-topic separation and counting consistency. The benchmark dry run
-is isolated with `FINSCOPE_TESTING=1`; no provider budget is used by tests.
+revisions/current-body preservation, restart/unknown dispatch, request/rate/URL
+bounds, large SEC histories, per-issuer isolation, generated-title exclusion,
+policy expiry/revocation, imports and counting consistency. The benchmark dry run
+is isolated with `FINSCOPE_TESTING=1` and spends no provider budget. Final test
+count, exact pushed SHA and its CI accompany the delivery.
 
-All 171 frozen files and the original 84 analysis rows were hash-checked
-unchanged. Existing news/HTTP/model ledgers, permissions and credential-registry
-row prefixes are unchanged. Only view/new-batch settings change existing product
-preferences. SQLite backups precede additive schema changes. Main remains read
-only; no public showcase/runtime change, frozen evaluation rerun or coursework
-submission occurred. Final pushed local SHA and its exact CI run accompany the
-delivery, separately from these live-data claims.
+All 171 frozen files and original 84 analysis rows are hash-checked unchanged.
+Original news/request/model/permission/credential-registry row prefixes are
+unchanged. Existing product preferences change only for views; new batch/contact
+settings are separate. Additive schema changes have SQLite backups. Main remains
+read only; no showcase change, frozen evaluation rerun or coursework submission.

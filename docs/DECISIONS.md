@@ -2,13 +2,15 @@
 
 **1 November 2026 Sydney — P3-A independent stages:** Adopt a model-free
 collection/save stage followed by a source-free local analysis stage; retain
-source/record policy restrictions, versioned text and caches. Actual approved
-ABS/NIST growth is +79 originals; current corpus 121 official announcements,
-205 total analysis-history rows after 121 genuine FinBERT inferences. SEC
-adapters require an actual user-provided contact identity before dispatch;
-live SEC count remains zero. Six-industry/corporate-source objectives remain
-incomplete. [P3 evidence](P3_BATCH_ACCEPTANCE.md) separates implementation,
-real requests, real analysis and the remaining gate.
+source/record policy restrictions, versioned text and caches. With the user's
+actual SEC contact, real growth is +219 originals: 141 official announcements
+and 120 SEC filings (six issuers). There are 148 current FinBERT results and
+113 not-applicable filing metadata records; history grows 84 → 232. All 34
+collector GETs returned HTTP 200; client schema/text rejections are separately
+recorded without fabricated sentiment or unknown retries. Six US parent/nine
+child dictionary labels are provisional, with 244 Unclassified originals.
+[P3 evidence](P3_BATCH_ACCEPTANCE.md) separates implementation, actual collection,
+actual inference and remaining media/semantic-classification limits.
 
 **1 November 2026 Sydney — execute the licensed ABS path:** Reuse an existing
 reviewed ABS release for saved-original, source-free local FinBERT processing.

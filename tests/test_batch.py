@@ -151,6 +151,18 @@ class SECTests(unittest.TestCase):
         with self.assertRaises(ValueError):parse_submissions(submissions(),'0000000001',DEFAULT_OPTIONS)
         for url in ('https://evil.invalid/news','https://www.sec.gov/Archives/edgar/data/1/../../x.htm','https://www.sec.gov@evil.invalid/news'):
             self.assertFalse(permitted_url(url))
+    def test_large_valid_recent_history_selects_only_bounded_rows(self):
+        rows=parse_submissions(submissions(10001),'0000789019',DEFAULT_OPTIONS)
+        self.assertEqual(len(rows),20)
+    def test_one_company_schema_failure_does_not_block_other_companies(self):
+        calls=[]
+        def get(url,headers):
+            calls.append(url)
+            if '0000019617' in url:return 200,b'{"unexpected":"authored schema fixture"}'
+            return 200,submissions(1)
+        collector=self.collector(get,ciks=['0000019617','0000789019'],document_limit=0)
+        rows=collector.collect('sec_submissions',5)
+        self.assertEqual(len(rows),1);self.assertEqual(len(calls),2);self.assertEqual(len(collector.failures),1)
     def test_contact_not_fabricated_and_conservative_limits(self):
         for value in ('','FinScope','FinScope your-email@example.com'):
             with self.assertRaises(ValueError):validate_user_agent(value)
@@ -164,6 +176,16 @@ class SECTests(unittest.TestCase):
         body,evidence=extract_event(text.encode(),'8-K')
         self.assertTrue(body.startswith('Item 2.02'));self.assertTrue(evidence['sentiment_eligible'])
         self.assertNotIn('Cover page',body);self.assertLess(evidence['document_coverage'],1)
+        procedural='<p>Item 2.02 Results of Operations and Financial Condition. '+('The registrant furnished a press release as Exhibit 99.1 which is incorporated herein by reference. '*5)+'</p><p>Item 9.01 Exhibits.</p>'
+        with self.assertRaises(ValueError):extract_event(procedural.encode(),'8-K')
+    def test_new_collection_reuses_existing_reviewed_filing_body(self):
+        n=parse_submissions(submissions(1),'0000789019',DEFAULT_OPTIONS)[0]
+        origin=json.loads(n.provenance);origin.update(body_status='event_excerpt',sentiment_eligible=True)
+        n=prepare(replace(n,body='The fictional company announced a new acquisition agreement. '*10,provenance=json.dumps(origin)))[0]
+        ProductStorage(self.store).save(n);calls=[]
+        collector=self.collector(lambda url,headers:(calls.append(url) or (200,submissions(1))))
+        rows=collector.collect('sec_submissions',1)
+        self.assertEqual(len(calls),1);self.assertIn('/submissions/',calls[0]);self.assertEqual(rows[0].body,n.body)
     def test_per_url_cache_checkpoint_never_reissues_success(self):
         calls=[];collector=self.collector(lambda url,headers:(calls.append(url) or (200,submissions())))
         url='https://data.sec.gov/submissions/CIK0000789019.json'
@@ -188,6 +210,20 @@ class SECTests(unittest.TestCase):
         self.q.save_step(self.key,'sec_http:'+hashlib.sha256(url.encode()).hexdigest(),'pending',{})
         collector=self.collector(lambda *a:self.fail('Unknown HTTP must not repeat'))
         with self.assertRaises(ValueError):collector.request(url,lambda b:[],'sec_submissions')
+    def test_unknown_transport_holds_other_urls_and_later_sec_tasks(self):
+        calls=[]
+        def failed(url,headers):calls.append(url);raise OSError('Authored transport outcome unknown')
+        collector=self.collector(failed)
+        with self.assertRaises(OSError):collector.request('https://data.sec.gov/submissions/CIK0000789019.json',lambda b:[],'sec_submissions')
+        collector.task_id='another-explicit-task'
+        with self.assertRaises(ValueError):collector.request('https://data.sec.gov/submissions/CIK0000019617.json',lambda b:[],'sec_submissions')
+        self.assertEqual(len(calls),1)
+    def test_post_response_archive_failure_is_not_treated_as_a_schema_retry(self):
+        calls=[];collector=self.collector(lambda url,headers:(calls.append(url) or (200,b'{}')))
+        def failed_archive(payload):raise OSError('Authored local persistence failure')
+        with self.assertRaises(OSError):collector.request('https://data.sec.gov/submissions/CIK0000789019.json',failed_archive,'sec_submissions')
+        with self.assertRaises(ValueError):collector.request('https://data.sec.gov/submissions/CIK0000019617.json',lambda b:[],'sec_submissions')
+        self.assertEqual(len(calls),1)
     def test_archive_integrity_and_path_cannot_trigger_network_repair(self):
         collector=self.collector(lambda *a:(200,b'{}'));url='https://data.sec.gov/submissions/CIK0000789019.json'
         collector.request(url,lambda b:{},'sec_submissions')
@@ -237,6 +273,37 @@ class ImportTests(unittest.TestCase):
         w=Worker(store,fetch=lambda *a:self.fail('Import cannot fetch'),infer=lambda *a:self.fail('Store-only cannot infer'),resources=lambda *a,**k:self.fail('No model resource probe'))
         for _ in range(2):q.submit_import(items,confirmed=True);w.run_one()
         self.assertEqual(len(store.list_news()),1);self.assertEqual(store.list_analyses(),[])
+
+
+class BatchUITests(unittest.TestCase):
+    def test_disclosures_use_record_kpis_and_remain_not_applicable_without_network(self):
+        from pathlib import Path
+        from streamlit.testing.v1 import AppTest
+        store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);q=TaskQueue(store)
+        q.configure({**C,'limit':3});store.set_setting('guide_completed',True)
+        n=prepare(parse_submissions(submissions(1),'0000789019',DEFAULT_OPTIONS)[0])[0]
+        ProductStorage(store).save(n)
+        with patch('requests.sessions.Session.request',side_effect=AssertionError('Viewing a disclosure cannot fetch news or a model')) as http:
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20).run()
+        self.assertFalse(app.exception);self.assertEqual(app.metric[0].label,'Original records')
+        self.assertEqual(app.metric[0].value,'1');self.assertEqual(app.metric[1].value,'0')
+        self.assertIsNone(q.get());http.assert_not_called()
+    def test_mixed_library_kpis_do_not_inherit_only_the_chart_cohort_topics(self):
+        from pathlib import Path
+        from streamlit.testing.v1 import AppTest
+        from finscope.industry_classifier import IndustryClassifier
+        store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);q=TaskQueue(store)
+        q.configure({**C,'limit':3});store.set_setting('guide_completed',True)
+        raw=parse_submissions(submissions(1),'0000789019',DEFAULT_OPTIONS)[0]
+        origin=json.loads(raw.provenance);origin.update(body_status='event_excerpt',sentiment_eligible=True)
+        filing=prepare(replace(raw,body='The fictional operator expanded oil storage and gas storage facilities.',provenance=json.dumps(origin)))[0]
+        data=ProductStorage(store);classifier=IndustryClassifier()
+        for n in (prepare(fixture())[0],filing):
+            data.save(n);data.save_classification(n,classifier.cache_key,classifier.classify(n))
+        with patch('requests.sessions.Session.request',side_effect=AssertionError('View only')):
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20).run()
+        self.assertFalse(app.exception);self.assertEqual(app.metric[0].value,'2')
+        self.assertEqual(app.metric[2].value,'2');self.assertIsNone(q.get())
 
 
 if __name__=='__main__':unittest.main()

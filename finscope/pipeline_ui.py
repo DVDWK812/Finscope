@@ -298,9 +298,12 @@ def main():
         chart_news=[n for n in news if source_type(n)==chart_kind];chart_results={n.article_id:results[n.article_id] for n in chart_news if n.article_id in results}
         st.caption(f'Chart denominator: {TYPES[chart_kind]} · {len(chart_news)} distinct records. Other source types are compared in the counts table.')
     rows=industry_rows(chart_news,chart_results,classes,catalog)
+    visible_topic_count=sum(r['Articles']>0 for r in industry_rows(news,results,classes,catalog) if r['Parent'])
     if page=='Dashboard':
         with kpis:
-            for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):
+            record_labels=(['Original records','Analyzed records'] if any(source_type(n)=='regulatory_disclosure' for n in news)
+                           else ['Original articles','Analyzed articles'])
+            for col,label,value in zip(st.columns(4),[*record_labels,'Business topics','Sources'],[len(news),len(results),visible_topic_count,len({n.source for n in news})]):
                 with col:st.metric(label,value)
             from .batch_records import eligibility
             for col,label,value in zip(st.columns(4),['Local total records','Media news records','Regulatory disclosures','Analyzable records'],

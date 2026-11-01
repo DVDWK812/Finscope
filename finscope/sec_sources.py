@@ -82,7 +82,8 @@ def parse_submissions(payload,cik,options):
     required=('accessionNumber','filingDate','form','primaryDocument')
     if any(not isinstance(recent.get(k),list) for k in required):raise ValueError('SEC submissions schema mismatch')
     count=len(recent['accessionNumber'])
-    if count>10000 or any(len(recent[k])!=count for k in required):raise ValueError('SEC columns are inconsistent')
+    if count>100000:raise ValueError('SEC submissions column row bound exceeded')
+    if any(len(recent[k])!=count for k in required):raise ValueError('SEC columns are inconsistent')
     result=[]
     for index in range(count):
         def cell(key):
@@ -135,7 +136,10 @@ def extract_event(payload,form):
             end=matches[i+1].start() if i+1<len(matches) else len(text)
             section=re.split(r'\bSIGNATURES?\b',text[match.start():end],maxsplit=1,flags=re.I)[0].strip()
             substantive=re.sub(r'[^a-z ]',' ',section.lower())
-            if len(section)>=180 and re.search(r'revenue|income|profit|loss|agreement|acquisit|sale|operat|cash|debt|dividend|appoint|resign',substantive):
+            # A heading or a pointer to an earnings exhibit is not an operating
+            # narrative. Remove the heading before testing substantive content.
+            narrative=re.sub(re.escape(ITEMS[match.group(1)]),' ',substantive,flags=re.I)
+            if len(section)>=180 and re.search(r'revenue|income|profit|loss|agreement|acquisit|sale|segment|cash|debt|dividend|appoint|resign',narrative):
                 spans.append((match.start(),match.start()+min(len(section),6000),match.group(1)))
     else:
         tree=Tree();tree.feed(html)
@@ -177,7 +181,7 @@ def parse_press(payload,limit):
 def access_problem(store):
     """A failed/unknown SEC request is never silently retried by a later batch."""
     with closing(store.connect()) as db:
-        row=db.execute("SELECT status,http_status FROM local_collector_http WHERE source_id LIKE 'sec_%' AND (status='pending' OR http_status IN (401,403,429)) ORDER BY rowid DESC LIMIT 1").fetchone()
+        row=db.execute("SELECT status,http_status FROM local_collector_http WHERE source_id LIKE 'sec_%' AND (status IN ('pending','unknown') OR (status='failed' AND http_status IS NULL) OR http_status IN (401,403,429)) ORDER BY rowid DESC LIMIT 1").fetchone()
     return 'SEC access requires review: unknown request or HTTP '+str(row[1]) if row else ''
 
 
@@ -185,6 +189,7 @@ class SECCollector:
     def __init__(self,store,queue,task_id,options,check,*,get=None,sleep=time.sleep):
         self.store=store;self.queue=queue;self.task_id=task_id;self.options=validate_options(options);self.check=check
         self.get=get;self.sleep=sleep;self.archive=store.path.parent/'batch_archive'
+        self.failures=[]
         try:self.ua=user_agent(store)
         except ValueError as error:raise FetchBlocked(str(error)) from None
     def request(self,url,transform,source):
@@ -232,8 +237,15 @@ class SECCollector:
             if not path.exists():path.write_bytes(encoded)
             self.queue.save_step(self.task_id,key,'ok',{'archive':path.name,'sha256':digest,'response_sha256':hashlib.sha256(payload).hexdigest()})
             state='ok'
-        except Exception:
-            state='failed';self.queue.save_step(self.task_id,key,'failed',{'reason':'SEC request/parse failed; receipt retained; no retry'})
+        except Exception as error:
+            state='failed' if isinstance(error,(ValueError,FetchBlocked)) else 'unknown'
+            reason=(str(error) if isinstance(error,ValueError) and str(error).startswith(('SEC ','No meaningful','Special-rights','Long periodic','Missing issuer'))
+                    else 'SEC request/transform failed: '+type(error).__name__)
+            evidence={'reason':reason,'response_sha256':hashlib.sha256(payload).hexdigest()}
+            if '/submissions/' in url and status==200:
+                try:evidence['response_recent_rows']=len(json.loads(payload)['filings']['recent']['accessionNumber'])
+                except (KeyError,TypeError,ValueError):pass
+            self.queue.save_step(self.task_id,key,'failed',evidence)
             raise
         finally:
             with closing(self.store.connect()) as db:
@@ -241,17 +253,25 @@ class SECCollector:
                     (utcnow().isoformat(),locals().get('state','pending'),status,len(payload),identity));db.commit()
         return value
     def collect(self,source,limit,*,on_items=lambda rows:None):
-        from .product_storage import decode
+        from .product_storage import decode,ProductStorage
+        storage=ProductStorage(self.store)
         if source=='sec_press':
             rows=[decode(json.dumps(row)) for row in self.request(PRESS_URL,lambda b:[asdict(n) for n in parse_press(b,limit)],source)]
             on_items(rows);return rows
         items=[];docs=0
         for cik in self.options['ciks']:
             self.check()
-            rows=self.request(f'https://data.sec.gov/submissions/CIK{cik}.json',lambda b:[asdict(n) for n in parse_submissions(b,cik,self.options)],source)
+            try:rows=self.request(f'https://data.sec.gov/submissions/CIK{cik}.json',lambda b:[asdict(n) for n in parse_submissions(b,cik,self.options)],source)
+            except (ValueError,FetchBlocked) as error:
+                reason='CIK '+cik+': '+(str(error) if isinstance(error,FetchBlocked) else 'SEC metadata schema validation failed')
+                self.failures.append(reason);self.queue.save_step(self.task_id,'sec_company:'+cik,'failed',{'reason':reason})
+                continue
             company_items=[decode(json.dumps(row)) for row in rows][:max(0,limit-len(items))]
             company_docs=0
             for index,n in enumerate(company_items):
+                previous=storage.merge_available_text(n)
+                if previous.body:
+                    company_items[index]=previous;continue
                 share=max(1,(self.options['document_limit']+len(self.options['ciks'])-1)//len(self.options['ciks']))
                 if docs>=self.options['document_limit'] or company_docs>=share or n.document_type not in {'8-K','8-K/A','6-K','6-K/A'}:continue
                 company_docs+=1

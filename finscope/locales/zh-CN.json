@@ -860,5 +860,7 @@
   "I confirm the file and its actual storage/use scope": "我确认此文件及其实际存储和使用范围",
   "Import and save locally": "导入并保存到本地",
   "Permission expiry ISO timestamp (if applicable)": "许可到期时间（ISO 格式，如适用）",
-  "Batch LM Studio model ID": "批量 LM Studio 模型 ID"
+  "Batch LM Studio model ID": "批量 LM Studio 模型 ID",
+  "Original records": "原始记录",
+  "Analyzed records": "已分析记录"
 }

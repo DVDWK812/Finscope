@@ -7,17 +7,18 @@ the organization below is optional. No Moodle access or coursework submission.
 
 ## Objective and current scope
 
-Local P3-A verified +79 official originals from ABS/NIST (13 collector GETs,
-all HTTP 200), taking the real corpus to 121 official announcements; five existing
-authored development records remain separate. Source-only saving left 84 earlier
-analyses intact; 121 genuine local FinBERT inferences brought history to 205.
-Current-text coverage is 121/121 and repeated offline work adds no inference.
-US dictionary classification retains 107 Unclassified originals (five parent,
-seven child labels among the other 14); all 121 remain Unclassified in CSRC's
-current English-source vocabulary. These are provisional topic labels, not
-issuer-industry or evaluated accuracy claims. Live SEC collection/disclosures,
-media-source diversity and six-parent coverage remain pending the actual SEC
-User-Agent/contact and subsequent bounded acceptance. See [P3 evidence](P3_BATCH_ACCEPTANCE.md).
+Local P3-A verified +219 real originals (34 collector GETs, all HTTP 200),
+comprising 141 official announcements and 120 SEC filings from six issuers.
+Five existing authored development records remain separate. Source-only saving
+preserved the original 84 analyses; 148 genuine local FinBERT inferences brought
+history to 232. Current-text coverage is 148; 113 metadata-only filings are not
+applicable rather than Neutral. Repeated offline work adds no inference.
+US dictionary classification retains 244 Unclassified originals (six parent,
+nine child labels among 17 classified); all 261 remain Unclassified in CSRC's
+current English-source vocabulary. Issuer SIC is separate from news-topic
+evidence. These provisional labels are not evaluated accuracy or complete
+market coverage. Media/IR diversity, suitable narrative availability and semantic
+classification remain limited. See [P3 evidence](P3_BATCH_ACCEPTANCE.md).
 Frozen evaluation results and their qualifications below are unchanged.
 
 - Inspect financial news text through sentiment, explainable sectors, original

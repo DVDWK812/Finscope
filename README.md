@@ -46,9 +46,10 @@ watchlists, strict local JSONL/CSV imports and source-type/status views. Saving
 its scope supplies the default Update & Analyze pipeline. SEC requests require
 your actual `FINSCOPE_SEC_USER_AGENT` contact identity; no placeholder is sent.
 The ABS archive follows at most three linked numbered index pages, without
-article bodies. Actual P3 evidence: **+79 real official announcements, 121 current
-FinBERT-covered originals; zero live SEC disclosures so far**. See
-[P3 acceptance, exact denominators and remaining SEC gate](docs/P3_BATCH_ACCEPTANCE.md).
+article bodies. Actual P3 evidence: **+219 real originals; 261 current records
+(141 official announcements / 120 SEC disclosures), 148 current-text FinBERT
+results and 113 not-applicable metadata records**. See
+[P3 acceptance, exact denominators and remaining limits](docs/P3_BATCH_ACCEPTANCE.md).
 
 ```powershell
 # Explicitly submit to the separately running local worker; no external LLM.

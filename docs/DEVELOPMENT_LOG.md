@@ -4,16 +4,21 @@
 
 Added independent collect/save and source-free local analysis phases, additive
 SQLite state/current-revision tables, explicit JSONL/CSV import policies, bounded
-SEC submissions/press adapters and source-type/status views. SEC requests remain
-zero because no truthful user contact identity was supplied. Actual approved
-ABS/NIST collection added 79 originals using 13 HTTP-200 GETs; the real official
-corpus is 121 (plus five existing development records). Actual FinBERT added 121
-history rows (84 → 205). Repeated offline work and a second-taxonomy pass used
-the cache with zero additional inference. Fixed the observed index-only body
-downgrade using a current-version pointer, preserving every prior revision.
-Five US parent/seven child dictionary labels are provisional; 107 US and all 121
-CSRC originals remain Unclassified. Corporate disclosures, media diversity and
-six-parent coverage are still pending. See [full live evidence and limits](P3_BATCH_ACCEPTANCE.md).
+SEC submissions/press adapters and source-type/status views. After the user
+provided an actual SEC contact, bounded collection added 120 filings from six
+issuers and 20 SEC press records, alongside +79 ABS/NIST originals: +219 real
+originals in total, 261 real records plus five existing development records.
+All 34 collector GETs returned HTTP 200; an initial JPMorgan large-history guard
+and five unsuitable event bodies are separately recorded client rejections.
+Fixed the large-history bound and per-issuer failure isolation; one explicit
+known schema re-retrieval stayed within the expansion's 18-GET combined cap.
+Actual FinBERT added 148 history rows (84 → 232); 148 current records are covered
+and 113 metadata-only filings remain not applicable. Cached offline work adds
+zero inference. Fixed the observed index-only body downgrade with a current
+pointer, preserving every revision. Six US parent/nine child dictionary labels
+are provisional; 244 US and 261 CSRC originals remain Unclassified. Media/IR
+diversity and semantic classification accuracy remain limited. See
+[full live evidence and limits](P3_BATCH_ACCEPTANCE.md).
 All 171 frozen files and original news/analysis/request/credential rows were
 hash-checked unchanged; main stayed read-only. No external LLM or paid-news request.
 

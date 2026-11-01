@@ -860,5 +860,7 @@
   "I confirm the file and its actual storage/use scope": "I confirm the file and its actual storage/use scope",
   "Import and save locally": "Import and save locally",
   "Permission expiry ISO timestamp (if applicable)": "Permission expiry ISO timestamp (if applicable)",
-  "Batch LM Studio model ID": "Batch LM Studio model ID"
+  "Batch LM Studio model ID": "Batch LM Studio model ID",
+  "Original records": "Original records",
+  "Analyzed records": "Analyzed records"
 }
