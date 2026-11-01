@@ -23,6 +23,7 @@ def saved(store):
 def controls(q,active):
     from .media_use import record_decision,decisions,REFERENCES
     from .media_batch import preflight
+    from .media_watchlist import DEFAULT,format_rows,parse,snapshot
     old=saved(q.store);d=(old or {}).get('media_batch',{})
     st.subheader('Media API text and local analysis')
     st.caption('One source-level scope per batch. A research confirmation records unresolved applicability; it is not publisher permission. No article pages, training, external LLM or redistribution.')
@@ -33,6 +34,10 @@ def controls(q,active):
         reference=st.text_area('Licence evidence or research purpose and unresolved applicability',value=d.get('scope',{}).get('reference',''),max_chars=1500)
         exception=st.text_input('Specific exception evidence (only if a restriction was recorded)',max_chars=1500)
         days=int(st.number_input('Local text retention days',1,30,7))
+        use_watchlist=st.checkbox('Use grouped company watchlist',value=bool(d.get('watchlist')))
+        watchlist_text=st.text_area('Company watchlist: group | symbols | optional Marketaux industries',
+            value=format_rows(d.get('watchlist',DEFAULT)),max_chars=3000)
+        st.caption('Watchlist groups are sampling cohorts, not article industries. Marketaux combines each group in one query; Finnhub uses one GET per ticker. Each response is reused once; no automatic fallback key or retry.')
         a,b=st.columns(2)
         with a:
             count=int(st.number_input('Maximum distinct media records',1,300,int((old or {}).get('limit',3))))
@@ -55,8 +60,9 @@ def controls(q,active):
                 if not reference.strip():raise ValueError('Record the concrete restricting term')
                 record_decision(q.store,scope)
                 st.info('Restriction recorded. No collection or analysis was started.');return
-            options=dict(source=source,scope=scope,batch_id=uuid4().hex,max_requests=gets,per_request=count if source=='finnhub' else per,
+            options=dict(source=source,scope=scope,batch_id=uuid4().hex,max_requests=gets,per_request=count if source=='finnhub' and not use_watchlist else per,
                 plan_limit=plan,utc_day=day,total_day_budget=total,symbol=symbol.strip().upper() if source=='finnhub' else '',days=2)
+            if use_watchlist:options['watchlist']=parse(watchlist_text)
             config=dict(sources=[source],model='Local FinBERT',model_id='',taxonomy='US-BUSINESS-1',classifier_llm=False,
                 limit=count,budgets={},source_permissions={},media_batch=options)
             from .task_queue import validate_config
@@ -75,6 +81,9 @@ def controls(q,active):
         except ValueError as error:st.error(str(error))
     if old:
         st.caption('Saved media batch: '+d.get('source','')+' · '+str(old['limit'])+' records · '+str(d['max_requests'])+' GETs · expires '+d['scope']['expires_at'])
+        if d.get('watchlist'):
+            st.dataframe(snapshot(q.store,d),hide_index=True,width='stretch')
+            st.caption('Offline next-query plan. Full pages retain a bounded pagination window; watermarks advance only after persistence. This does not establish exhaustive news coverage. Update analyzes only newly saved originals; earlier pending records use the offline action.')
         left,right=st.columns(2)
         with left:
             if st.button('Save media text only',disabled=active):
@@ -97,3 +106,15 @@ def controls(q,active):
                 db.execute('DELETE FROM product_settings WHERE name=?',(SETTING,));db.commit()
             st.rerun()
         st.caption('If a subscription ends or the scope no longer applies, delete its finite text here immediately. Cleanup runs only while FinScope is running, and before the next startup read.')
+    with st.expander('Live media source coverage and quality',expanded=False):
+        from .media_quality import statistics,failed_diagnostics,batch_receipts
+        stats=statistics(q.store)
+        if stats:
+            columns=('service','reported_source','linked_publisher','records','titles','summaries','classified','unclassified','classifier_failed','finbert','sentiment_failed','sentiment_pending','nlp_not_authorized')
+            st.dataframe([{k:r[k] for k in columns} for r in stats],hide_index=True,width='stretch')
+            st.json({'text_amounts_and_distributions':stats},expanded=False)
+        st.caption('Counts use active finite originals. Query-company cohorts, supplier entity associations and text-supported topic industries are separate. A direct supplied URL verifies its domain only; editorial originality remains unverified. Research confirmation is not publisher permission.')
+        errors=failed_diagnostics(q.store)
+        if errors:st.dataframe(errors,hide_index=True,width='stretch')
+        task=q.get()
+        if task and task['snapshot'].get('media_batch'):st.json(batch_receipts(q.store,task['id']))

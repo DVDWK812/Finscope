@@ -10,7 +10,7 @@ from .media_use import validate as validate_scope, apply as apply_scope
 
 def validate(options):
     fields={'source','scope','batch_id','max_requests','per_request','plan_limit','utc_day','total_day_budget','symbol','days'}
-    if not isinstance(options,dict) or set(options)!=fields:
+    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist'}:
         raise ValueError('Invalid media batch scope')
     d=dict(options)
     if d['source'] not in {'marketaux','finnhub'}:raise ValueError('Choose an official supported news API')
@@ -22,8 +22,12 @@ def validate(options):
     if d['max_requests']>d['total_day_budget']:raise ValueError('Batch exceeds confirmed application budget')
     if d['plan_limit'] not in (3,20,50,100):raise ValueError('Record the actual Marketaux plan cap')
     if d['source']=='marketaux' and d['per_request']>d['plan_limit']:raise ValueError('Marketaux request exceeds the plan article cap')
-    if d['source']=='finnhub' and d['max_requests']!=1:raise ValueError('One company-news response is reused; no repeated three-record requests')
-    if not isinstance(d['symbol'],str) or (d['source']=='finnhub' and not re.fullmatch(r'[A-Z][A-Z0-9.-]{0,14}',d['symbol'])):raise ValueError('Choose the Finnhub company ticker')
+    if 'watchlist' in d:
+        from .media_watchlist import validate as watchlist,units
+        d['watchlist']=watchlist(d['watchlist'])
+        if d['max_requests']>len(units(d)):raise ValueError('One request per selected watchlist query; no automatic repetition')
+    elif d['source']=='finnhub' and d['max_requests']!=1:raise ValueError('One company-news response is reused; no repeated three-record requests')
+    if not isinstance(d['symbol'],str) or (d['source']=='finnhub' and 'watchlist' not in d and not re.fullmatch(r'[A-Z][A-Z0-9.-]{0,14}',d['symbol'])):raise ValueError('Choose the Finnhub company ticker')
     datetime.strptime(d['utc_day'],'%Y-%m-%d')
     return d
 
@@ -70,6 +74,14 @@ def collect(worker,task,persist,check):
     source=d['source'];collected=[];errors=[]
     before=datetime.fromisoformat(task['created']).astimezone(timezone.utc)
     service=LocalIngestionService(worker.store)
+    planned=[];existing=set()
+    if d.get('watchlist'):
+        from .media_watchlist import plan,commit
+        checkpoint=q.step(identity,'media_query_plan')
+        if not checkpoint:
+            value=dict(queries=plan(worker.store,d,before),existing_ids=[n.article_id for n in worker.data.news()])
+            q.save_step(identity,'media_query_plan','ok',value);checkpoint=('ok',value)
+        planned=checkpoint[1]['queries'];existing=set(checkpoint[1]['existing_ids'])
     for page in range(d['max_requests']):
         key='media_request:'+str(page+1);step=q.step(identity,key)
         if step:
@@ -81,6 +93,8 @@ def collect(worker,task,persist,check):
                     except ValueError:continue
                     if origin.get('capture_task_id')==identity:collected.append(n.article_id)
                 break
+            if planned and step[1].get('query'):
+                commit(worker.store,d,step[1]['query'],published=step[1]['published'],received=step[1]['raw_count'],accepted=step[1]['saved'])
             continue
         if len(set(collected))>=c['limit']:break
         check()
@@ -103,30 +117,44 @@ def collect(worker,task,persist,check):
         ids=[]
         try:
             amount=min(d['per_request'],c['limit']-len(set(collected)))
+            previous_versions={n.article_id:n.content_version for n in worker.data.news()}
+            initial_new=task['counts'].get('new',0)
+            query={**planned[page], 'operation_id':identity+':'+str(page),'requested':amount} if planned else None
             if worker.fetch_override:
                 rows=worker.fetch_override(source,{**c,'limit':amount},check)
                 result=None
             else:
                 kwargs={}
                 if source=='marketaux':
-                    kwargs=dict(marketaux_plan_limit=d['plan_limit'],marketaux_page=page+1,marketaux_before=before.isoformat(),
-                        marketaux_filters=MarketauxFilters(tuple(d['scope']['domains']),published_after=(before-timedelta(days=d['days'])).isoformat()))
+                    kwargs=dict(marketaux_plan_limit=d['plan_limit'],marketaux_page=query['page'] if query else page+1,marketaux_before=query['before'] if query else before.isoformat(),
+                        marketaux_filters=MarketauxFilters(tuple(d['scope']['domains']),tuple(query['symbols']) if query else (),tuple(query['industries']) if query else (),published_after=query['after'] if query else (before-timedelta(days=d['days'])).isoformat()))
+                symbol=query['symbols'][0] if query and source=='finnhub' else d['symbol']
+                days=min(30,max(1,(service.clock()-datetime.fromisoformat(query['after'])).days+1)) if query and source=='finnhub' else d['days']
                 result,rows=NewsKeyRegistry(worker.store).fetch(service,source,'technology',
                     selection=c.get('news_key_slots',{}).get(source,CURRENT),
                     rights=ContentRights(True,False,False,False,'Source-level batch access; text use basis recorded separately'),
-                    remaining=d['total_day_budget']-used,days=d['days'],symbol=d['symbol'] or None,
+                    remaining=d['total_day_budget']-used,days=days,symbol=symbol or None,
                     explicit=True,limit=amount,application_daily_cap=d['total_day_budget'],**kwargs)
                 if result.status!='ok':raise FetchBlocked('API response failed; original receipt/hold retained; no retry')
             for raw in rows[:amount]:
                 check();n=apply_scope(raw,d['scope']);origin=json.loads(n.provenance)
                 origin.update(capture_task_id=identity,api_page=page+1)
+                if query:origin['query_cohort']={k:query[k] for k in ('group','symbols','industries','after','before','page')}
                 n=replace(n,provenance=json.dumps(origin,ensure_ascii=False))
                 authorize(n,('retain','local_display'));saved=persist(n)
                 if saved:ids.append(saved)
             collected.extend(ids)
-            q.save_step(identity,key,'ok',{'article_ids':ids,'http_status':result.http_status if result else None,
-                'raw_count':result.raw_count if result else len(rows),'saved':len(ids)})
-            if not rows or source=='finnhub':break
+            receipt={'article_ids':ids,'http_status':result.http_status if result else None,
+                'raw_count':result.raw_count if result else len(rows),'saved':len(ids),
+                'new':task['counts'].get('new',0)-initial_new}
+            current_versions={n.article_id:n.content_version for n in worker.data.news()}
+            receipt.update(duplicates=len(ids)-receipt['new'],changed=sum(k in previous_versions and previous_versions[k]!=current_versions.get(k) for k in set(ids)))
+            if query:
+                if len(ids)!=len(rows[:amount]):raise FetchBlocked('Some returned records could not be saved; query watermark unchanged')
+                receipt.update(query=query,published=[n.timestamp for n in rows[:amount] if n.timestamp])
+            q.save_step(identity,key,'ok',receipt)
+            if query:commit(worker.store,d,query,published=receipt['published'],received=receipt['raw_count'],accepted=len(ids))
+            if not planned and (not rows or source=='finnhub'):break
         except Cancelled:
             q.save_step(identity,key,'failed',{'article_ids':ids,'reason':'Cancelled after dispatch; no automatic repeat'})
             raise
@@ -134,4 +162,4 @@ def collect(worker,task,persist,check):
             q.save_step(identity,key,'failed',{'article_ids':ids,'reason':'API capture/persistence failed; no automatic retry'})
             collected.extend(ids);errors.append('API capture or persistence failed; committed records retained')
             break
-    return list(dict.fromkeys(collected)),errors
+    return [v for v in dict.fromkeys(collected) if v not in existing],errors

@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 from urllib.parse import urlsplit
 from pathlib import Path
+import json
 import re
 import time
 
@@ -60,6 +61,7 @@ class Article:
     timestamp_kind: str  # 'published' or 'first_seen'
     body: str = field(default='', repr=False)
     body_permission_reference: str = field(default='', repr=False)
+    source_metadata: str = field(default='', repr=False)
 
 
 @dataclass(frozen=True)
@@ -294,7 +296,20 @@ def normalize(provider: str, payload: Any, *, newsdata_text_access=None) -> tupl
                 body=''
             if body:
                 body_reference='Paid plan: '+access.plan_reference+'; content use: '+access.body_permission_reference
-        records.append(Article(provider, title, url, source, desc, ts, kind,body,body_reference))
+        metadata={}
+        if provider in {'marketaux','finnhub'}:
+            identity=row.get('uuid' if provider=='marketaux' else 'id')
+            if isinstance(identity,(str,int)) and not isinstance(identity,bool) and len(str(identity))<=160:metadata['record_id']=str(identity)
+            entities=[]
+            if provider=='marketaux' and isinstance(row.get('entities'),list):
+                for entity in row['entities'][:20]:
+                    if not isinstance(entity,dict):continue
+                    v={k:entity[k][:160] for k in ('symbol','name','industry','country','exchange') if isinstance(entity.get(k),str)}
+                    if v:entities.append(v)
+            if provider=='finnhub' and isinstance(row.get('related'),str):
+                entities=[dict(symbol=s.strip()) for s in row['related'].split(',')[:20] if re.fullmatch(r'[A-Z][A-Z0-9.-]{0,14}',s.strip())]
+            if entities:metadata.update(entities=entities,entity_basis='Supplier association, not verified issuer business or text-supported topic')
+        records.append(Article(provider, title, url, source, desc, ts, kind,body,body_reference,json.dumps(metadata) if metadata else ''))
     return records, len(raw)
 
 

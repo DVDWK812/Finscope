@@ -30,9 +30,9 @@ class Feed:
 
 FEEDS={
  'bloomberg':Feed('Bloomberg','https://www.bloomberg.com/feeds/markets/news.rss',
-   'https://www.bloomberg.com/notices/tos/','No automatic storage/NLP grant verified; licensed distribution is separate'),
+   'https://www.bloomberg.com/notices/tos/','Direct automated use restriction identified; specific feed exception not established; historical receipts retained'),
  'cnbc':Feed('CNBC','https://www.cnbc.com/id/100003114/device/rss/rss.html',
-   'https://www.cnbc.com/rss-feeds/','RSS terms page unavailable to research browser; storage/NLP unverified'),
+   'https://www.cnbc.com/rss-feeds/','NBCUniversal direct extraction/archive restrictions identified; specific feed exception required'),
  'wsj':Feed('WSJ','https://feeds.content.dowjones.io/public/rss/RSSMarketsMain',
    'https://www.wsj.com/policy/subscriber-agreement','Personal reader access does not establish archiving/NLP rights'),
  'ft':Feed('Financial Times','https://www.ft.com/rss/home',
@@ -104,7 +104,7 @@ def parse_feed(body,source):
                      fields=sorted(fields),latest_published=max((r['published'] for r in rows),default=''))
 
 def policy(value=None):
-    """User-supplied actual source licence only. Defaults never grant NLP."""
+    """Recorded source basis or unverified research scope; defaults grant nothing."""
     p=value or dict(basis='',fields=[],purposes=[],retention='',expires_at='')
     required={'basis','fields','purposes','retention','expires_at'}
     if not required<=set(p) or set(p)-required-{'publisher_domains','basis_status','exception_reference'}:raise ValueError('Invalid media policy')

@@ -94,9 +94,38 @@ class ProductStorage:
             from .text_processing import canonical_url
             for key,payload in db.execute('SELECT id,payload FROM local_news'):
                 old=json.loads(payload)
-                if item.url and old['source']==item.source and canonical_url(old['url'])==canonical_url(item.url):
+                finite=getattr(self.store,'is_expiring_media',False)
+                from .publisher_attribution import link_key
+                same_url=False
+                if item.url and (finite or old['source']==item.source):
+                    same_url=(link_key(old['url'])==link_key(item.url)) if finite else canonical_url(old['url'])==canonical_url(item.url)
+                if same_url:
                     from dataclasses import replace
                     item=replace(item,article_id=key);break
+            if getattr(self.store,'is_expiring_media',False):
+                from .publisher_attribution import observed
+                import hashlib
+                observation=observed(item)
+                identity=hashlib.sha256(json.dumps(observation,sort_keys=True).encode()).hexdigest()
+                previous=db.execute('SELECT c.payload FROM product_current_content p JOIN product_content c ON c.article_id=p.article_id AND c.version=p.version WHERE p.article_id=?',(item.article_id,)).fetchone()
+                if previous:
+                    old_item=decode(previous[0]);self.store.check(old_item,db)
+                    origin=json.loads(item.provenance);capture=origin.get('capture_task_id') or origin.get('capture_request_id','')
+                    epoch=db.execute('SELECT max(epoch) FROM media_captures WHERE article_id=?',(item.article_id,)).fetchone()[0]
+                    seen=db.execute('SELECT epoch FROM media_captures WHERE article_id=? AND capture=?',(item.article_id,capture)).fetchone()
+                    if seen and seen[0]!=epoch:raise ValueError('Expired capture cannot write into a later retention period')
+                    db.execute('INSERT OR IGNORE INTO media_captures VALUES (?,?,?)',(item.article_id,capture,epoch))
+                    expiry=db.execute('SELECT expires_at FROM media_lifetimes WHERE article_id=?',(item.article_id,)).fetchone()[0]
+                    from .media_use import scope_of
+                    expiry=min(expiry,scope_of(item)['expires_at'])
+                    db.execute('UPDATE media_lifetimes SET expires_at=? WHERE article_id=? AND expires_at>?',(expiry,item.article_id,expiry))
+                    if item.content_version==old_item.content_version:
+                        db.execute('INSERT OR IGNORE INTO product_media_observations VALUES (?,?,?)',(item.article_id,identity,json.dumps(observation)))
+                        db.commit();return old_item,False,False
+                    origin['media_use']['expires_at']=expiry
+                    from dataclasses import replace
+                    item=replace(item,provenance=json.dumps(origin,ensure_ascii=False))
+                db.execute('INSERT OR IGNORE INTO product_media_observations VALUES (?,?,?)',(item.article_id,identity,json.dumps(observation)))
             if getattr(self.store,'is_expiring_media',False):self.store.bind(db,item)
             fresh=not db.execute('SELECT 1 FROM local_news WHERE id=?',(item.article_id,)).fetchone()
             db.execute('INSERT OR IGNORE INTO local_news VALUES (?,?)',(item.article_id,json.dumps(asdict(item))))

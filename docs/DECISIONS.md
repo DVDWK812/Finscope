@@ -1,5 +1,45 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**2 November 2026 — P3-D company/source coverage:** Keep semantic-topics-5 and
+FinBERT unchanged. Read-only diagnosis distinguishes JSON/envelope failure,
+contract-invalid JSON, literal evidence mismatch and semantic rejection. No
+inference follows automatically from diagnosis. Real output details remain only
+in the finite sidecar.
+
+[Marketaux documentation](https://www.marketaux.com/documentation) supports
+multi-symbol/entity-industry and publication-domain/time filters, with plan-based
+article caps. The [official Finnhub client](https://github.com/Finnhub-Stock-API/finnhub-python/blob/master/finnhub/client.py)
+uses one symbol plus from/to dates for company news. Configure six initial company
+cohorts independently of news topic labels. Freeze a bounded query plan in ID-only
+worker checkpoints; retain partial Marketaux pagination windows, per-query time
+watermarks and round-robin progress. Confirm a fresh current UTC application/account
+budget before real dispatch; keep primary-key pinning, 60-second spacing, provider
+holds and unknown-outcome protection. No alternate key or retry loop.
+
+Stable supplier article IDs and bounded entity associations are source evidence,
+not verified issuer business or topic labels; highlights/body/provider sentiment
+are excluded. Finite same-URL API/RSS observations share one original, with separate
+acquisition provenance. No title/event similarity merge or intermediary resolution.
+Duplicate observations preserve original content, sentiment cache and earliest
+expiry, including stale-capture epoch protection. Observation copies are purged
+with the original; permanent checkpoints contain no news/model text.
+
+Linked publisher means a supplied URL matches a reviewed domain; no article page
+was requested and editorial originality remains unverified. Finnhub/Yahoo redirect
+labels do not prove Yahoo authorship. Existing RSS findings remain historical
+transport evidence, not fresh checks or text/NLP permission. Bloomberg direct
+automation is restricted; a specific feed exception remains unestablished
+([terms](https://www.bloomberg.com/notices/tos/)). CNBC direct extraction/archive
+restrictions remain ([NBCUniversal](https://www.nbcuniversal.com/terms/prohibited-actions)).
+Research acknowledgement cannot waive identified restrictions. FT/WSJ current
+terms checks were blocked; Yahoo retains only its previously confirmed RAM-reader
+scope. API-supplied research fields still require their distinct applicable scope;
+no publisher permission is inferred from API access or a user checkbox.
+
+No new real API/RSS batch is represented as completed by this implementation.
+The proposed finite Marketaux batch requires a new account allowance and explicit
+budget/scope confirmation; old budgets are never renewed automatically.
+
 **2 November 2026 — independent media topic classification:** US-BUSINESS-1 now
 has dictionary evidence, independent pinned MiniLM candidate recall and an
 installed loopback LM Studio semantic decision/support review. FinBERT is a

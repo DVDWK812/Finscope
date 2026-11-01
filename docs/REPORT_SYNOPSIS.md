@@ -10,6 +10,17 @@ The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8a
 
 ## Purpose and architecture
 
+**P3-D continuation, 2 November:** The local media workflow now supports grouped
+company sampling, bounded per-query incremental checkpoints, URL-based cross-service
+deduplication and explicit supplier/link-domain attribution. Company query cohorts
+and supplier entity industries remain separate from text-supported news topics.
+Current MiniLM/Gemma prompts, existing sentiment results and the frozen evaluation
+are unchanged. Real coverage expansion requires a newly confirmed source scope
+and UTC account/application budget; implementation or additional URL indices do
+not demonstrate broader real-news coverage. Private finite text is not report or
+shared-demo material after its expiry, and private research confirmation never
+establishes a publisher licence or redistribution rights.
+
 **Post-handoff engineering, 2 November:** The continuing `local` product now has
 an explicit source-level choice between licence evidence, private research with
 unresolved applicability, and concrete restrictions. Finite API/RSS titles and

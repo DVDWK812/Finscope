@@ -72,7 +72,10 @@ class NewsDataTextTests(unittest.TestCase):
         with closing(store.connect()) as db:self.assertEqual(db.execute('SELECT count(*) FROM local_requests').fetchone()[0],0)
     def test_summary_record_identity_remains_compatible_with_existing_articles(self):
         article=normalize('newsdata',payload())[0][0]
-        old=asdict(article);old.pop('body');old.pop('body_permission_reference')
+        # Pin the historical headline/summary schema independently of optional
+        # metadata fields subsequently added to the transport dataclass.
+        old={k:getattr(article,k) for k in ('provider','title','url','source','description','timestamp','timestamp_kind')}
         expected=hashlib.sha256(json.dumps(old,sort_keys=True).encode()).hexdigest()[:32]
         self.assertEqual(NewsItem.from_article(article,RIGHTS).article_id,expected)
+        self.assertEqual(NewsItem.from_article(replace(article,source_metadata='{"record_id":"authored-metadata"}'),RIGHTS).article_id,expected)
         with self.assertRaises(ValueError):NewsItem.from_article(replace(article,body='Unapproved body'),RIGHTS)

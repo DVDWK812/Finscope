@@ -116,6 +116,11 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
         try:media_authorize(item,('local_display',))
         except ValueError:st.info('Media text expired or its use scope is blocked.');return
         st.caption(('Recorded licence evidence' if scope['status']=='licensed' else 'User research use · applicability unverified · not publisher permission')+' · expires UTC '+scope['expires_at'])
+        from .publisher_attribution import attribution
+        a=attribution(item)
+        st.caption('Collection: '+a['collection_service']+' · Supplier-reported source: '+a['supplier_reported_source']+' · Linked publisher: '+a['linked_publisher'])
+        st.caption(a['verification']+' · Editorial originality: unverified')
+        if a['explicit_wire_credit']:st.caption('Supplied wire credit: '+a['explicit_wire_credit']+'; no direct wire licence or original authorship inferred')
         from urllib.parse import urlsplit
         if item.provider=='finnhub' and (urlsplit(item.url).hostname or '').endswith('finnhub.io'):
             st.caption('Finnhub supplied redirect link · reported source: '+item.source+' · original publication domain and editorial originality unverified')

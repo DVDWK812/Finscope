@@ -1,5 +1,38 @@
 # Development log
 
+## P3-D company/source coverage engineering — 2 November 2026 Sydney
+
+- Verified clean local/origin 313ee8323051a0391620d276560ed2efa5993d71 and the
+  existing 8511/worker. Main stayed read only; no prompt, FinBERT or frozen-evaluation
+  change. Read-only failure diagnosis separates structural contract problems from
+  evidence mismatch and semantic rejection, without rerunning the classifier.
+- Added grouped configurable watchlists, offline bounded request plans, independent
+  per-query windows/pages/watermarks and transactional progress after persistence.
+  Finnhub company queries stay single-symbol, with one reused response per ticker;
+  Marketaux uses documented entity/domain filters and the verified plan cap.
+  Provider ledgers, spacing, quota/Retry-After/unknown safeguards and key selection
+  remain in force. New collection analyzes only newly saved originals; pending
+  older records retain the explicit offline action.
+- Added bounded API record/entity provenance, finite acquisition observations,
+  same-URL cross-service deduplication, unchanged-text/cache reuse and stale-capture
+  expiry protection. Different publisher links are not event-merged. Source details
+  distinguish service, claimed source, link-domain match and unknown originality.
+  Quality aggregates separate query cohorts, supplier associations, text mentions,
+  topic classification and fixed-model sentiment states. No new audit page.
+- Formal 8511 loaded the implementation with no active task. Existing news/source
+  qualifications, classifier version, watchlist controls and read-only quality
+  diagnostics were visible. User scope/budget confirmations were not preselected
+  or saved by browser verification. This is an implementation/UI check, not a
+  new-source or real-media-analysis acceptance. The source budget request remains
+  separate; no old API/RSS permission or daily budget is silently expanded.
+- Preserved existing original/content/analysis/classifier-call/lifetime/HTTP-ledger
+  hashes and all 171 frozen files. No real news/model calls were made for this
+  engineering verification. Final tests, delivery SHA and exact-SHA CI are recorded
+  separately from the sealed report-handoff evidence.
+- Delivery regression: 676 tests passed with one platform skip (127.472 s),
+  isolated benchmark dry run passed. Real new collection/analysis remains pending
+  explicit scope/current-budget confirmation; no coverage-growth claim is made.
+
 ## P3-C local topic classification — 2 November 2026 Sydney
 
 - Started from clean local/origin cce295e1476de4d96425a05f4f7518a4116845f3;

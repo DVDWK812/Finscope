@@ -227,6 +227,12 @@ class TaskQueue:
                         (not eligibility(n)[0] or bool(data.cached(n,key))))
                 ids=[n.article_id for n in items]
             if not ids:raise ValueError('No saved originals selected')
+            if c['taxonomy']=='US-BUSINESS-1' and not c.get('classifier_options'):
+                from .media_use import scope_of
+                if any(scope_of(n) and n.article_id in ids for n in data.news()):
+                    from .classification_scheme import selected
+                    options=selected(self.store)
+                    if options:c['classifier_options']=options
             c.update(sources=[],article_ids=list(dict.fromkeys(ids))[:300],budgets={},source_permissions={})
         return self._enqueue(validate_config(c))
     def submit_reclassify(self,*,article_ids=None,options=None,confirmed=False):

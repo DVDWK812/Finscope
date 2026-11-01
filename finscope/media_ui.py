@@ -81,7 +81,7 @@ def controls(store):
                 p=s['policy']
                 statuses=['licensed','research_unverified','restricted']
                 basis_status=st.selectbox('Source use basis status',statuses,index=statuses.index(p.get('basis_status','licensed')))
-                basis=st.text_area('Actual source licence / legal basis',value=p['basis'],max_chars=1500)
+                basis=st.text_area('Source basis / research scope and unresolved applicability',value=p['basis'],max_chars=1500)
                 exception_reference=st.text_input('Specific exception to an identified restriction',value=p.get('exception_reference',''),max_chars=1500)
                 fields=st.multiselect('Covered RSS text fields',['title','summary'],default=p['fields'])
                 purposes=st.multiselect('Covered operations',['display','retain','nlp','poll'],default=p['purposes'])

@@ -100,6 +100,7 @@ class NewsItem:
     @classmethod
     def from_article(cls, article, rights, *, now=None, company="", publication_date=""):
         payload=asdict(article)
+        payload.pop('source_metadata',None)  # Metadata enrichment does not rewrite legacy article identities.
         # Preserve legacy IDs for title/summary-only records.
         if not article.body and not article.body_permission_reference:
             payload.pop('body');payload.pop('body_permission_reference')
@@ -107,12 +108,13 @@ class NewsItem:
             raise ValueError('API body text requires its content permission reference')
         identity = (hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()[:32]
                     if article.url else uuid4().hex)
+        provenance=('API-supplied content; '+article.body_permission_reference if article.body else 'provider headline and available summary')
+        if article.source_metadata:provenance=json.dumps({'api_record':json.loads(article.source_metadata),'text_origin':provenance})
         return cls(identity, article.provider, article.title, article.source, article.url,
                    article.description, article.timestamp, article.timestamp_kind,
                    (now or utcnow()).isoformat(), tuple(classify_sectors(article.title+" "+article.description)),
                    rights, publication_date, company,body=article.body,
-                   provenance=('API-supplied content; '+article.body_permission_reference if article.body
-                               else 'provider headline and available summary'))
+                   provenance=provenance)
 
 
 @dataclass(frozen=True)

@@ -2,6 +2,25 @@
 
 ### Finite media text batches (local)
 
+**Grouped company watchlist** accepts `group | symbols | optional Marketaux
+industries` lines in the existing media batch form. The six initial cohorts cover
+technology, finance, energy, healthcare, industrial and consumer companies; they
+are query cohorts, not inferred news industries. Marketaux combines each group
+in one domain-filtered query; Finnhub uses one company request per ticker. The
+offline plan shows bounded dates/pages and still needs a fresh explicit UTC-day
+account/application budget. Full Marketaux pages retain their window/page cursor;
+successful persistence advances checkpoints, while failed/unknown requests never
+retry automatically. One bounded response does not establish exhaustive coverage.
+
+Finite API/RSS records sharing the same normalized supplied URL reuse one original
+and retain separate acquisition evidence. Similar headlines or events on different
+publisher URLs are kept separate; unresolved intermediary URLs are not followed.
+Deduplication never extends the original expiry. The details distinguish collection
+service, supplier source, reviewed link-domain match and unverified originality.
+**Live media source coverage and quality** reports active text amounts, separate
+query/entity/topic distributions, NLP states and read-only output-failure types.
+These engineering capabilities are not evidence of newly acquired publisher data.
+
 For US-BUSINESS-1, **Industry classification** in the same advanced batch panel
 selects an installed LM Studio classifier independently of FinBERT. Inspect/load
 the exact local variant, disable LM Studio prompt/response and token logging, then

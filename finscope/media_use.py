@@ -10,10 +10,11 @@ REFERENCES = {
     'marketaux': 'https://www.marketaux.com/tos',
     'finnhub': 'https://finnhub.io/terms-of-service',
     'cnbc': 'https://www.nbcuniversal.com/terms/prohibited-actions',
+    'bloomberg': 'https://www.bloomberg.com/notices/tos/',
 }
 # A research acknowledgement cannot waive this identified direct-feed restriction.
 # An actual source-specific exception must be recorded separately as licence evidence.
-RESTRICTIONS = {'rss:cnbc': REFERENCES['cnbc']}
+RESTRICTIONS = {'rss:cnbc': REFERENCES['cnbc'],'rss:bloomberg':REFERENCES['bloomberg']}
 
 
 def utcnow():
