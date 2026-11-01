@@ -192,6 +192,7 @@ def parse_source(source_id,payload,limit):
 
 def http_get(url):
     allowed={c[k] for c in SOURCES.values() for k in ('url','robots') if k in c and 'license' in c}
+    allowed.update(SOURCES['abs_html']['url']+'?page='+str(i) for i in range(1,4))
     if url not in allowed and not any(original_url(k,url)==url for k in ('nist_rss','abs_html')):raise SourceError('Endpoint is not allowlisted')
     start=time.monotonic()
     try:
@@ -209,8 +210,10 @@ def http_get(url):
         raise SourceError('Source transport failed; no retry',status=None) from None
 
 
-def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None,check_cancel=lambda:None,include_body=False):
-    if explicit is not True or source_id not in {'abs_html','accc_rss','nist_rss'} or type(limit) is not int or not 1<=limit<=MAX_RECORDS:
+def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence_root=None,check_cancel=lambda:None,include_body=False,archive_pages=0):
+    if type(archive_pages) is not int or not 0<=archive_pages<=3 or archive_pages and (source_id!='abs_html' or include_body):
+        raise FetchBlocked('Archive batch is limited to three linked ABS index pages, with no body fetch')
+    if explicit is not True or source_id not in {'abs_html','accc_rss','nist_rss'} or type(limit) is not int or not 1<=limit<=(100 if archive_pages else MAX_RECORDS):
         raise FetchBlocked('Explicit collection from a registered source with 1–50 parsed records is required')
     config=SOURCES[source_id]
     if not config.get('enabled'):
@@ -222,11 +225,12 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
     log=[];transport=get or http_get
     allowed_urls={config['robots'],config['url']}
     request_budget=config.get('body_http_budget',config.get('http_budget',HTTP_BUDGET)) if include_body else config.get('http_budget',HTTP_BUDGET)
+    request_budget+=archive_pages
     def request(url,filename):
         check_cancel()
         if len(log)>=request_budget or url not in allowed_urls or any(r['url']==url for r in log):
             raise SourceError('HTTP budget/endpoint bound exceeded')
-        if (source_id=='nist_rss' or include_body) and log:
+        if (source_id=='nist_rss' or include_body or archive_pages) and log:
             # Cancellation remains responsive during source spacing.
             for _ in range(10):
                 check_cancel();time.sleep(.1)
@@ -259,7 +263,23 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
         policy=RobotFileParser();policy.parse(robots.decode('utf-8-sig').splitlines())
         if not policy.can_fetch(USER_AGENT,config['url']):raise SourceError('Robots disallows this fixed entry')
         payload=request(config['url'],'response.html' if source_id=='abs_html' else 'response.xml')
-        items=parse_source(source_id,payload,limit)
+        items=parse_source(source_id,payload,min(limit,MAX_RECORDS))
+        if archive_pages:
+            from urllib.parse import urljoin
+            seen={n.url for n in items}
+            for page_number in range(1,archive_pages+1):
+                if len(items)>=limit:break
+                next_url=config['url']+'?page='+str(page_number)
+                tree=Tree();tree.feed(payload.decode('utf-8-sig'))
+                linked={urljoin(config['url'],n.attrs.get('href','')) for n in tree.root.walk() if n.tag=='a'}
+                if next_url not in linked:break
+                if not policy.can_fetch(USER_AGENT,next_url):raise SourceError('Robots disallows the next bounded ABS index page')
+                allowed_urls.add(next_url);payload=request(next_url,'archive-index.html')
+                for item in parse_source(source_id,payload,min(limit-len(items),MAX_RECORDS)):
+                    if item.url in seen:continue
+                    origin=json.loads(item.provenance);origin['index_url']=next_url
+                    items.append(replace(item,provenance=json.dumps(origin,ensure_ascii=False)));seen.add(item.url)
+                    if len(items)>=limit:break
         body_errors=[];body_hold=None
         if source_id=='nist_rss' or include_body and source_id=='abs_html':
             for index,item in enumerate(items[:config['body_limit']]):
@@ -286,7 +306,7 @@ def collect_source(service,source_id,*,limit=50,explicit=False,get=None,evidence
         status='failed' if body_errors else 'ok';hold=body_hold
     except (SourceError,UnicodeError) as error:
         report.update(status='failed',reason=str(error) if isinstance(error,SourceError) else 'Invalid source encoding',records=0)
-        status='failed';items=[]
+        status='failed';items=items if archive_pages and 'items' in locals() else []
         hold=retry_deadline(getattr(error,'retry_after',None),utcnow()) if getattr(error,'retry_after',None) or getattr(error,'status',None)==429 else None
     except Cancelled:
         report.update(status='cancelled',reason='Explicit cancellation; completed HTTP stages preserved',records=0)

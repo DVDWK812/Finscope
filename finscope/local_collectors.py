@@ -51,6 +51,10 @@ for _source in SOURCES.values():
     _source.setdefault('max_records',50 if _source.get('bucket') in {'abs','accc','nist'} else 3)
     _source.setdefault('date_parser','Preserve exact feed timestamp or original date-only index evidence')
 
+SOURCES['abs_archive']={**SOURCES['abs_html'],'label':'ABS bounded release archive (headlines/date only)',
+    'scope':'Current release index plus at most three linked numbered index pages; no article bodies',
+    'max_records':100,'http_budget':5}
+
 
 def collector_items(articles, provenance, rights):
     rights.require("preview")

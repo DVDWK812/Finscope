@@ -34,6 +34,10 @@ class IndustryClassifier:
         self.cache_key=taxonomy+'|'+VERSION+'|'+digest+'|'+model_version
     def classify(self,item):
         text='\n'.join((item.title,item.summary,item.body));labels=[]
+        # SEC display titles are generated issuer/form labels. Topic evidence
+        # must come from a supplied narrative, never an issuer name or SIC.
+        topic_text=(' '*len(item.title)+'\n'+item.summary+'\n'+item.body
+                    if item.provider=='sec_submissions' else text)
         for node in self.nodes.values():
             if self.catalog['id']=='CSRC-JRT0020-2024' and node['id'] in {'S','91'}:
                 continue  # No audited main-business evidence; never use "综合" as unknown.
@@ -44,11 +48,14 @@ class IndustryClassifier:
                 words={'technology':['semiconductor','computer chip','半导体','科技行业'],
                        'healthcare':['healthcare','medical treatment','医疗保健'],
                        'financials':['commercial bank','financial services','金融服务']}.get(node['id'],[])
-            hits=list(matches(text,words))[:6]
+            hits=list(matches(topic_text,words))[:6]
             if hits:
                 labels.append({'id':node['id'],'parent_id':node['parent_id'],'evidence':hits,'method':VERSION})
         entities=[{'name':name,'evidence':list(matches(text,aliases))[:4]} for name,aliases in ENTITIES.items() if list(matches(text,aliases))]
-        topics=[{'id':key,'evidence':list(matches(text,words))[:4]} for key,words in TOPICS.items() if list(matches(text,words))]
+        if item.company and not any(e['name']==item.company for e in entities):
+            evidence=list(matches(text,[item.company]))[:4]
+            if evidence:entities.append({'name':item.company,'evidence':evidence,'method':'literal issuer name; SEC metadata not topic industry'})
+        topics=[{'id':key,'evidence':list(matches(topic_text,words))[:4]} for key,words in TOPICS.items() if list(matches(topic_text,words))]
         if self.llm_model and labels:
             labels=self.enhance(item,labels,text)
         # Parents are derived from legal child edges, with the child's evidence.
@@ -58,6 +65,7 @@ class IndustryClassifier:
         return {'taxonomy':self.catalog['id'],'taxonomy_version':self.catalog['version'],'classifier_version':VERSION,
                 'content_version':item.content_version,'labels':labels,'topics':topics,'entities':entities,
                 'company_business':[],'company_business_status':'Unverified; article topics never establish issuer main business',
+                'issuer_reported_industry':item.issuer_industry,
                 'text_basis':'permitted title / summary / body; evidence character offsets refer to their newline concatenation'}
     def enhance(self,item,labels,text):
         from .model_providers import LMStudioProvider,LMSTUDIO_ORIGIN,model_request,ModelError

@@ -9,7 +9,7 @@ from .local_news import LocalIngestionService,FetchBlocked
 
 def conditions(state,compact=False):
     labels={'primary':'Primary key','local':'Local key check','preview':'Preview permission','processing':'Storage and NLP permission',
-            'quota':'Today’s request allowance','ticker':'Finnhub ticker','enabled':'Enable this source for automatic collection'}
+            'quota':'Today’s request allowance','ticker':'Finnhub ticker','enabled':'Enable this source for automatic collection','sec_identity':'Real SEC User-Agent/contact configured'}
     missing=[str(tr(labels[k])) if k!='hold' else str(tr(state['hold_reason'])) for k in state['missing']]
     return t('Missing conditions',missing=', '.join(missing)) if missing else tr('Ready')
 

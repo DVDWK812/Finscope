@@ -41,6 +41,10 @@ class Worker:
         from .public_sources import collect_source
         service=LocalIngestionService(self.store)
         check()
+        if source=='abs_archive':
+            items,report=collect_source(service,'abs_html',limit=min(c['limit'],100),explicit=True,check_cancel=check,archive_pages=3)
+            if report.get('status')!='ok':self.source_warnings[source]='ABS archive stopped; completed permitted index records retained'
+            return items
         if source in {'abs_html','nist_rss','accc_rss'}:
             items,report=collect_source(service,source,limit=c['limit'],explicit=True,check_cancel=check,include_body=True)
             if report.get('body_errors'):self.source_warnings[source]='Body request/extraction failed; permitted feed text used, source ledger stop retained'
@@ -72,8 +76,8 @@ class Worker:
         from .model_providers import INSTRUCTIONS
         prompt_version=hashlib.sha256(INSTRUCTIONS.encode()).hexdigest()[:16]
         if c['model']=='Local FinBERT':
-            from .model_assets import manifest
-            m=manifest('finbert');return '|'.join((c['model'],m['model_id'],m['revision'],VERSION,'sentiment-v1'))
+            from .batch_config import finbert_cache_key
+            return finbert_cache_key()
         if c['model']=='Local LM Studio':
             from .model_providers import LMStudioProvider,lmstudio_revision,ModelError
             models=LMStudioProvider().inventory();model=models.get(c.get('model_id'))
@@ -106,6 +110,9 @@ class Worker:
     def run_one(self):
         task=self.queue.get()
         if not task or task['status']!='queued':return False
+        if task['snapshot'].get('operation'):
+            from .batch_pipeline import BatchRunner
+            return BatchRunner(self).run(task)
         identity=task['id'];c=task['snapshot'];counts=task['counts'];errors=[]
         self.queue.update(identity,status='running',stage='preflight')
         def check():self.queue.check_cancel(identity)

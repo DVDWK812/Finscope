@@ -40,6 +40,22 @@ ABS releases; unknown providers receive no policy grant. One retained ABS origin
 has completed actual local FinBERT and formal Dashboard/Explorer acceptance without
 new collection: [evidence and policy rollout limits](docs/ABS_P2_ACCEPTANCE.md).
 
+Advanced **Batch collection and offline analysis** adds separate store-only and
+source-free analysis actions, reviewed SEC/NIST/ABS/RBA policies, bounded SEC
+watchlists, strict local JSONL/CSV imports and source-type/status views. Saving
+its scope supplies the default Update & Analyze pipeline. SEC requests require
+your actual `FINSCOPE_SEC_USER_AGENT` contact identity; no placeholder is sent.
+The ABS archive follows at most three linked numbered index pages, without
+article bodies. Actual P3 evidence: **+79 real official announcements, 121 current
+FinBERT-covered originals; zero live SEC disclosures so far**. See
+[P3 acceptance, exact denominators and remaining SEC gate](docs/P3_BATCH_ACCEPTANCE.md).
+
+```powershell
+# Explicitly submit to the separately running local worker; no external LLM.
+.venv-ai/Scripts/python.exe -m finscope.batch_cli collect --sources abs_archive --limit 100 --confirm
+.venv-ai/Scripts/python.exe -m finscope.batch_cli analyze --confirm
+```
+
 ## Models and evidence
 
 FinBERT is the default local model and requires no API key. Its genuine three-class probabilities and exact revision are preserved with MiniLM revision and unverified candidate groups. No mock prediction is substituted on failure. FinBERT weights: **CC BY-NC-SA 4.0**, ProsusAI / MIH AI B.V.; MiniLM: **Apache-2.0**. These weight licences do not grant publisher rights. See [model evidence](docs/AI_PROTOTYPE.md).

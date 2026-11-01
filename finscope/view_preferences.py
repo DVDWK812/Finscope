@@ -19,6 +19,12 @@ def normalize(raw,store):
              'product_children':{n['id'] for n in catalog['nodes'] if n['parent_id']},
              'local_sources':{n.source for n in store.list_news()},'local_sentiments':{'Positive','Neutral','Negative'}}
     result={'product_taxonomy':mode}
+    from .batch_records import TYPES
+    for key in ('batch_source_type_filter','batch_chart_type'):
+        if raw.get(key) in {'all',*TYPES}:result[key]=raw[key]
+    statuses={'Analyzed','Not analyzed','Not applicable','Permission required','Failed','Blocked'}
+    if isinstance(raw.get('batch_status_filter'),list):
+        result['batch_status_filter']=[v for v in raw['batch_status_filter'] if v in statuses]
     if raw.get('product_page') in PAGES:result['product_page']=raw['product_page']
     for key,allowed in choices.items():
         value=raw.get(key,[])

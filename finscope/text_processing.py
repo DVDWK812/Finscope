@@ -44,13 +44,19 @@ def prepare(item):
     language=detect_language(excerpt);language_method='text vocabulary and script check'
     if language=='unknown' and item.language=='en' and len(full)<300 and all(ord(c)<128 or c in '–—’“”' for c in full):
         language='en';language_method='source document/feed explicitly declares en; short Latin text script check'
-    fingerprint=hashlib.sha256(json.dumps([title,summary,body,language],ensure_ascii=False).encode()).hexdigest()
+    revision=[title,summary,body,language]
+    if item.record_id:
+        revision.append([item.record_id,item.document_type,item.timestamp,item.publication_date,
+                         item.company,item.ticker,item.cik,item.disclosed_at,item.filed_date,item.issuer_industry])
+    fingerprint=hashlib.sha256(json.dumps(revision,ensure_ascii=False).encode()).hexdigest()
     evidence={'preprocessing_version':VERSION,'analysis_basis':basis,'selection':'leading character span; one original, one label',
               'span_start':0,'span_end':span_end,'source_characters':len(full),'coverage':span_end/max(1,len(full)),
               'aggregation':'none; selected excerpt sentiment only','content_sha256':fingerprint,'language_method':language_method}
     url=canonical_url(item.url)
     # Provider identity prevents accidental merging across independent publishers.
     identity=hashlib.sha256((item.source+'|'+url).encode()).hexdigest()[:32] if url else item.article_id
+    if item.record_id:
+        identity=hashlib.sha256((item.provider+'|'+item.source+'|'+item.record_id).encode()).hexdigest()[:32]
     return replace(item,article_id=identity,title=title,summary=summary,body=body,processed_text=excerpt,
                    content_version=fingerprint,language=language,text_basis=basis),evidence
 

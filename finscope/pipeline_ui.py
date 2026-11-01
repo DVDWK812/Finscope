@@ -55,7 +55,10 @@ def update_button(q):
     from .news_readiness import source_plan,LABELS
     from .news_source_ui import conditions
     expected=editable(q);c=saved(q) or q.config();task=q.get()
-    unsaved=st.session_state.get('_settings_edit',expected)!=expected
+    from .batch_ui import saved_config
+    batch=saved_config(q)
+    if batch:expected=batch;c=batch
+    unsaved=not batch and st.session_state.get('_settings_edit',expected)!=expected
     if unsaved:st.caption('Unsaved changes')
     if st.button('Update & Analyze',type='primary',disabled=unsaved or not c or not c.get('sources') or bool(task and task['status'] in ACTIVE),key='product_update'):
         ready,blocked=source_plan(q.store,expected)
@@ -70,11 +73,16 @@ def update_button(q):
                 st.caption(t('Skipped source',source=LABELS.get(provider,provider),reason=conditions(state)))
             config=review['config']
             st.write(t('Analysis model summary',model=str(display(config['model']))+(' / '+config.get('model_id','') if config.get('model_id') else '')))
-            if saved(q):st.caption('This review uses the saved draft.')
+            if saved(q) and not batch:st.caption('This review uses the saved draft.')
             model_ready=config['model'] in ('Local FinBERT','Local LM Studio','Local Ollama') and (config['model']=='Local FinBERT' or bool(config.get('model_id')))
             if st.button('Confirm update and analysis',key='product_confirm_update',disabled=not review['ready'] or not model_ready or unsaved or bool(task and task['status'] in ACTIVE)):
                 try:
-                    q.submit_ready(confirmed=True,expected_sources=review['ready'],expected_config=config)
+                    if batch:
+                        if saved_config(q)!=config:raise ValueError('Batch settings changed; review again')
+                        ready,_=source_plan(q.store,config)
+                        if ready!=review['ready']:raise ValueError('Source readiness changed; review again')
+                        q.submit_batch('update',{**config,'sources':ready},confirmed=True)
+                    else:q.submit_ready(confirmed=True,expected_sources=review['ready'],expected_config=config)
                     st.session_state.pop('_update_review',None);st.rerun()
                 except ValueError as error:st.session_state['_product_submit_error']=str(error)
             if st.button('Cancel',key='product_cancel_review'):st.session_state.pop('_update_review',None);st.rerun()
@@ -90,13 +98,23 @@ def settings(store,q):
 def reanalyze(item,store,prefix='product'):
     q=TaskQueue(store);c=q.config();task=q.get()
     st.caption('Uses the configured worker model; preserves every historical version.')
-    if st.button('Queue reanalysis of this original',key=prefix+'_queue_reanalysis_'+item.article_id,disabled=not c or bool(task and task['status'] in ACTIVE) or not item.rights.analyze):
+    from .batch_records import eligibility
+    if st.button('Queue reanalysis of this original',key=prefix+'_queue_reanalysis_'+item.article_id,disabled=not c or bool(task and task['status'] in ACTIVE) or not eligibility(item)[0]):
         q.submit({**c,'sources':[],'source_permissions':{},'article_ids':[item.article_id],'force_reanalysis':True});st.rerun()
 
 
 def details(item,result,store,classifications,catalog,context='product',keyword=None):
     from html import escape
     c=classifications.get(item.article_id,{})
+    from .batch_records import eligibility,source_type,TYPES
+    st.caption(TYPES[source_type(item)]+(' · '+item.document_type if item.document_type else ''))
+    eligible,reason=eligibility(item)
+    if not eligible:st.info('Sentiment not applicable: '+reason)
+    if item.cik:
+        st.write({'issuer':item.company,'ticker':item.ticker,'CIK':item.cik,
+                  'filed_date':item.filed_date,'disclosed_at':item.disclosed_at,'disclosure_precision':item.disclosure_precision,
+                  'issuer_reported_industry':item.issuer_industry})
+        st.caption('Issuer SIC describes the issuer, not the industries discussed in this disclosure. Topic labels below require literal text evidence.')
     lookup={n['id']:n for n in catalog['nodes']}
     st.caption(Verbatim(' · '.join(node_name(lookup[v['id']]) for v in c.get('labels',[]))) or t('Unclassified'))
     def text(n):
@@ -230,12 +248,16 @@ def main():
     for key,value in st.session_state.get('product_view_preferences',{}).items():
         if key not in st.session_state:st.session_state[key]=value
     update_button(q)
+    from .batch_ui import controls
+    controls(q)
     kpis=st.container(key='product_kpis') if page=='Dashboard' else None
     c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
     catalog=load_taxonomy(mode);classes=data.classifications(mode)
     news=data.news()
+    all_record_count=len(news)
     with st.expander('Development records',expanded=False):include_dev=st.checkbox('Include synthetic development records',value=False,key='product_include_dev')
     if not include_dev:news=[n for n in news if n.provider!='authored_synthetic']
+    library_news=list(news);states=data.states()
     missing=sum(n.article_id not in classes for n in news)
     if missing:
         st.info(f"{missing}/{len(news)} originals have no saved classification for {mode}; industry relevance is not yet determined.")
@@ -253,18 +275,38 @@ def main():
     widget_key='product_result_model_'+hashlib.sha256(c.get('result_model_key','default').encode()).hexdigest()[:10]
     with st.container(key='product_filters'):
         news,results,start,end=shared_filters(news,analyses,sector_options=parent_names,model_choices=choices,model_widget_key=widget_key)
+    from .batch_records import TYPES,source_type,analysis_status,statistics
+    kind=st.selectbox('Source type scope',['all',*TYPES],format_func=lambda k:Verbatim('All types (separate counts)' if k=='all' else TYPES[k]),key='batch_source_type_filter')
+    if kind!='all':news=[n for n in news if source_type(n)==kind]
+    status_filter=st.multiselect('Analysis status',['Analyzed','Not analyzed','Not applicable','Permission required','Failed','Blocked'],key='batch_status_filter')
+    if status_filter:news=[n for n in news if analysis_status(n,results.get(n.article_id),states) in status_filter]
+    results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
     children=[n for n in catalog['nodes'] if n['parent_id'] and (not st.session_state.get('local_sectors') or node_label(next(p for p in catalog['nodes'] if p['id']==n['parent_id'])) in st.session_state['local_sectors'])]
     valid=[n['id'] for n in children]
     if any(k not in valid for k in st.session_state.get('product_children',[])):st.session_state['product_children']=[k for k in st.session_state['product_children'] if k in valid]
     child_ids=st.multiselect('Subindustries',valid,format_func=lambda k:node_label(next(n for n in children if n['id']==k)),key='product_children')
-    st.session_state['product_view_preferences']={k:st.session_state[k] for k in ('product_taxonomy','product_children','product_include_dev') if k in st.session_state}
+    st.session_state['product_view_preferences']={k:st.session_state[k] for k in ('product_taxonomy','product_children','product_include_dev','batch_source_type_filter','batch_status_filter','batch_chart_type') if k in st.session_state}
     if child_ids:news=[n for n in news if set(child_ids)&{v['id'] for v in classes.get(n.article_id,{}).get('labels',[])}];results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
     st.caption(f"{sum(n.sectors==('Unclassified',) for n in news)} unclassified originals · {len(news)-len(results)} without a current selected-model result; neither is Neutral by default.")
-    rows=industry_rows(news,results,classes,catalog)
+    st.caption('Counts below use distinct local originals and keep media, company releases, regulatory disclosures and government announcements separate.')
+    st.dataframe(pd.DataFrame(statistics(news,results,classes,states)),hide_index=True,width='stretch')
+    chart_news=news;chart_results=results
+    kinds=[k for k in TYPES if any(source_type(n)==k for n in news)]
+    if len(kinds)>1 and page!='News Explorer':
+        if st.session_state.get('batch_chart_type') not in kinds:st.session_state.pop('batch_chart_type',None)
+        chart_kind=st.selectbox('Chart source type',kinds,format_func=lambda k:Verbatim(TYPES[k]),key='batch_chart_type')
+        chart_news=[n for n in news if source_type(n)==chart_kind];chart_results={n.article_id:results[n.article_id] for n in chart_news if n.article_id in results}
+        st.caption(f'Chart denominator: {TYPES[chart_kind]} · {len(chart_news)} distinct records. Other source types are compared in the counts table.')
+    rows=industry_rows(chart_news,chart_results,classes,catalog)
     if page=='Dashboard':
         with kpis:
             for col,label,value in zip(st.columns(4),['Original articles','Analyzed articles','Business topics','Sources'],[len(news),len(results),sum(r['Articles']>0 for r in rows if r['Parent']),len({n.source for n in news})]):
                 with col:st.metric(label,value)
+            from .batch_records import eligibility
+            for col,label,value in zip(st.columns(4),['Local total records','Media news records','Regulatory disclosures','Analyzable records'],
+                [all_record_count,sum(source_type(n)=='media_news' for n in library_news),sum(source_type(n)=='regulatory_disclosure' for n in library_news),sum(eligibility(n)[0] for n in news)]):
+                with col:st.metric(label,value)
+            if not include_dev and all_record_count>len(library_news):st.caption(f'{all_record_count-len(library_news)} authored development records are excluded from real-source counts and charts.')
         if not news:
             st.info('No real originals match these filters. Set sources or widen the date range.')
             save_view(store,dict(st.session_state));return
@@ -276,12 +318,12 @@ def main():
             with right:
                 with st.container(key='product_chart_mix'):
                     st.subheader('Text sentiment')
-                    if results:distribution_chart(results)
+                    if chart_results:distribution_chart(chart_results)
                     else:st.info('No selected-model results; missing analysis is not Neutral.')
             with st.container(key='product_chart_time'):
-                st.subheader('News over time');timeline_chart(news,results,start,end)
+                st.subheader('News over time');timeline_chart(chart_news,chart_results,start,end)
             with st.container(key='product_chart_heatmap'):
-                heatmap(news,results,start,end,store,sectors_override=parent_names,background=True)
+                heatmap(chart_news,chart_results,start,end,store,sectors_override=parent_names,background=True)
     elif page=='Industries':
         sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
         visible=[r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)]
@@ -290,7 +332,7 @@ def main():
                 **{k:r[k] for k in ('Positive','Neutral','Negative','Not analyzed')}} for r in visible]),hide_index=True,width='stretch')
         else:st.info('No saved industry assignments in this selection; originals awaiting classification remain below.')
         st.caption('Parent counts deduplicate article IDs across child topics. Unknown sector is not CSRC S/91.')
-        article_list(news,results,store,classes,catalog,'industries')
-    elif page=='Knowledge Graph':network(news,results,store,classes,catalog)
+        article_list(chart_news,chart_results,store,classes,catalog,'industries')
+    elif page=='Knowledge Graph':network(chart_news,chart_results,store,classes,catalog)
     else:article_list(news,results,store,classes,catalog,'explorer')
     save_view(store,dict(st.session_state))

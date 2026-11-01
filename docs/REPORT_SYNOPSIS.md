@@ -1,11 +1,24 @@
 # FinScope — team report synopsis
 
-Evidence current: **31 October 2026 Sydney**. The three team members write the
+Evidence current: **1 November 2026 Sydney**. The three team members write the
 academic report independently. This is a concise factual reference, not a submission
 manuscript or PDF. The user confirmed there are **no required section headings**;
 the organization below is optional. No Moodle access or coursework submission.
 
 ## Objective and current scope
+
+Local P3-A verified +79 official originals from ABS/NIST (13 collector GETs,
+all HTTP 200), taking the real corpus to 121 official announcements; five existing
+authored development records remain separate. Source-only saving left 84 earlier
+analyses intact; 121 genuine local FinBERT inferences brought history to 205.
+Current-text coverage is 121/121 and repeated offline work adds no inference.
+US dictionary classification retains 107 Unclassified originals (five parent,
+seven child labels among the other 14); all 121 remain Unclassified in CSRC's
+current English-source vocabulary. These are provisional topic labels, not
+issuer-industry or evaluated accuracy claims. Live SEC collection/disclosures,
+media-source diversity and six-parent coverage remain pending the actual SEC
+User-Agent/contact and subsequent bounded acceptance. See [P3 evidence](P3_BATCH_ACCEPTANCE.md).
+Frozen evaluation results and their qualifications below are unchanged.
 
 - Inspect financial news text through sentiment, explainable sectors, original
   evidence and possible semantic overlap; no price forecasting or market-impact claim.

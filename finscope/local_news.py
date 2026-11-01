@@ -71,15 +71,26 @@ class NewsItem:
     content_version: str = ""
     language: str = "unknown"
     text_basis: str = ""
+    source_type: str = ""  # media_news/company_release/regulatory_disclosure/government
+    record_id: str = ""
+    document_type: str = ""
+    ticker: str = ""
+    cik: str = ""
+    disclosed_at: str = ""
+    disclosure_precision: str = ""
+    filed_date: str = ""  # SEC calendar filing day; never a publication timestamp.
+    issuer_industry: dict = field(default_factory=dict)
 
     @property
     def record_date(self):
+        if self.timestamp_kind=='filed':return self.filed_date
         return (datetime.fromisoformat(self.timestamp).astimezone(timezone.utc).date().isoformat()
                 if self.timestamp else self.publication_date)
 
     @property
     def published_day(self):
         """Never substitute first-seen, submitted, ingestion or inference time."""
+        if self.timestamp_kind=='filed':return self.filed_date  # Explicit filing-date cohort in product views.
         return self.record_date if self.timestamp_kind == "published" else ""
 
     @property

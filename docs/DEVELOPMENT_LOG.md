@@ -1,5 +1,22 @@
 # Development log
 
+## P3-A batch local product — 1 November 2026 Sydney
+
+Added independent collect/save and source-free local analysis phases, additive
+SQLite state/current-revision tables, explicit JSONL/CSV import policies, bounded
+SEC submissions/press adapters and source-type/status views. SEC requests remain
+zero because no truthful user contact identity was supplied. Actual approved
+ABS/NIST collection added 79 originals using 13 HTTP-200 GETs; the real official
+corpus is 121 (plus five existing development records). Actual FinBERT added 121
+history rows (84 → 205). Repeated offline work and a second-taxonomy pass used
+the cache with zero additional inference. Fixed the observed index-only body
+downgrade using a current-version pointer, preserving every prior revision.
+Five US parent/seven child dictionary labels are provisional; 107 US and all 121
+CSRC originals remain Unclassified. Corporate disclosures, media diversity and
+six-parent coverage are still pending. See [full live evidence and limits](P3_BATCH_ACCEPTANCE.md).
+All 171 frozen files and original news/analysis/request/credential rows were
+hash-checked unchanged; main stayed read-only. No external LLM or paid-news request.
+
 ## Team-reference synopsis scope — 29 October 2026 Sydney
 
 - User clarified that the three members independently write the final academic report; Codex maintains only a concise, evidence-based team-reference synopsis and technical documentation. The user also confirmed **there are no required section headings**. Recorded that clarification without Moodle/PDF access or inventing an assignment structure. Added docs/REPORT_SYNOPSIS.md and made the old docs/FINAL_REPORT.md a short compatibility pointer; current README/demo/sprint/freeze links now identify the synopsis. Historical report-draft work remains recorded in Git/history and the AI-assistance disclosure.

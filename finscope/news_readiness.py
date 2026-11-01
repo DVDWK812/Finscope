@@ -10,7 +10,7 @@ LOCAL={'saved':'Saved; local read verified','unchecked':'Not checked locally','m
 API={'verified':'Verified','untested':'Not tested','authentication':'Authentication failed','restricted':'Restricted','failed':'Verification failed','pending':'Outcome unknown'}
 CONDITIONS={'primary':'Enabled primary key','local':'Local key check','preview':'Preview permission',
     'processing':'Storage and NLP permission','quota':'Verified UTC-day allowance','ticker':'Finnhub ticker',
-    'hold':'Provider safeguards clear','enabled':'Source enabled'}
+    'hold':'Provider safeguards clear','enabled':'Source enabled','sec_identity':'Real SEC User-Agent/contact configured'}
 
 
 def storage_label(row):
@@ -105,6 +105,13 @@ def source_plan(store,config,*,service=None):
     from .local_collectors import SOURCES
     ready=[];blocked={}
     for provider in config.get('sources',[]):
+        if provider in {'sec_submissions','sec_press'}:
+            from .sec_sources import user_agent,access_problem
+            try:user_agent(store);problem=access_problem(store)
+            except ValueError:problem='Configure an actual SEC User-Agent/contact before requesting'
+            if problem:
+                blocked[provider]={'missing':['sec_identity'],'complete':[],'hold_reason':problem};continue
+            ready.append(provider);continue
         if provider in NEWS_PROVIDERS:
             state=source_readiness(store,provider,config,service=service)
             if not state['ready']:blocked[provider]=state;continue

@@ -36,6 +36,7 @@ def restore_filters():
 
 
 def publication_label(item):
+    if item.timestamp_kind=='filed':return 'SEC filed '+item.filed_date+' (date only; not a publication timestamp)'
     if item.timestamp_kind == 'published' and item.timestamp:
         stamp=datetime.fromisoformat(item.timestamp).astimezone(timezone.utc)
         return str(t('Published'))+' '+stamp.strftime('%Y-%m-%d %H:%M UTC')
@@ -69,7 +70,8 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, s
         st.button('Include unknown publication dates',on_click=include_unknown)
     left, middle, right = st.columns([2, 2, 2])
     with left:
-        selected = st.date_input("Publication date range (UTC)", value=(start,end), key="local_dates",on_change=remember_filter,args=('local_dates',),
+        date_label='Publication / filing date range (UTC)' if any(n.timestamp_kind=='filed' for n in news) else 'Publication date range (UTC)'
+        selected = st.date_input(date_label, value=(start,end), key="local_dates",on_change=remember_filter,args=('local_dates',),
                                  help='Exact timestamps use UTC; date-only records keep their original calendar day. Unknown publication dates stay separate.')
     with middle:
         options=sector_options or SECTORS
