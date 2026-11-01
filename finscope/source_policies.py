@@ -95,11 +95,12 @@ def authorize(item,purposes):
     if not isinstance(origin,dict):raise PolicyBlocked('Source provenance needs review')
     url=urlsplit(item.url)
     if item.provider=='media_rss':
-        from .media_monitor import FEEDS
+        from .media_monitor import FEEDS,publisher_covered
         feed=FEEDS.get(origin.get('source_id'))
         if (feed is None or origin.get('feed_url')!=feed.url or item.source!=feed.name or item.body
                 or item.source_type!='media_news' or policy.retention!='no_fixed_expiry'
-                or set(policy.allowed_fields)-set(FIELDS) or 'body' in policy.allowed_fields):
+                or set(policy.allowed_fields)-set(FIELDS) or 'body' in policy.allowed_fields
+                or not publisher_covered(origin['source_id'],item.url,{'publisher_domains':origin.get('licensed_publisher_domains',[])})):
             raise PolicyBlocked('Outside the reviewed RSS field/use scope')
     if item.provider=='abs_html' and (item.source!='Australian Bureau of Statistics' or url.scheme!='https' or
             url.hostname!='www.abs.gov.au' or url.username or url.password or

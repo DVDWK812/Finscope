@@ -41,6 +41,13 @@ FEEDS={
    'https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html','RSS clause permits unmodified attributed display with links; local archiving/NLP not established'),
 }
 
+FIRST_PARTY={'bloomberg':'bloomberg.com','cnbc':'cnbc.com','wsj':'wsj.com','ft':'ft.com','yahoo':'finance.yahoo.com'}
+
+def publisher_covered(source,url,p):
+    host=(urlsplit(url).hostname or '').lower()
+    domains=[FIRST_PARTY[source],*p.get('publisher_domains',[])]
+    return any(host==d or host.endswith('.'+d) for d in domains)
+
 def stamp():return datetime.now(timezone.utc)
 def iso(d):return d.astimezone(timezone.utc).isoformat()
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
@@ -99,7 +106,12 @@ def parse_feed(body,source):
 def policy(value=None):
     """User-supplied actual source licence only. Defaults never grant NLP."""
     p=value or dict(basis='',fields=[],purposes=[],retention='',expires_at='')
-    if set(p)!={'basis','fields','purposes','retention','expires_at'}:raise ValueError('Invalid media policy')
+    required={'basis','fields','purposes','retention','expires_at'}
+    if not required<=set(p) or set(p)-required-{'publisher_domains'}:raise ValueError('Invalid media policy')
+    p={**p,'publisher_domains':p.get('publisher_domains',[])}
+    domains=p['publisher_domains']
+    if not isinstance(domains,list) or len(domains)>20 or any(not isinstance(d,str) or not re.fullmatch(r'[a-z0-9]+(?:[.-][a-z0-9]+)*\.[a-z]{2,}',d) for d in domains):raise ValueError('Invalid covered publisher domains')
+    if domains and not p['basis'].strip():raise ValueError('Actual licence evidence must cover the named original publishers')
     if any(not isinstance(p[k],str) or len(p[k])>1500 for k in ('basis','retention','expires_at')):raise ValueError('Invalid media evidence')
     if (not isinstance(p['fields'],list) or set(p['fields'])-{'title','summary'} or
         not isinstance(p['purposes'],list) or set(p['purposes'])-{'display','retain','nlp','poll'}):raise ValueError('Invalid field/use scope')
@@ -158,7 +170,8 @@ class MediaMonitor:
             s=self._state(db,source);s.update(enabled=enabled,interval=interval,daily_cap=daily_cap,policy=p)
             for identity,payload in db.execute('SELECT identity,payload FROM media_seen WHERE source=?',(source,)).fetchall():
                 saved=json.loads(payload)
-                kept={k:v for k,v in saved.items() if k=='wire_credit' or 'retain' in p['purposes'] and k in p['fields'] and active_policy(p,self.clock())}
+                url=db.execute('SELECT url FROM media_seen WHERE source=? AND identity=?',(source,identity)).fetchone()[0]
+                kept={k:v for k,v in saved.items() if k=='wire_credit' or 'retain' in p['purposes'] and k in p['fields'] and active_policy(p,self.clock()) and publisher_covered(source,url,p)}
                 db.execute('UPDATE media_seen SET payload=?,policy=? WHERE source=? AND identity=?',(json.dumps(kept),json.dumps(p),source,identity))
             self._put(db,source,s);db.commit()
         # Revocation/narrowing wins over previously promoted article grants.
@@ -167,7 +180,7 @@ class MediaMonitor:
         for item in ProductStorage(self.store).news():
             if item.provider!='media_rss' or item.source!=FEEDS[source].name:continue
             if ('nlp' not in p['purposes'] or not active_policy(p,self.clock()) or
-                'title' not in p['fields'] or item.summary and 'summary' not in p['fields']):
+                'title' not in p['fields'] or item.summary and 'summary' not in p['fields'] or not publisher_covered(source,item.url,p)):
                 self.store.update_rights(item.article_id,replace(item.rights,analyze=False,external=False))
     def _state(self,db,source):
         row=db.execute('SELECT payload FROM media_sources WHERE source=?',(source,)).fetchone()
@@ -237,14 +250,17 @@ class MediaMonitor:
         visible=[]
         p=s['policy'];allow=active_policy(p,now) and 'display' in p['purposes']
         for row in rows:
-            visible.append({k:v for k,v in row.items() if k in {'url','published','publisher','wire_credit'} or allow and k in p['fields']})
+            covered=allow and publisher_covered(source,row['url'],p)
+            entry={k:v for k,v in row.items() if k in {'url','published','wire_credit'} or covered and k in p['fields']}
+            entry.update(feed_provider=FEEDS[source].name,publishing_domain=urlsplit(row['url']).hostname)
+            visible.append(entry)
         return report,visible
     def _ingest(self,db,source,rows,now,p):
         counts=dict(new=0,duplicates=0,changed=0,processable=0,stored=0)
         for r in rows:
             old=db.execute('SELECT fingerprint FROM media_seen WHERE source=? AND identity=?',(source,r['identity'])).fetchone()
             counts['new' if not old else 'duplicates' if old[0]==r['fingerprint'] else 'changed']+=1
-            keep=active_policy(p,now) and 'retain' in p['purposes']
+            keep=active_policy(p,now) and 'retain' in p['purposes'] and publisher_covered(source,r['url'],p)
             keep=keep and 'title' in r
             payload={k:r[k] for k in p['fields'] if k in r} if keep else {}
             payload['wire_credit']=r['wire_credit']  # Factual explicit credit, never an inferred licence.
@@ -299,14 +315,14 @@ class MediaMonitor:
             'Independent local analysis; no publisher endorsement','RSS title/summary only; no linked pages, media or content:encoded')
         result={'new':0,'duplicates':0,'changed':0};data=ProductStorage(self.store)
         for row in self.index(source):
-            if not row.get('title'):continue
+            if not row.get('title') or not publisher_covered(source,row['url'],p):continue
             # Recheck the current grant and the stored field scope.
             n=NewsItem(digest(source+'|'+row['url'])[:32],'media_rss',row['title'],FEEDS[source].name,row['url'],
                 row.get('summary',''),row['published'],'published',row['first_seen'],(),
                 ContentRights(True,True,True,False,p['basis']),source_type='media_news',
                 provenance=json.dumps(dict(source_id=source,feed_url=FEEDS[source].url,
                     publishing_domain=urlsplit(row['url']).hostname,feed_provider=FEEDS[source].name,
-                    wire_credit=row.get('wire_credit',''),media_policy=asdict(scoped))))
+                    wire_credit=row.get('wire_credit',''),licensed_publisher_domains=p.get('publisher_domains',[]),media_policy=asdict(scoped))))
             n=prepare(n)[0]
             from .source_policies import authorize
             authorize(n,('retain','local_classification','local_sentiment','local_display'))
@@ -352,8 +368,8 @@ class MediaMonitor:
         for url,published,first,last,payload,p in rows:
             grant=json.loads(p);current=self.states()[source]['policy']
             # Archived grants do not outrank present revocation/expiry.
-            text=json.loads(payload) if active_policy(grant,self.clock()) and active_policy(current,self.clock()) and 'display' in current['purposes'] else {}
+            text=json.loads(payload) if active_policy(grant,self.clock()) and active_policy(current,self.clock()) and 'display' in current['purposes'] and publisher_covered(source,url,current) else {}
             text={k:v for k,v in text.items() if k in current['fields']}
             credit=json.loads(payload).get('wire_credit','Not captured in initial receipt')
-            result.append(dict(url=url,published=published,first_seen=first,last_seen=last,wire_credit=credit,**text))
+            result.append(dict(feed_provider=FEEDS[source].name,publishing_domain=urlsplit(url).hostname,url=url,published=published,first_seen=first,last_seen=last,wire_credit=credit,**text))
         return result

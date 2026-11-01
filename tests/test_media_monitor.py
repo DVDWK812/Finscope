@@ -17,7 +17,7 @@ XML=b'''<rss version="2.0"><channel><title>Authored fixture</title><item>
 <title>The fictional chip company grows in revenue</title><link>https://example.com/authored/one</link>
 <pubDate>Sun, 01 Nov 2026 04:30:00 GMT</pubDate><description>Authored financial test summary.</description>
 <author>Reuters</author><encoded>DO NOT RETAIN BODY</encoded></item></channel></rss>'''
-GRANT=dict(basis='Authored fixture; test-only rights',fields=['title','summary'],purposes=['display','retain','nlp','poll'],retention='no_fixed_expiry',expires_at='')
+GRANT=dict(basis='Authored fixture; test-only rights',fields=['title','summary'],purposes=['display','retain','nlp','poll'],retention='no_fixed_expiry',expires_at='',publisher_domains=['example.com'])
 
 class MediaTests(unittest.TestCase):
     def setUp(self):
@@ -79,6 +79,15 @@ class MediaTests(unittest.TestCase):
     def test_same_event_different_media_not_merged(self):
         for source in ('wsj','ft'):self.monitor.check(source,explicit=True)
         with closing(self.store.connect()) as db:self.assertEqual(db.execute('select count(*) from media_seen').fetchone()[0],2)
+    def test_syndicated_publisher_needs_its_own_covered_domain(self):
+        self.monitor.configure('yahoo',grant={**GRANT,'publisher_domains':[]})
+        report,visible=self.monitor.check('yahoo',explicit=True)
+        self.assertEqual(report['new'],1);self.assertEqual(report['stored'],0);self.assertEqual(report['processable'],0)
+        self.assertEqual(visible[0]['publishing_domain'],'example.com');self.assertEqual(visible[0]['feed_provider'],'Yahoo Finance')
+        self.assertNotIn('title',visible[0]);self.assertEqual(self.monitor.promote('yahoo')['new'],0)
+        self.monitor.configure('yahoo',grant=GRANT)
+        rows,_=parse_feed(XML,'yahoo');self.monitor.replay('yahoo',rows)
+        self.assertEqual(self.monitor.promote('yahoo')['new'],1)
     def test_revisions_and_late_arrivals_not_dropped_by_watermark(self):
         self.monitor.check('wsj',explicit=True);self.advance()
         changed=XML.replace(b'grows',b'declines').replace(b'04:30:00',b'04:00:00')
@@ -167,6 +176,7 @@ class MediaTests(unittest.TestCase):
                 self.assertEqual(db.execute('select count(*) from '+table).fetchone()[0],0)
     def test_monitor_ui_renders_offline_and_does_not_fill_rights(self):
         from streamlit.testing.v1 import AppTest
+        rows,_=parse_feed(XML,'bloomberg');self.monitor.replay('bloomberg',rows)
         def render():
             import os
             from finscope.local_news import LocalNewsStore
@@ -175,6 +185,7 @@ class MediaTests(unittest.TestCase):
             store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);TaskQueue(store);controls(store)
         app=AppTest.from_function(render).run();self.assertFalse(app.exception)
         self.assertTrue(any(e.label=='Global media monitor' for e in app.expander))
+        self.assertEqual(app.selectbox(key='media_original_bloomberg').value,'https://example.com/authored/one')
         self.assertFalse(any(c.value for c in app.checkbox))
         with closing(self.store.connect()) as db:
             self.assertEqual(db.execute('select count(*) from media_requests').fetchone()[0],0)

@@ -51,10 +51,15 @@ def controls(store):
         visible=st.session_state.get('media_preview_'+source) or monitor.index(source)
         if visible:
             p=s['policy']
-            from .media_monitor import active_policy,stamp
+            from .media_monitor import active_policy,stamp,publisher_covered
             allow=active_policy(p,stamp()) and 'display' in p['purposes']
-            visible=[{k:v for k,v in row.items() if k not in {'title','summary'} or allow and k in p['fields']} for row in visible]
-            st.dataframe(visible,hide_index=True,width='stretch',column_config={'url':st.column_config.LinkColumn('Original link')})
+            visible=[{k:v for k,v in row.items() if k not in {'title','summary'} or allow and k in p['fields'] and publisher_covered(source,row['url'],p)} for row in visible]
+            # The shared evidence-table renderer uses plain cells; provide an
+            # explicit original-link action instead of pretending cells link out.
+            st.dataframe([{'Publishing domain':r.get('publishing_domain',''),'Published UTC':r['published'],'Original URL':r['url']} for r in visible],hide_index=True,width='stretch')
+            urls=[r['url'] for r in visible]
+            selected=st.selectbox('Discovered original link',urls,key='media_original_'+source)
+            st.link_button('Open discovered original',selected)
         with st.expander('Source licence and polling',expanded=False):
             with st.form('media_policy_'+source):
                 p=s['policy']
@@ -63,6 +68,7 @@ def controls(store):
                 purposes=st.multiselect('Covered operations',['display','retain','nlp','poll'],default=p['purposes'])
                 retention=st.text_input('Retention basis (no_fixed_expiry only if the actual licence allows it)',value=p['retention'])
                 expiry=st.text_input('Permission expiry UTC (ISO; empty only if none)',value=p['expires_at'])
+                publishers=st.text_input('Additional original publisher domains covered by this licence',value=','.join(p.get('publisher_domains',[])))
                 interval=st.slider('Polling interval (minutes)',5,15,s['interval'])
                 cap=st.number_input('Per-source UTC-day GET cap',1,288,s['daily_cap'])
                 enabled=st.checkbox('Enable polling for this source while the local worker runs',value=s['enabled'])
@@ -70,7 +76,8 @@ def controls(store):
             if save:
                 try:
                     monitor.configure(source,enabled=enabled,interval=interval,daily_cap=cap,
-                        grant=dict(basis=basis,fields=fields,purposes=purposes,retention=retention,expires_at=expiry))
+                        grant=dict(basis=basis,fields=fields,purposes=purposes,retention=retention,expires_at=expiry,
+                                   publisher_domains=[d.strip().lower() for d in publishers.split(',') if d.strip()]))
                     st.session_state.pop('media_preview_'+source,None);st.rerun()
                 except ValueError as error:st.error(str(error))
             if st.button('Save covered discoveries and queue local analysis',key='media_promote'):

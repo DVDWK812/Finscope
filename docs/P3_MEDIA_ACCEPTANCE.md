@@ -38,6 +38,15 @@ CNBC/WSJ/Yahoo latency was 488.93 / 868.54 / 936.63 ms; FT 1512.68 ms. No 429
 occurred. ETag/Last-Modified and 304 behaviour are implemented and offline-tested;
 no second live conditional request was spent in this round.
 
+These are feed-provider counts: all CNBC links use `www.cnbc.com`, all WSJ links
+use `www.wsj.com`, while Yahoo's 19 links comprise **15 `www.fool.com` and four
+`finance.yahoo.com`**. Original publishing domains are displayed separately from
+the feed provider. A source grant covers its own publication domain; additional
+syndicated publishers need explicitly named, applicable licence scope before
+their title/summary can be displayed, cached or promoted for analysis. A Yahoo
+grant never automatically covers Motley Fool. This real-data boundary has an
+independent authored regression and required no additional request.
+
 ## Fields and rights
 
 The durable default index contains source-specific URL identities, publication

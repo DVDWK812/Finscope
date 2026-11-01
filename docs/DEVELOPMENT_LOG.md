@@ -28,7 +28,10 @@ formal local instance because source watching is disabled; existing SQLite state
 survived. Actual browser inspection and ignored p3b evidence accompany the delivery.
 All original 266 news/232 analyses/13 API reservations/46 collector receipts and
 old content/classification/cache rows hash-match; all171 frozen files unchanged.
-Full offline tests:612, skipped1; isolated benchmark dry run passed. Exact pushed
+The actual Yahoo feed contains15 Motley Fool links and4 Yahoo links; display
+feed-provider versus original domain separately and gate syndicated publishers
+by additional applicable publisher-domain scope. No additional GET was needed.
+Final offline tests:613, skipped1; isolated benchmark dry run passed. Exact pushed
 local SHA/CI are reported separately. See [P3-B acceptance](P3_MEDIA_ACCEPTANCE.md).
 
 ## P3-A batch local product — 1 November 2026 Sydney
