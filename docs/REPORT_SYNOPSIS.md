@@ -18,6 +18,14 @@ no broad-feed HTTP request or new media inference is claimed until a fresh expli
 UTC-day account budget is provided. The prior private acceptance and sealed handoff
 remain separate evidence, with unchanged expiry and redistribution qualifications.
 
+**P3-E later live collection:** An explicitly confirmed immediate private-research
+batch added 28 distinct title records with 26 returned descriptions across 11
+supplied link domains. Eleven HTTP-200 responses contained 33 observations; five
+were duplicates. A wholly repeated page stopped collection before the budget cap.
+This verifies broader real acquisition below the 50-record target, not original
+authorship, completeness or redistribution permission. Local model outputs and
+their completion status remain separate private evidence, not public report text.
+
 **P3-D live continuation, 2 November:** A separately authorized, bounded Marketaux
 batch added two real finite title/description records, with subsequent actual local
 classification and FinBERT completion. Six requests returned HTTP 200; five query

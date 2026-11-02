@@ -177,7 +177,7 @@ def collect(worker,task,persist,check):
                 more,reason=media_broad.continuation(meta,receipt['raw_count'],window['page']+page,amount,len(rows),len(ids),bool(ids) and set(ids)<=prior_ids)
                 receipt.update(pagination=meta,broad_query={**window,'page':window['page']+page,'operation_id':identity+':'+str(page)},more=more,pagination_stop=reason)
                 receipt['pagination_error']=reason not in ('Reported result window exhausted','More results within fixed window','Provider pagination bound reached','Record cap or persistence gap; page not fully consumed')
-                if receipt['pagination_error']:errors.append(reason);task['counts']['failed']+=1
+                if receipt['pagination_error']:errors.append(reason)  # BatchRunner counts each phase error once.
             if query:
                 if len(ids)!=len(rows[:amount]):raise FetchBlocked('Some returned records could not be saved; query watermark unchanged')
                 receipt.update(query=query,published=[n.timestamp for n in rows[:amount] if n.timestamp])

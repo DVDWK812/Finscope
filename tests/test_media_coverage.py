@@ -87,6 +87,18 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(batch_receipts(self.store,task)['normalized'],5)
         self.assertEqual(self.q.submit_batch('collect',c,confirmed=True),(task,False))
         self.assertFalse(self.data.analyses())
+        # A supplier may repeat an earlier page despite correct page metadata.
+        # Preserve those receipts, stop, and count the single incident once.
+        def repeated(url,p,*args):
+            response=transport(url,{**p,'page':1},*args)
+            response.payload['meta'].update(page=p['page'],found=100)
+            return response
+        c['media_batch'].update(batch_id=uuid4().hex,total_day_budget=6)
+        task=self.run_collect(c,LocalIngestionService(self.store,transport=repeated,clock=lambda:self.now))
+        self.assertEqual(self.q.get(task)['status'],'partial_failed')
+        self.assertEqual(self.q.get(task)['counts']['failed'],1)
+        self.assertEqual(batch_receipts(self.store,task)['request_stages'],2)
+        self.assertEqual(len(self.data.news()),5)
     def test_broad_cursor_is_separate_and_metadata_is_required(self):
         from finscope import media_broad
         from finscope.media_batch import validate

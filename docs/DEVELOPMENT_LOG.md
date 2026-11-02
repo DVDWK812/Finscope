@@ -2,6 +2,20 @@
 
 ## P3-E broad financial collection — 2 November 2026
 
+- Subsequent live continuation: after confirming available allowance and asking
+  for immediate execution, the user's scope was applied conservatively as a UTC
+  2026-11-02 total of 20 GETs, with six already consumed (14 maximum new GETs).
+  Actual broad collection stopped after 11 HTTP-200 requests: 33 returned and
+  normalized observations, 28 new originals, five duplicates, 11 link domains.
+  Page 11 repeated all three identities from page 9; the durable repeated-page
+  guard stopped without retries, alternate keys or spending the three remaining
+  requests. This is real growth below the 50-record target, not exhaustive coverage.
+  New finite records retain 26 actual descriptions; no body pages were requested.
+- The live repeated-page incident exposed double-counting of one phase error in
+  the task header. Removed the redundant increment and verified an authored
+  repeated-page integration case. Original receipts/history are preserved; the
+  historical header is not evidence of two HTTP failures. Subsequent classification
+  and sentiment evidence stays in the finite local store and private run receipt.
 - Started at clean local/origin `2dfd7dcfd3f3806d5e69c4d5e4b0b6280179aab8`.
   Added default Broad Financial News with independently optional publisher filters;
   company tracking remains optional. Removed mandatory-domain and implicit keyword
