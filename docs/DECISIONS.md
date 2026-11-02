@@ -1,5 +1,17 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**2 November 2026 — P3-E broad acquisition:** Separate financial-news retrieval
+from topic classification. The default Marketaux draft has no entity, keyword or
+publisher filters. [Official documentation](https://www.marketaux.com/documentation)
+defines optional filters, publication ordering and `meta.found/returned/limit/page`.
+Use a fixed window/page size and a separate broad cursor; retain actual titles and
+descriptions under the finite private-research scope, never snippets or bodies.
+Model availability and unclassified topics do not determine what is collected.
+Current budget remains exhausted; this engineering change authorizes no requests
+or expanded account access. Real broad-feed acceptance remains pending a fresh
+explicit UTC-day account/application budget. Supplier backfills may still change
+page membership; this is not a snapshot-completeness guarantee.
+
 **2 November 2026 — bounded live continuation:** A new current-day user budget
 authorized six primary-key Marketaux requests across the six configured company
 cohorts and five publisher domains. All returned HTTP 200; only the technology

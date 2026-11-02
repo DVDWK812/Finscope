@@ -126,7 +126,8 @@ class RequestTests(unittest.TestCase):
         _, params, _, mode, _ = build_request("marketaux", "materials", NOW, 2, 50, "fake-key")
         self.assertEqual(params["group_similar"], "false")
         self.assertEqual(params["limit"], 3)
-        self.assertEqual(mode, "keyword")
+        self.assertEqual(mode, "broad_financial_news")
+        self.assertNotIn('search',params)
 
     def test_newsdata_uses_header_auth(self):
         _, params, headers, _, _ = build_request("newsdata", "healthcare", NOW, 2, 5, "fake-key")

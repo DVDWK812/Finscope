@@ -119,6 +119,7 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
         from .publisher_attribution import attribution
         a=attribution(item)
         st.caption('Collection: '+a['collection_service']+' · Supplier-reported source: '+a['supplier_reported_source']+' · Linked publisher: '+a['linked_publisher'])
+        st.caption('Supplied link domain: '+a['link_domain'])
         st.caption(a['verification']+' · Editorial originality: unverified')
         if a['explicit_wire_credit']:st.caption('Supplied wire credit: '+a['explicit_wire_credit']+'; no direct wire licence or original authorship inferred')
         from urllib.parse import urlsplit

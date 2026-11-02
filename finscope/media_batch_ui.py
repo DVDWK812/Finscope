@@ -34,7 +34,8 @@ def controls(q,active):
         reference=st.text_area('Licence evidence or research purpose and unresolved applicability',value=d.get('scope',{}).get('reference',''),max_chars=1500)
         exception=st.text_input('Specific exception evidence (only if a restriction was recorded)',max_chars=1500)
         days=int(st.number_input('Local text retention days',1,30,7))
-        use_watchlist=st.checkbox('Use grouped company watchlist',value=bool(d.get('watchlist')))
+        mode=st.selectbox('Collection mode',['Broad Financial News','Company Tracking'],index=0)
+        use_watchlist=mode=='Company Tracking'
         watchlist_text=st.text_area('Company watchlist: group | symbols | optional Marketaux industries',
             value=format_rows(d.get('watchlist',DEFAULT)),max_chars=3000)
         st.caption('Watchlist groups are sampling cohorts, not article industries. Marketaux combines each group in one query; Finnhub uses one GET per ticker. Each response is reused once; no automatic fallback key or retry.')
@@ -43,7 +44,9 @@ def controls(q,active):
             count=int(st.number_input('Maximum distinct media records',1,300,int((old or {}).get('limit',3))))
             plan=int(st.selectbox('Marketaux subscription article cap (conservative default 3)',['3','20','50','100']))
             per=int(st.number_input('Records requested / accepted per response',1,300,int(d.get('per_request',3))))
-            domains=st.text_input('Marketaux publication-domain whitelist',value=','.join(d.get('scope',{}).get('domains',['reuters.com','finance.yahoo.com'])))
+            use_domains=st.checkbox('Restrict collection to specified media',value=False)
+            domains=st.text_input('Marketaux publication-domain whitelist',value='')
+            window_days=int(st.number_input('Publication lookback days',1,30,7))
         with b:
             gets=int(st.number_input('Maximum new GETs in this batch',1,50,int(d.get('max_requests',1))))
             total=int(st.number_input('Confirmed total application GET budget for the UTC day',0,10000,int(d.get('total_day_budget',0))))
@@ -55,13 +58,15 @@ def controls(q,active):
         try:
             scope=dict(source=source,status=status,reference=reference,fields=['title','summary'] if fields=='title+summary' else ['title'],
                 expires_at=(datetime.now(timezone.utc)+timedelta(days=days)).isoformat(),confirmed=confirmed,
-                exception_reference=exception,domains=[v.strip().lower() for v in domains.split(',') if v.strip()] if source=='marketaux' else [])
+                exception_reference=exception,domains=[v.strip().lower() for v in domains.split(',') if v.strip()] if source=='marketaux' and use_domains else [])
+            if source=='marketaux' and use_domains and not scope['domains']:raise ValueError('Enter domains or disable the optional media filter')
             if status=='restricted':
                 if not reference.strip():raise ValueError('Record the concrete restricting term')
                 record_decision(q.store,scope)
                 st.info('Restriction recorded. No collection or analysis was started.');return
             options=dict(source=source,scope=scope,batch_id=uuid4().hex,max_requests=gets,per_request=count if source=='finnhub' and not use_watchlist else per,
-                plan_limit=plan,utc_day=day,total_day_budget=total,symbol=symbol.strip().upper() if source=='finnhub' else '',days=2)
+                plan_limit=plan,utc_day=day,total_day_budget=total,symbol=symbol.strip().upper() if source=='finnhub' else '',days=window_days,
+                mode='company' if use_watchlist or source=='finnhub' else 'broad')
             if use_watchlist:options['watchlist']=parse(watchlist_text)
             config=dict(sources=[source],model='Local FinBERT',model_id='',taxonomy='US-BUSINESS-1',classifier_llm=False,
                 limit=count,budgets={},source_permissions={},media_batch=options)
@@ -80,6 +85,7 @@ def controls(q,active):
             st.rerun()
         except ValueError as error:st.error(str(error))
     if old:
+        st.caption('Saved configuration remains unchanged until confirmed. Draft Broad Financial News does not silently replace an earlier Company Tracking batch.')
         st.caption('Saved media batch: '+d.get('source','')+' · '+str(old['limit'])+' records · '+str(d['max_requests'])+' GETs · expires '+d['scope']['expires_at'])
         if d.get('watchlist'):
             st.dataframe(snapshot(q.store,d),hide_index=True,width='stretch')

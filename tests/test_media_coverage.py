@@ -67,6 +67,43 @@ class CoverageTests(unittest.TestCase):
         self.assertNotIn('DO NOT RETAIN HIGHLIGHT',n.provenance);self.assertFalse(n.issuer_industry)
         self.assertEqual(batch_receipts(self.store,task)['new'],18)
         with closing(self.store.connect()) as db:self.assertNotIn(n.title,'\n'.join(db.iterdump()))
+    def test_broad_default_parameters_and_fixed_window_pagination(self):
+        from finscope.api_sources import build_request,MarketauxFilters
+        for filters in (None,MarketauxFilters()):
+            params=build_request('marketaux','technology',self.now,7,3,'AUTHORED',marketaux_filters=filters)[1]
+            self.assertFalse(set(params)&{'search','symbols','industries','domains','source_ids','must_have_entities'})
+        c=self.config();c['limit']=50;d=c['media_batch'];d.pop('watchlist');d.update(mode='broad',max_requests=4,total_day_budget=4);d['scope']['domains']=[]
+        def transport(url,p,*args):
+            self.calls.append((url,p.copy()));self.now+=timedelta(seconds=61);page=p['page']
+            rows=[dict(uuid=str(i),title='Authored broad headline '+str(i),description='Authored financial research description.',url='https://different.example/news/'+str(i),source='Authored publisher',published_at=self.start.isoformat()) for i in range((page-1)*3,min(page*3,5))]
+            return HTTPResponse(dict(data=rows,meta=dict(found=5,returned=len(rows),limit=3,page=page)),200,{})
+        service=LocalIngestionService(self.store,transport=transport,clock=lambda:self.now)
+        task=self.run_collect(c,service)
+        self.assertEqual(len(self.calls),2);self.assertEqual(len(self.data.news()),5)
+        self.assertEqual(self.calls[0][1]['published_before'],self.calls[1][1]['published_before'])
+        self.assertEqual(self.calls[0][1]['published_after'],self.calls[1][1]['published_after'])
+        for _,p in self.calls:self.assertFalse(set(p)&{'search','symbols','industries','domains','source_ids','must_have_entities'})
+        self.assertTrue(all('query_cohort' not in json.loads(n.provenance) for n in self.data.news()))
+        self.assertEqual(batch_receipts(self.store,task)['normalized'],5)
+        self.assertEqual(self.q.submit_batch('collect',c,confirmed=True),(task,False))
+        self.assertFalse(self.data.analyses())
+    def test_broad_cursor_is_separate_and_metadata_is_required(self):
+        from finscope import media_broad
+        from finscope.media_batch import validate
+        c=self.config();d=c['media_batch']
+        with self.assertRaises(ValueError):validate({**d,'mode':'broad'})
+        d={**d,'mode':'broad'};d.pop('watchlist');d['scope']['domains']=[]
+        self.assertEqual(media_broad.plan(self.store,d,self.now)['page'],1)
+        self.assertFalse(media_broad.continuation({},3,1,3,3,3)[0])
+        meta=dict(found=100,returned=3,limit=3,page=2)
+        self.assertFalse(media_broad.continuation(meta,3,1,3,3,3)[0])
+        meta['page']=1
+        self.assertFalse(media_broad.continuation(meta,3,1,3,3,3,True)[0])
+        query=media_broad.plan(self.store,d,self.now)
+        media_broad.commit(self.store,d,query,dict(more=True,pagination_stop='More results within fixed window'))
+        resumed=media_broad.plan(self.store,d,self.now+timedelta(days=1))
+        self.assertEqual(resumed['page'],2);self.assertEqual(resumed['before'],query['before'])
+        self.assertEqual(plan(self.store,{**d,'watchlist':DEFAULT},self.now)[0]['page'],1)
     def test_partial_window_resume_retains_bounds_page_and_no_repeat_same_batch(self):
         c=self.config(groups=DEFAULT[:1]);service=self.service();task=self.run_collect(c,service)
         options=c['media_batch'];next_query=plan(self.store,options,self.now+timedelta(days=1))[0]

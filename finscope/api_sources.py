@@ -107,7 +107,6 @@ class MarketauxFilters:
             if not isinstance(values,(tuple,list)) or len(values)>20 or any(not isinstance(v,str) or not re.fullmatch(pattern,v) for v in values):
                 raise ValueError('Invalid Marketaux '+name)
             if values:result[name]=','.join(dict.fromkeys(values))
-        if not self.domains:raise ValueError('Select a Marketaux media domain whitelist')
         if self.published_after:
             try:
                 stamp=datetime.fromisoformat(self.published_after.replace('Z','+00:00'))
@@ -137,6 +136,7 @@ class QueryResult:
     http_status: int | None = None
     rate_limit_headers: dict[str, str] = field(default_factory=dict)
     outcome: str = ""  # records / empty / invalid_records / classified failure / missing_credentials
+    pagination: dict = field(default_factory=dict)  # Allowlisted response counts only.
 
 
 @dataclass
@@ -351,11 +351,10 @@ def build_request(provider: str, topic: str, now: datetime, days: int, limit: in
         if marketaux_page is not None:params['page']=marketaux_page
         if marketaux_before is not None:params['published_before']=datetime.fromisoformat(_published_datetime(marketaux_before)).strftime('%Y-%m-%dT%H:%M:%S')
         if marketaux_filters is not None:params.update(marketaux_filters.parameters())
-        else:params['search']=keyword  # Historical benchmark remains reproducible.
         return (
             "https://api.marketaux.com/v1/news/all",
             params,
-            headers, "media_entity_filters" if marketaux_filters is not None else "keyword",
+            headers, "media_entity_filters" if marketaux_filters and (marketaux_filters.symbols or marketaux_filters.industries) else "broad_financial_news",
             f"Recorded plan cap {marketaux_plan_limit} articles/request (default free: 3); group_similar=false.",
         )
     if provider == "newsdata":
@@ -423,7 +422,7 @@ def fetch_provider(
             rate_headers = payload.rate_limit_headers
             payload = payload.payload
         items, raw_count = normalize(provider, payload,newsdata_text_access=newsdata_text_access)
-        if provider=='marketaux' and marketaux_filters is not None:
+        if provider=='marketaux' and marketaux_filters is not None and marketaux_filters.domains:
             domains=marketaux_filters.domains
             def matches(article):
                 host=(urlsplit(article.url).hostname or '').lower()
@@ -451,6 +450,8 @@ def fetch_provider(
                            http_status=http_status, rate_limit_headers=rate_headers,
                            outcome="invalid_records", note=f"{note} No valid records in nonempty array.")
     return QueryResult(provider, topic, query_mode, "ok", items[:limit],
+                       pagination={k:v for k,v in (payload.get('meta',{}) if provider=='marketaux' and isinstance(payload,dict) and isinstance(payload.get('meta',{}),dict) else {}).items()
+                                   if k in {'found','returned','limit','page'} and type(v) is int and v>=0},
                        raw_count=raw_count, normalized_count=len(items),
                        http_status=http_status, rate_limit_headers=rate_headers,
                        outcome="records" if items else "empty",

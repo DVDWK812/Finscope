@@ -10,6 +10,14 @@ The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8a
 
 ## Purpose and architecture
 
+**P3-E engineering, 2 November:** Broad Financial News now separates Marketaux
+retrieval from company/industry selection, with optional publisher filtering and
+independent fixed-window pagination checkpoints. Finite originals are saved before
+the existing local classifier and FinBERT stages. This is an implementation change;
+no broad-feed HTTP request or new media inference is claimed until a fresh explicit
+UTC-day account budget is provided. The prior private acceptance and sealed handoff
+remain separate evidence, with unchanged expiry and redistribution qualifications.
+
 **P3-D live continuation, 2 November:** A separately authorized, bounded Marketaux
 batch added two real finite title/description records, with subsequent actual local
 classification and FinBERT completion. Six requests returned HTTP 200; five query

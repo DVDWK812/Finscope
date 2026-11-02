@@ -2,6 +2,22 @@
 
 ### Finite media text batches (local)
 
+**Broad Financial News** is the default Marketaux draft mode. It omits company,
+industry, search, source-ID and domain filters, including the old keyword fallback.
+English and a configurable publication window remain; the provider's default
+publication ordering applies. Optional specified-media filtering is off by default.
+Company Tracking remains available separately. A draft never changes a saved
+scope/budget or repeats an earlier collection.
+
+Broad batches freeze their time window and page size, persist each permitted
+title/actual description before analysis, and record response pagination metrics.
+Their cursor is separate from company watchlists. Missing/inconsistent metadata or
+repeated page identities stop further requests; failed/unknown requests never retry.
+The distinct-record cap may stop partway through the last page; an explicitly
+authorized later batch revisits that boundary page with URL deduplication. Stable
+time bounds prevent newer publication times shifting pages, but cannot guarantee
+snapshot isolation against supplier reindexing or backdated additions.
+
 **Grouped company watchlist** accepts `group | symbols | optional Marketaux
 industries` lines in the existing media batch form. The six initial cohorts cover
 technology, finance, energy, healthcare, industrial and consumer companies; they

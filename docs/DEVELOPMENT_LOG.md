@@ -1,5 +1,26 @@
 # Development log
 
+## P3-E broad financial collection — 2 November 2026
+
+- Started at clean local/origin `2dfd7dcfd3f3806d5e69c4d5e4b0b6280179aab8`.
+  Added default Broad Financial News with independently optional publisher filters;
+  company tracking remains optional. Removed mandatory-domain and implicit keyword
+  restrictions. No saved rights or budget attestation was rewritten.
+- Added response pagination counts, isolated fixed-window/page-size checkpoints,
+  metadata consistency and repeated-page stops, incremental finite persistence,
+  unchanged-record exclusion from analysis and explicit supplied-domain display.
+  The existing worker still completes collection before local classification and
+  independent FinBERT; no new analysis pipeline or model/prompt change.
+- Offline authored fixtures cover unfiltered requests, fixed-window pagination,
+  independent cursor recovery, exhausted windows, inconsistent metadata, duplicate
+  pages and no model dispatch during collection. No real news/model call was made;
+  the prior six-request allowance remains exhausted. Real 50-record acceptance is
+  pending new budget confirmation and is not claimed by these engineering tests.
+- Final offline regression: 680 tests, OK with one platform skip (134.173 s);
+  isolated benchmark dry run passed. Existing data/history/request rows and all
+  171 frozen files were preserved. Exact commit CI and runtime verification are
+  recorded separately from the immutable handoff snapshot.
+
 ## P3-D authorized live batch — 2 November 2026 Sydney
 
 - Continued from clean local/origin `85745793dcf1608b8980a413831677ba7cd71a9a`.

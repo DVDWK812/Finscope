@@ -61,7 +61,6 @@ def validate(scope, *, now=None, active=True):
     domains = s.get('domains', [])
     if not isinstance(domains, list) or len(domains) > 20:
         raise ValueError('Invalid publication-domain scope')
-    if s['source']=='marketaux' and not domains:raise ValueError('Select an explicit Marketaux publication-domain whitelist')
     from .api_sources import MarketauxFilters
     if domains:
         MarketauxFilters(tuple(domains)).parameters()

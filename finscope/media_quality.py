@@ -50,9 +50,10 @@ def statistics(store,article_ids=None):
         g=groups.setdefault(key,dict(service=key[0],reported_source=key[1],linked_publisher=key[2],originality='unverified',
             records=0,titles=0,title_characters=0,summaries=0,summary_characters=0,title_only=0,classified=0,
             unclassified=0,classifier_failed=0,classification_pending=0,finbert=0,sentiment_failed=0,sentiment_pending=0,sentiment_not_applicable=0,nlp_not_authorized=0,
-            publisher_domains=set(),query_symbols=set(),supplier_entity_symbols=set(),query_symbol_records=Counter(),supplier_entity_records=Counter(),text_mentioned_entities=Counter(),query_groups=Counter(),parent_topics=Counter(),child_topics=Counter(),basis_statuses=Counter()))
+            publisher_domains=set(),link_domains=set(),query_symbols=set(),supplier_entity_symbols=set(),query_symbol_records=Counter(),supplier_entity_records=Counter(),text_mentioned_entities=Counter(),query_groups=Counter(),parent_topics=Counter(),child_topics=Counter(),basis_statuses=Counter()))
         g['records']+=1;g['titles']+=bool(n.title);g['title_characters']+=len(n.title);g['summaries']+=bool(n.summary);g['summary_characters']+=len(n.summary);g['title_only']+=not bool(n.summary)
         if a['publisher_domain']:g['publisher_domains'].add(a['publisher_domain'])
+        if a['link_domain']:g['link_domains'].add(a['link_domain'])
         cohort=p.get('query_cohort',{});g['query_symbols'].update(cohort.get('symbols',[]) or ([n.company] if n.provider=='finnhub' and n.company else []))
         if cohort.get('group'):g['query_groups'][cohort['group']]+=1
         g['supplier_entity_symbols'].update(e['symbol'] for e in p.get('api_record',{}).get('entities',[]) if e.get('symbol'))
@@ -82,4 +83,6 @@ def batch_receipts(store,task_id):
     return dict(request_stages=len(rows),successful_requests=len(values),failed_or_unknown=len(rows)-len(values),
         accepted_observations=accepted,new=sum(v.get('new',0) for v in values),duplicates=duplicates,
         duplicate_ratio=duplicates/accepted if accepted else None,changed=sum(v.get('changed',0) for v in values),
-        raw_returned=sum(v.get('raw_count',0) for v in values),http_statuses=dict(Counter(str(v.get('http_status')) for v in values)))
+        raw_returned=sum(v.get('raw_count',0) for v in values),normalized=sum(v.get('normalized_count',0) for v in values),
+        pagination_stops=[v['pagination_stop'] for v in values if v.get('pagination_stop')],
+        http_statuses=dict(Counter(str(v.get('http_status')) for v in values)))
