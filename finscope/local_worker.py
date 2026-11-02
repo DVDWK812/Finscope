@@ -18,7 +18,16 @@ from .model_providers import ModelError
 
 # ModelError comes from a shared imported module even under `python -m`.
 # BatchRunner must also catch the entry-point module's resource exception.
-class ResourceBlocked(ModelError):pass
+class ResourceBlocked(ModelError):
+    def __init__(self,message,*,resources=None):
+        super().__init__(message,kind='resource_limit');self.resources=resources
+
+def record_resource_pause(queue,identity,counts,error):
+    snapshot=getattr(error,'resources',None)
+    if not isinstance(snapshot,dict):return
+    counts['resource_pauses']=counts.get('resource_pauses',0)+1
+    safe={k:snapshot[k] for k in ('ram_available','gpu_available','ram_total','gpu_total') if type(snapshot.get(k)) is int}
+    queue.save_step(identity,'resource_pause:'+str(counts['resource_pauses']),'ok',safe)
 
 
 def resource_check(mode,*,loading=False):
@@ -27,9 +36,9 @@ def resource_check(mode,*,loading=False):
     # The loaded Qwen is left alone; never silently unload a user's model.
     required=5*GIB if mode=='Local FinBERT' and loading else 2*GIB
     if r['ram_available']<required:
-        raise ResourceBlocked(f"Insufficient free RAM for this model stage: {r['ram_available']/GIB:.2f} GiB available / {required/GIB:.2f} GiB required; free resources or explicitly change/unload models in Settings, then resume")
+        raise ResourceBlocked(f"Insufficient free RAM for this model stage: {r['ram_available']/GIB:.2f} GiB available / {required/GIB:.2f} GiB required; free resources or explicitly change/unload models in Settings, then resume",resources=r)
     if mode=='Local LM Studio' and r['gpu_available']<512*1024**2:
-        raise ResourceBlocked('Insufficient free VRAM; stage paused, no model was unloaded')
+        raise ResourceBlocked('Insufficient free VRAM; stage paused, no model was unloaded',resources=r)
     return r
 
 

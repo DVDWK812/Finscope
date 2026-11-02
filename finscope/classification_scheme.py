@@ -98,6 +98,8 @@ def run_reclassification(worker,task):
                  error='Some classifier results need review; no automatic retry' if failures else '')
     except Cancelled:q.update(identity,status='cancelled',stage='classification stopped',counts=counts)
     except Exception as error:
+        from .local_worker import record_resource_pause
+        record_resource_pause(q,identity,counts,error)
         counts['classifier_calls']=initial_calls+(classifier.calls if classifier else 0)
         from .semantic_classifier import ClassifierPrerequisite
         reason=str(error) if isinstance(error,ClassifierPrerequisite) else 'Local classification prerequisite or expiry changed; no source/sentiment dispatch'

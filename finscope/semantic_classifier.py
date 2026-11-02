@@ -58,7 +58,10 @@ class SemanticIndustryClassifier:
         # MiniLM is a fresh CPU subprocess for every encode, not a resident
         # inference call. Apply the existing cold-load reserve before spawning.
         try:return resource_check('Local LM Studio' if kind=='LM Studio' else 'Local FinBERT',loading=kind!='LM Studio')
-        except ModelError as e:raise ClassifierPrerequisite('Local classifier resources unavailable: '+str(e)) from e
+        except ModelError as e:
+            error=ClassifierPrerequisite('Local classifier resources unavailable: '+str(e))
+            error.resources=getattr(e,'resources',None)
+            raise error from e
     def call(self,item,stage,model_id,revision,input_text,action):
         part=self.guard(item)
         with closing(part.connect()) as db:

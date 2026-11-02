@@ -47,6 +47,16 @@ class SemanticTests(unittest.TestCase):
         with self.assertRaises(ClassifierPrerequisite):c.call(n,'never-dispatched','fixture','revision','authored input',lambda:self.fail('dispatched'))
         with closing(partition(self.store).connect()) as db:
             self.assertEqual(db.execute("SELECT count(*) FROM product_classifier_calls WHERE stage='never-dispatched'").fetchone()[0],0)
+    def test_resource_pause_count_survives_task_resume_without_text(self):
+        from finscope.local_worker import record_resource_pause,ResourceBlocked
+        n=self.item();identity,_=self.q.submit_reclassify(article_ids=[n.article_id],options=OPTIONS,confirmed=True)
+        counts=self.q.get(identity)['counts'];error=ResourceBlocked('low RAM',resources={'ram_available':123,'gpu_available':456,'secret':'excluded'})
+        record_resource_pause(self.q,identity,counts,error)
+        self.q.update(identity,status='blocked',counts=counts)
+        self.q.resume(identity);counts=self.q.get(identity)['counts']
+        record_resource_pause(self.q,identity,counts,error)
+        self.assertEqual(counts['resource_pauses'],2)
+        self.assertEqual(self.q.step(identity,'resource_pause:1')[1],{'ram_available':123,'gpu_available':456})
     def setUp(self):
         self.now=datetime.now(timezone.utc)
         p=patch('finscope.media_use.utcnow',side_effect=lambda:self.now);p.start();self.addCleanup(p.stop)

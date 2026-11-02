@@ -175,6 +175,8 @@ class BatchRunner:
         except Cancelled:
             self.queue.update(identity,status='cancelled',stage='cancelled; saved stages retained',counts=counts)
         except (ResourceBlocked,ModelError) as error:
+            from .local_worker import record_resource_pause
+            record_resource_pause(self.queue,identity,counts,error)
             self.queue.update(identity,status='blocked',stage='analysis paused; collection retained',counts=counts,error=str(error))
         except Exception:
             self.queue.update(identity,status='partial_failed',stage='batch interrupted',counts=counts,error='Local batch failed; saved records/checkpoints retained; inspect and explicitly resume')

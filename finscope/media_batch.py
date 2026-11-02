@@ -10,7 +10,7 @@ from .media_use import validate as validate_scope, apply as apply_scope
 
 def validate(options):
     fields={'source','scope','batch_id','max_requests','per_request','plan_limit','utc_day','total_day_budget','symbol','days'}
-    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode','window_end'}:
+    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode','window_end','strategy'}:
         raise ValueError('Invalid media batch scope')
     d=dict(options)
     mode=d.get('mode','company' if d.get('watchlist') else 'broad')
@@ -24,10 +24,14 @@ def validate(options):
         d['window_end']=end.astimezone(timezone.utc).isoformat()
     if d['source'] not in {'marketaux','finnhub'}:raise ValueError('Choose an official supported news API')
     d['scope']=validate_scope(d['scope'])
+    if d.get('strategy','latest') not in ('latest','stratified'):raise ValueError('Unknown broad strategy')
+    if d.get('strategy')=='stratified':
+        if d['source']!='marketaux' or mode!='broad' or d['scope']['domains']:raise ValueError('Stratified collection must be unfiltered broad Marketaux')
     if d['scope']['source']!=d['source']:raise ValueError('Source and use scope differ')
     if not isinstance(d['batch_id'],str) or not re.fullmatch('[0-9a-f]{32}',d['batch_id']):raise ValueError('Save a new explicit batch confirmation')
     for key,minimum,maximum in [('max_requests',1,50),('per_request',1,300),('total_day_budget',1,10000),('days',1,30)]:
         if type(d[key]) is not int or not minimum<=d[key]<=maximum:raise ValueError('Invalid bounded '+key)
+    if d.get('strategy')=='stratified' and (d['max_requests']>12 or d['days']!=1):raise ValueError('Stratified batch uses 24 hours and at most 12 total GETs')
     if d['max_requests']>d['total_day_budget']:raise ValueError('Batch exceeds confirmed application budget')
     if d['plan_limit'] not in (3,20,50,100):raise ValueError('Record the actual Marketaux plan cap')
     if d['source']=='marketaux' and d['per_request']>d['plan_limit']:raise ValueError('Marketaux request exceeds the plan article cap')
@@ -85,8 +89,15 @@ def collect(worker,task,persist,check):
     service=LocalIngestionService(worker.store)
     planned=[];existing=set()
     broad=source=='marketaux' and d.get('mode')=='broad'
-    window=None
-    if broad:
+    window=None;strata=d.get('strategy')=='stratified';schedule=[];closed=set()
+    if strata:
+        from . import media_strata
+        checkpoint=q.step(identity,'media_strata_plan_v1')
+        if not checkpoint:
+            value=dict(queries=media_strata.plan(worker.store,d,before),existing_ids=[n.article_id for n in worker.data.news()])
+            q.save_step(identity,'media_strata_plan_v1','ok',value);checkpoint=('ok',value)
+        schedule=checkpoint[1]['queries'];existing=set(checkpoint[1]['existing_ids'])
+    if broad and not strata:
         from . import media_broad
         checkpoint=q.step(identity,'media_broad_plan_v1')
         if not checkpoint:
@@ -100,7 +111,11 @@ def collect(worker,task,persist,check):
             value=dict(queries=plan(worker.store,d,before),existing_ids=[n.article_id for n in worker.data.news()])
             q.save_step(identity,'media_query_plan','ok',value);checkpoint=('ok',value)
         planned=checkpoint[1]['queries'];existing=set(checkpoint[1]['existing_ids'])
-    for page in range(d['max_requests']):
+    if strata:from . import media_broad
+    for page in range(min(d['max_requests'],len(schedule)) if strata else d['max_requests']):
+        if strata:window=schedule[page]
+        page_number=window['page'] if strata else window['page']+page if broad else page+1
+        if strata and window['stratum'] in closed:continue
         key='media_request:'+str(page+1);step=q.step(identity,key)
         if step:
             collected.extend(step[1].get('article_ids',[]))
@@ -114,9 +129,11 @@ def collect(worker,task,persist,check):
             if planned and step[1].get('query'):
                 commit(worker.store,d,step[1]['query'],published=step[1]['published'],received=step[1]['raw_count'],accepted=step[1]['saved'])
             if broad:
-                media_broad.commit(worker.store,d,step[1]['broad_query'],step[1])
+                (media_strata.commit(worker.store,step[1]['broad_query'],step[1]) if strata else media_broad.commit(worker.store,d,step[1]['broad_query'],step[1]))
                 if step[1].get('pagination_error'):errors.append(step[1]['pagination_stop'])
-                if not step[1]['more']:break
+                if not step[1]['more']:
+                    if strata:closed.add(window['stratum'])
+                    else:break
             continue
         if len(set(collected))>=c['limit']:break
         check()
@@ -135,6 +152,7 @@ def collect(worker,task,persist,check):
         with closing(worker.store.connect()) as db:
             used=db.execute('SELECT count(*) FROM local_requests WHERE provider=? AND substr(reserved_at,1,10)=?',(source,d['utc_day'])).fetchone()[0]
         if used>=d['total_day_budget']:raise FetchBlocked('Confirmed application/account budget exhausted')
+        if strata:media_strata.record(worker.store,window,dict(status='pending',more=False),reserve=True)
         q.save_step(identity,key,'pending',{'article_ids':[]})
         ids=[]
         try:
@@ -151,7 +169,7 @@ def collect(worker,task,persist,check):
                 if source=='marketaux':
                     kwargs=dict(marketaux_plan_limit=d['plan_limit'],marketaux_page=query['page'] if query else page+1,marketaux_before=query['before'] if query else before.isoformat(),
                         marketaux_filters=MarketauxFilters(tuple(d['scope']['domains']),tuple(query['symbols']) if query else (),tuple(query['industries']) if query else (),published_after=query['after'] if query else (before-timedelta(days=d['days'])).isoformat()))
-                    if broad:kwargs.update(marketaux_page=window['page']+page,marketaux_before=window['before'],marketaux_filters=MarketauxFilters(tuple(d['scope']['domains']),published_after=window['after']))
+                    if broad:kwargs.update(marketaux_page=page_number,marketaux_before=window['before'],marketaux_filters=MarketauxFilters(tuple(d['scope']['domains']),published_after=window['after']))
                 symbol=query['symbols'][0] if query and source=='finnhub' else d['symbol']
                 days=min(30,max(1,(service.clock()-datetime.fromisoformat(query['after'])).days+1)) if query and source=='finnhub' else d['days']
                 result,rows=NewsKeyRegistry(worker.store).fetch(service,source,'technology',
@@ -162,11 +180,16 @@ def collect(worker,task,persist,check):
                 if result.status!='ok':raise FetchBlocked('API response failed; original receipt/hold retained; no retry')
             accepted_rows=rows[:min(amount,c['limit']-len(set(collected)))]
             prior_ids=set(collected)
+            if strata:
+                prior_ids=set()
+                for index in range(page):
+                    prior=q.step(identity,'media_request:'+str(index+1))
+                    if prior and prior[1].get('broad_query',{}).get('stratum')==window['stratum']:prior_ids.update(prior[1].get('article_ids',[]))
             for raw in accepted_rows:
                 check();n=apply_scope(raw,d['scope']);origin=json.loads(n.provenance)
                 origin.update(capture_task_id=identity,api_page=page+1)
                 if query:origin['query_cohort']={k:query[k] for k in ('group','symbols','industries','after','before','page')}
-                if broad:origin.update(collection_mode='broad',api_page=window['page']+page,query_window={k:window[k] for k in ('after','before')})
+                if broad:origin.update(collection_mode='broad',api_page=page_number,query_window={k:window[k] for k in ('after','before')})
                 n=replace(n,provenance=json.dumps(origin,ensure_ascii=False))
                 authorize(n,('retain','local_display'));saved=persist(n)
                 if saved:ids.append(saved)
@@ -180,12 +203,12 @@ def collect(worker,task,persist,check):
             if broad:
                 meta=result.pagination if result else {}
                 if len(ids)!=len(accepted_rows):raise FetchBlocked('Some broad records could not be saved; no pagination advance')
-                more,reason=media_broad.continuation(meta,receipt['raw_count'],window['page']+page,amount,len(rows),len(ids),bool(ids) and set(ids)<=prior_ids)
-                receipt.update(pagination=meta,broad_query={**window,'page':window['page']+page,'operation_id':identity+':'+str(page)},more=more,pagination_stop=reason)
+                more,reason=media_broad.continuation(meta,receipt['raw_count'],page_number,amount,len(rows),len(ids),bool(ids) and set(ids)<=prior_ids)
+                receipt.update(pagination=meta,broad_query={**window,'page':page_number,'operation_id':identity+':'+str(page)},more=more,pagination_stop=reason)
                 previous=[]
                 for index in range(page):
                     prior=q.step(identity,'media_request:'+str(index+1))
-                    if prior and prior[0]=='ok':previous.append((window['page']+index,prior[1]))
+                    if prior and prior[0]=='ok' and (not strata or prior[1].get('broad_query',{}).get('stratum')==window['stratum']):previous.append((prior[1]['broad_query']['page'],prior[1]))
                 receipt['pagination_diagnostics']=media_broad.diagnostics(meta,previous,ids,[n.timestamp for n in accepted_rows if n.timestamp])
                 receipt['pagination_error']=reason not in ('Reported result window exhausted','More results within fixed window','Provider pagination bound reached','Record cap or persistence gap; page not fully consumed')
                 if receipt['pagination_error']:errors.append(reason)  # BatchRunner counts each phase error once.
@@ -194,10 +217,12 @@ def collect(worker,task,persist,check):
                 receipt.update(query=query,published=[n.timestamp for n in rows[:amount] if n.timestamp])
             q.save_step(identity,key,'ok',receipt)
             if broad:
-                media_broad.commit(worker.store,d,receipt['broad_query'],receipt)
-                if not more:break
+                (media_strata.commit(worker.store,receipt['broad_query'],receipt) if strata else media_broad.commit(worker.store,d,receipt['broad_query'],receipt))
+                if not more:
+                    if strata:closed.add(window['stratum'])
+                    else:break
             if query:commit(worker.store,d,query,published=receipt['published'],received=receipt['raw_count'],accepted=len(ids))
-            if not planned and (not rows or source=='finnhub'):break
+            if not planned and not strata and (not rows or source=='finnhub'):break
         except Cancelled:
             q.save_step(identity,key,'failed',{'article_ids':ids,'reason':'Cancelled after dispatch; no automatic repeat'})
             raise

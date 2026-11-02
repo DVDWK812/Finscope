@@ -1052,3 +1052,29 @@ batch must validate resource telemetry before claiming sustained 50–100-item
 analysis. No old news inference or frozen evaluation is rerun for that validation.
 
 Validation: 683 offline tests passed (one platform skip), isolated benchmark dry run passed. Production read-only counts remained 266/232 permanent originals/analyses, 60/59 finite originals/analyses, 180 finite classifier calls and 32 news request receipts; all 171 frozen hashes matched. No live model/provider validation was performed for this fix.
+
+
+### P3-E.2 — time-stratified broad batching (2 November 2026)
+
+Optional six-by-four-hour fixed UTC strata preserve Latest news. Default end is
+creation minus one hour, rounded down to a second; explicit historical ends work.
+At most 12 GETs total and two per window, first pages before second pages. No
+company/industry/keyword/domain filters. Logical windows touch without overlap;
+HTTP bounds each extend one second deliberately, with existing ID/URL dedup.
+This guards boundary inclusivity uncertainty, not limited-page or mutable-index
+omissions; there is no exhaustive coverage or snapshot-isolation claim.
+
+Immutable task plans and separate per-window/page dispatch fences preserve
+completed, blocked and unknown states. Existing broad cursors remain untouched.
+Collection persists before model stages; RAM/VRAM blocks now retain numeric
+measurements and cumulative pause counts. Existing caches/expiry are unchanged.
+
+Ignored reports/p3e2_redacted_plan.json contains an illustrative 12-slot plan,
+not an authorized or scheduled batch. Phase A still needs a fresh UTC date and
+account/application budget: primary mel, <=12 GETs, <=3 per response, <=36 returned,
+target 22 net new beyond the previous 28. Actual titles/descriptions only, seven-day
+private local research, no body retrieval or external models. Phase B is deferred.
+No new news/model request was made; earlier real coverage remains historical
+rather than evidence of this unexecuted time-stratified strategy.
+
+Validation: 686 offline tests passed (one platform skip); isolated benchmark dry run passed. No live provider requests or model inference. Formal 8511 reload/preservation evidence and exact-SHA CI are checked separately after commit.

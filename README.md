@@ -28,6 +28,18 @@ MiniLM with the existing 5 GiB load reserve, records RAM/VRAM before dispatched
 stages in finite storage, and releases the worker's unused FinBERT object before
 classification-only tasks. It never unloads a user's model service automatically.
 
+**Time-stratified broad batches** are optional; Latest news stays available.
+Six adjacent four-hour UTC windows end one hour before task creation by default,
+with a whole-second anchor or an explicit historical end. At most two pages per
+window and 12 GETs total: first pages across all six precede second pages. Requests
+deliberately extend both window edges by one second; existing ID/URL deduplication
+handles boundary observations without assuming supplier inclusivity. Page caps
+and mutable indexes mean this is sampling, not exhaustive 24-hour coverage.
+Independent durable window/page fences block unknown redispatch and preserve old
+broad-feed holds. No company, industry, keyword or domain filters are allowed.
+Resource pauses record measured RAM/VRAM and a cumulative count; collection does
+not require a loaded classifier or sentiment model.
+
 **Grouped company watchlist** accepts `group | symbols | optional Marketaux
 industries` lines in the existing media batch form. The six initial cohorts cover
 technology, finance, energy, healthcare, industrial and consumer companies; they

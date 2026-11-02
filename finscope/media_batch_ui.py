@@ -36,6 +36,7 @@ def controls(q,active):
         days=int(st.number_input('Local text retention days',1,30,7))
         mode=st.selectbox('Collection mode',['Broad Financial News','Company Tracking'],index=0)
         use_watchlist=mode=='Company Tracking'
+        strategy=st.selectbox('Broad collection strategy',['Latest news','Time-stratified · 6 × 4 hours · at most 12 GETs'])
         watchlist_text=st.text_area('Company watchlist: group | symbols | optional Marketaux industries',
             value=format_rows(d.get('watchlist',DEFAULT)),max_chars=3000)
         st.caption('Watchlist groups are sampling cohorts, not article industries. Marketaux combines each group in one query; Finnhub uses one GET per ticker. Each response is reused once; no automatic fallback key or retry.')
@@ -69,6 +70,8 @@ def controls(q,active):
                 plan_limit=plan,utc_day=day,total_day_budget=total,symbol=symbol.strip().upper() if source=='finnhub' else '',days=window_days,
                 mode='company' if use_watchlist or source=='finnhub' else 'broad')
             if window_end.strip():options['window_end']=window_end.strip()
+            if strategy.startswith('Time-stratified'):
+                options.update(strategy='stratified',days=1)
             if use_watchlist:options['watchlist']=parse(watchlist_text)
             config=dict(sources=[source],model='Local FinBERT',model_id='',taxonomy='US-BUSINESS-1',classifier_llm=False,
                 limit=count,budgets={},source_permissions={},media_batch=options)
