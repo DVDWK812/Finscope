@@ -61,6 +61,26 @@ class BatchTests(unittest.TestCase):
         self.q.update(key,status='running');self.q.interrupt_orphans();self.assertEqual(self.q.get()['status'],'queued')
         self.worker(fetch=lambda *a:self.fail('No repeated HTTP'),infer=lambda *a:self.fail('No repeated inference')).run_one()
         self.assertEqual(len(self.store.list_analyses()),1)
+    def test_classifier_prerequisite_pauses_and_resumes_without_redownload(self):
+        from finscope.semantic_classifier import ClassifierPrerequisite
+        self.q.submit_batch('update',C,confirmed=True)
+        with patch('finscope.industry_classifier.IndustryClassifier.classify',side_effect=ClassifierPrerequisite('Authored classifier prerequisite')):
+            self.worker(infer=lambda *a:self.fail('No sentiment before classifier prerequisite')).run_one()
+        task=self.q.get();self.assertEqual(task['status'],'blocked')
+        self.assertEqual(task['error'],'Authored classifier prerequisite')
+        self.assertEqual(task['counts']['failed'],0)
+        self.assertEqual(len(self.data.news()),1)
+        self.assertFalse(self.data.classifications('US-BUSINESS-1'))
+        self.q.resume(task['id'])
+        self.worker(fetch=lambda *a:self.fail('No repeated download')).run_one()
+        self.assertEqual(self.q.get()['status'],'completed')
+        self.assertEqual(len(self.store.list_analyses()),1)
+    def test_classification_cancellation_does_not_become_invalid_evidence(self):
+        self.q.submit_batch('update',C,confirmed=True)
+        with patch('finscope.industry_classifier.IndustryClassifier.classify',side_effect=Cancelled()):
+            self.worker(infer=lambda *a:self.fail('Cancelled')).run_one()
+        self.assertEqual(self.q.get()['status'],'cancelled')
+        self.assertEqual(self.q.get()['counts']['failed'],0)
     def test_unreviewed_source_is_not_fetched_or_saved(self):
         self.q.submit_batch('collect',{**C,'sources':['marketaux']},confirmed=True)
         self.worker(fetch=lambda *a:self.fail('No API call')).run_one();self.assertEqual(self.data.news(),[])

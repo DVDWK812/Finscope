@@ -10,6 +10,15 @@ The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8a
 
 ## Purpose and architecture
 
+**P3-D live continuation, 2 November:** A separately authorized, bounded Marketaux
+batch added two real finite title/description records, with subsequent actual local
+classification and FinBERT completion. Six requests returned HTTP 200; five query
+cohorts were empty. The supplied CNBC-domain links establish a new observed source
+path, not verified editorial originality or broad multi-industry coverage. The
+private research scope remains unresolved as to third-party applicability. Text,
+per-article results and operational evidence remain local and are not shared report
+or demonstration material. The earlier sealed handoff baseline is unchanged.
+
 **P3-D continuation, 2 November:** The local media workflow now supports grouped
 company sampling, bounded per-query incremental checkpoints, URL-based cross-service
 deduplication and explicit supplier/link-domain attribution. Company query cohorts

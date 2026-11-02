@@ -1,5 +1,37 @@
 # Development log
 
+## P3-D authorized live batch — 2 November 2026 Sydney
+
+- Continued from clean local/origin `85745793dcf1608b8980a413831677ba7cd71a9a`.
+  The user confirmed a fresh UTC 2026-11-02 total of six Marketaux GETs, legal
+  account allowance and the existing seven-day private research scope. Six
+  primary-key requests, spaced at least 60 seconds, returned HTTP 200; five
+  company cohorts returned no items. No retries, alternate keys, RSS/article-page
+  requests, external LLM calls or old-record inference were performed.
+- Two new API title/description records were saved in the expiring partition.
+  Supplied source and direct URL domain match CNBC; editorial originality remains
+  unverified. The other requested publisher domains added no records. This is
+  limited real growth, not six-industry or broad publisher coverage. Private
+  operational receipts and per-record outputs remain local, outside Git.
+- The update task initially stopped before any classifier dispatch, but its broad
+  exception handler discarded the specific prerequisite. Explicit offline
+  continuation completed both classifications and two fixed FinBERT inferences.
+  The existing classifier made two MiniLM and four Gemma calls without prompt or
+  model changes. The task-loaded Gemma instance was unloaded after classification;
+  RAM then exceeded the unchanged FinBERT loading guard. A repeated offline task
+  completed with zero new classifier, FinBERT or news calls.
+- Corrected the batch handler so model prerequisites pause with their safe reason
+  and cancellation stays cancellation, instead of being mislabeled invalid
+  classification evidence. Authored regression cases verify resumption from saved
+  collection without downloading again. This change does not assert a recovered
+  cause for the original swallowed exception.
+- All pre-batch original, analysis, classification, model-call, lifetime and HTTP
+  rows remain byte-identical by row-hash comparison; 171 frozen files match.
+  The sealed report handoff is unchanged. Seven-day expiry is not extended.
+- Regression: full offline suite ran 678 tests in 145.912 seconds, OK with one
+  platform skip; isolated benchmark dry run passed. Real acceptance receipts are
+  separate from authored test fixtures and the frozen challenge evaluation.
+
 ## P3-D company/source coverage engineering — 2 November 2026 Sydney
 
 - Verified clean local/origin 313ee8323051a0391620d276560ed2efa5993d71 and the

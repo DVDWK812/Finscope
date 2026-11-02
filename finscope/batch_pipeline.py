@@ -118,6 +118,12 @@ class BatchRunner:
                     try:
                         self.data.save_classification(item,classifier.cache_key,classifier.classify(item))
                         once('batch_class:'+item.article_id+':'+item.content_version+':'+c['taxonomy'],'classified')
+                    except Cancelled:raise
+                    except ModelError:
+                        # Pre-dispatch model/resource prerequisites are resumable,
+                        # not invalid evidence. Keep collection and prior caches.
+                        self.data.state(item,'blocked','Local classifier prerequisite unavailable; saved text retained')
+                        raise
                     except Exception:
                         self.data.state(item,'failed','Classification evidence validation failed');errors.append('Classification failed; original retained');counts['failed']+=1;continue
                 current_classification=self.data.classification(item,classifier.cache_key)

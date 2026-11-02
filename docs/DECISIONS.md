@@ -1,5 +1,18 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**2 November 2026 — bounded live continuation:** A new current-day user budget
+authorized six primary-key Marketaux requests across the six configured company
+cohorts and five publisher domains. All returned HTTP 200; only the technology
+query returned items, yielding two retained CNBC-domain originals. Offline local
+classification and fixed FinBERT subsequently completed for both. This is private
+research acceptance with unresolved third-party applicability, not a publisher
+licence, general coverage claim or permission to redistribute text/results.
+No empty response was retried or broadened; the six-request budget is exhausted.
+Preserve the initial failed task as history. Model prerequisite exceptions now
+pause the batch explicitly and allow cached offline continuation; they are not
+classified as invalid model evidence. No classifier prompt or sentiment model
+was changed to obtain these results.
+
 **2 November 2026 — P3-D company/source coverage:** Keep semantic-topics-5 and
 FinBERT unchanged. Read-only diagnosis distinguishes JSON/envelope failure,
 contract-invalid JSON, literal evidence mismatch and semantic rejection. No
