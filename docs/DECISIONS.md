@@ -454,3 +454,31 @@ target 22 net new beyond the previous 28. Actual titles/descriptions only, seven
 private local research, no body retrieval or external models. Phase B is deferred.
 No new news/model request was made; earlier real coverage remains historical
 rather than evidence of this unexecuted time-stratified strategy.
+
+### 3 November 2026 — Acquisition modes and account-aware request budgets
+
+The local media batch form has three exclusive modes: all financial news (default),
+a nonempty selection from six fixed publisher domains (Latest only), or the existing
+company watchlist. All-news carries no implicit company, industry or domain filters.
+Old saved configurations remain unchanged; new query fingerprints isolate media
+combinations and existing independent checkpoints remain intact.
+
+Credential selection is manual. Provider, subscription account, credential slot,
+user-attested account remaining allowance, and the application-day total are distinct.
+Unmapped keys share a conservative unknown pool; same-account keys never add quota.
+New batches require current account evidence before credential resolution. A named
+independent account needs explicit independent allowance/terms confirmation. Account
+associations and request attribution are retained; no automatic fallback exists.
+Users may explicitly increase today's application total after checking actual allowance;
+all prior requests, unknown outcomes and provider cooldowns still count. Attestations
+are not supplier balance probes: live balance remains Unknown and outside usage is not
+observable. Existing legacy configuration paths retain their prior guards.
+
+Marketaux documents HTTP 402 as plan usage exhaustion and 429 as the past-60-second
+rate limit (https://www.marketaux.com/documentation). Safe numeric usage/rate headers
+and validated Retry-After are recorded without arbitrary headers or response bodies.
+402 requires fresh verified balance evidence; another credential cannot clear it.
+429 retains Retry-After and conservative spacing without inventing a UTC-day ban.
+A zero usage-remaining receipt also stops collection pending renewed evidence.
+No new news HTTP, model inference, credential read or production budget change was
+performed for this implementation; real media coverage and NLP totals are unchanged.

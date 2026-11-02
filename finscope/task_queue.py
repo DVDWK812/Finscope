@@ -119,7 +119,8 @@ def validate_config(config):
         if not isinstance(c['news_key_slots'],dict) or set(c['news_key_slots'])-set(NEWS_PROVIDERS):raise ValueError('Invalid news key selection')
         for ref in c['news_key_slots'].values():
             if ref is None:continue
-            if not isinstance(ref,dict) or set(ref)!={'slot_id','credential_ref'}:raise ValueError('Invalid news key selection')
+            if not isinstance(ref,dict) or not {'slot_id','credential_ref'}<=set(ref) or set(ref)-{'slot_id','credential_ref','account_id'}:raise ValueError('Invalid news key selection')
+            if 'account_id' in ref and (not isinstance(ref['account_id'],str) or not __import__('re').fullmatch('[a-z][a-z0-9-]{0,22}',ref['account_id'])):raise ValueError('Invalid news account alias')
             validate_ref(ref['slot_id']);validate_ref(ref['credential_ref'])
             if (ref['slot_id']=='legacy')!=(ref['credential_ref']=='legacy'):raise ValueError('Invalid news key selection')
     if (not isinstance(c.get('sources'),list) or not (c['sources'] or c.get('article_ids')) or len(c['sources'])>10

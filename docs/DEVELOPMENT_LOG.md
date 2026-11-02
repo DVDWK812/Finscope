@@ -1078,3 +1078,20 @@ No new news/model request was made; earlier real coverage remains historical
 rather than evidence of this unexecuted time-stratified strategy.
 
 Validation: 686 offline tests passed (one platform skip); isolated benchmark dry run passed. No live provider requests or model inference. Formal 8511 reload/preservation evidence and exact-SHA CI are checked separately after commit.
+
+### 3 November 2026 — Three acquisition modes and account allowance separation
+
+Implemented default unrestricted financial news, six fixed media checkboxes with
+Latest-only collection, and company-watchlist collection. Added metadata-only account
+allowance editing beside manual primary-key selection, immutable request/account
+attribution, same-account quota sharing, explicit same-day budget revision and safe
+402/429 usage receipts. Unknown supplier balance is shown as Unknown. New batches
+require current source/account evidence; no automatic key rotation or request replay.
+Classifiers, sentiment inference, source scopes, expiry and frozen evaluation were
+not changed. Offline and formal UI validation use no real provider or model calls.
+
+Validation: 694 offline tests passed (one platform skip); benchmark dry run passed.
+Formal 8511 showed all three modes, six media choices with multi-selection, the
+company watchlist, default all-news selection and Unknown account balance. No form
+was submitted. Original/analysis/lifetime/request/key metadata hashes and all 171
+frozen files match the pre-change baseline; navigation only replaces the view row.

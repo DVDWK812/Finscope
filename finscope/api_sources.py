@@ -157,6 +157,19 @@ class APIError(Exception):
         self.rate_headers = rate_headers or {}
 
 
+def safe_usage_headers(headers):
+    result={}
+    values={str(k).lower():v for k,v in headers.items()}
+    for name in ('Retry-After','X-RateLimit-Limit','X-RateLimit-Remaining','X-RateLimit-Reset',
+                 'X-UsageLimit-Limit','X-UsageLimit-Remaining','X-UsageLimit-Reset'):
+        value=values.get(name.lower(),'')
+        if not isinstance(value,str):continue
+        if name=='Retry-After':
+            safe=safe_retry_after(value) if value else None
+            if safe is not None:result[name]=safe
+        elif value.isascii() and value.isdecimal() and len(value)<=12:result[name]=value
+    return result
+
 def _http_get_json(url: str, params: dict[str, Any], headers: dict[str, str], timeout: float) -> Any:
     try:
         # No automatic retries or redirects that might spend quota or forward tokens.
@@ -165,19 +178,10 @@ def _http_get_json(url: str, params: dict[str, Any], headers: dict[str, str], ti
     except requests.RequestException as exc:
         # Do not display str(exc): requests may embed URL query parameters / API keys.
         raise APIError(f"Transport error ({type(exc).__name__})", kind="transport") from None
-    rate_headers = {}
-    for name in ("Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"):
-        value = response.headers.get(name, "")
-        # Quotas are numeric; Retry-After also permits a validated HTTP date.
-        if name == "Retry-After" and value:
-            safe = safe_retry_after(value)
-            if safe is not None:
-                rate_headers[name] = safe
-        elif value and value.isascii() and value.isdecimal():
-            rate_headers[name] = value
+    rate_headers = safe_usage_headers(response.headers)
     if response.status_code != 200:
         kind = "auth" if response.status_code in (401, 403) else (
-            "rate_limit" if response.status_code == 429 else "http")
+            "usage_limit" if response.status_code == 402 else "rate_limit" if response.status_code == 429 else "http")
         raise APIError(f"HTTP {response.status_code}", kind=kind,
                        status=response.status_code, rate_headers=rate_headers)
     try:

@@ -294,3 +294,11 @@ without saving articles or running models. An API verification is not a grant of
 publisher storage/NLP rights. NewsData remains manually paused.
 
 This local-product task uses the explicitly requested `local` branch and isolated worktree; the concurrent web task keeps its original `main` checkout. No PR or merge is opened. No GDELT retry/task recreation, challenge tuning/rescoring, Moodle access or coursework submission. Internal target: 31 October; the official deadline remains user-confirmed, with the historical conflicting values preserved in [assessment notes](docs/ASSESSMENT_VERIFICATION.md).
+
+Local media collection offers **全部财经新闻** (default, unrestricted), **指定媒体新闻**
+(six fixed publisher checkboxes, Latest only), and **指定公司新闻** (saved watchlist).
+In Settings → News sources, select an existing primary credential manually and record
+its subscription account and checked allowance. Keys in the same account share quota;
+no fallback rotation occurs. Supplier live balance stays Unknown without a probe.
+An explicitly revised same-day application budget keeps all historical request counts
+and supplier cooldowns. Confirm account allowance and the batch total separately.

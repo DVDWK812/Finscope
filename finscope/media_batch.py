@@ -10,7 +10,7 @@ from .media_use import validate as validate_scope, apply as apply_scope
 
 def validate(options):
     fields={'source','scope','batch_id','max_requests','per_request','plan_limit','utc_day','total_day_budget','symbol','days'}
-    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode','window_end','strategy'}:
+    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode','window_end','strategy','acquisition_mode','media_choices'}:
         raise ValueError('Invalid media batch scope')
     d=dict(options)
     mode=d.get('mode','company' if d.get('watchlist') else 'broad')
@@ -24,6 +24,11 @@ def validate(options):
         d['window_end']=end.astimezone(timezone.utc).isoformat()
     if d['source'] not in {'marketaux','finnhub'}:raise ValueError('Choose an official supported news API')
     d['scope']=validate_scope(d['scope'])
+    if 'acquisition_mode' in d:
+        from .media_modes import scope as mode_scope
+        domains=mode_scope(d['acquisition_mode'],d.get('media_choices',[]),d.get('strategy','latest'))
+        if domains!=sorted(d['scope']['domains']):raise ValueError('Mode and fixed media-domain mapping differ')
+        if (d['acquisition_mode']=='company')!=(mode=='company'):raise ValueError('Company and broad acquisition modes cannot be combined')
     if d.get('strategy','latest') not in ('latest','stratified'):raise ValueError('Unknown broad strategy')
     if d.get('strategy')=='stratified':
         if d['source']!='marketaux' or mode!='broad' or d['scope']['domains']:raise ValueError('Stratified collection must be unfiltered broad Marketaux')
@@ -57,6 +62,8 @@ def preflight(store,options,*,service=None,ignore_spacing=False):
     if not primary or not primary['enabled'] or primary['deletion_pending'] or primary['api_state']=='authentication':raise ValueError('Select an enabled primary news credential')
     with closing(store.connect()) as db:
         rows=db.execute('SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=? ORDER BY reserved_at',(d['source'],)).fetchall()
+        from .news_accounts import check
+        check(db,d['source'],primary['slot_id'],now,needed=d['max_requests'],required='acquisition_mode' in d)
     used=sum(r[0][:10]==d['utc_day'] for r in rows)
     if d['total_day_budget']-used<d['max_requests']:raise ValueError('Confirm remaining account quota and an application budget covering this bounded batch')
     try:service._check_holds(d['source'],now,rows,daily_cap=d['total_day_budget'])

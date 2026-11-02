@@ -41,6 +41,8 @@ def render(store,provider):
             clear_input(selected_key);st.session_state[selected_key]=info['primary']['slot_id'] if info['primary'] else ids[0]
         selected=st.selectbox('Select key',ids,key=selected_key,format_func=lambda slot:tr(next(r['name'] for r in rows if r['slot_id']==slot)) if slot==LEGACY else next(r['name'] for r in rows if r['slot_id']==slot))
         row=next(r for r in rows if r['slot_id']==selected)
+        from .news_accounts_ui import render as account_controls
+        account_controls(store,provider,selected)
         if st.button('Check local key',key=prefix+'_check_local'):
             state=check_local(store,provider,selected)
             st.session_state[prefix+'_notice']=t('Local check result',state=tr(LOCAL[state]));st.rerun()

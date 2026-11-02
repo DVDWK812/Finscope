@@ -73,7 +73,9 @@ class NewsKeyRegistry:
         with closing(self.store.connect()) as db:return self._selection(db,provider)
 
     def pin(self,sources,db):
-        return {p:self._selection(db,p) for p in sources if p in NEWS_PROVIDERS}
+        from .news_accounts import account_id
+        result={p:self._selection(db,p) for p in sources if p in NEWS_PROVIDERS}
+        return {p:({**ref,'account_id':account_id(db,p,ref['slot_id'])} if ref else None) for p,ref in result.items()}
 
     def rows(self,provider,*,inspect_legacy=True):
         self.provider(provider)
@@ -103,6 +105,7 @@ class NewsKeyRegistry:
             raise NewsKeyError('A request is using this key or has an unknown outcome; key changes are paused')
 
     def _ensure_policy(self,db,provider):
+        if db.execute('SELECT 1 FROM news_key_policies WHERE provider=?',(provider,)).fetchone():return
         db.execute('INSERT OR IGNORE INTO news_key_policies(provider,primary_slot,updated_at) VALUES (?,?,?)',(provider,LEGACY if self.legacy_key(provider) else None,stamp()))
 
     def _write_verified(self,provider,value):
@@ -192,13 +195,18 @@ class NewsKeyRegistry:
         with closing(self.store.connect()) as db:
             db.execute('UPDATE news_key_slots SET deletion_pending=0,deleted_at=? WHERE provider=? AND slot_id=?',(stamp(),provider,slot));db.commit()
 
-    def resolve(self,provider,*,selection=CURRENT,transaction=None,request_id=None):
+    def resolve(self,provider,*,selection=CURRENT,transaction=None,request_id=None,reservation_time=None):
         self.provider(provider)
         if transaction is None:
             with closing(self.store.connect()) as db:return self.resolve(provider,selection=selection,transaction=db)
         db=transaction;ref=self._selection(db,provider) if selection is CURRENT else selection
         if not ref:raise NewsKeyError('No enabled primary news key; this source was skipped')
         slot=ref['slot_id'];validate_ref(slot);validate_ref(ref['credential_ref'])
+        if request_id:
+            from .news_accounts import check,account_id
+            if ref.get('account_id',account_id(db,provider,slot))!=account_id(db,provider,slot):raise NewsKeyError('Task account attribution changed; confirm a new batch')
+            try:account=check(db,provider,slot,reservation_time or datetime.now(timezone.utc))
+            except ValueError as error:raise NewsKeyError(str(error)) from None
         if (slot==LEGACY)!=(ref['credential_ref']==LEGACY):raise NewsKeyError('Invalid news key selection')
         if slot==LEGACY:
             policy=db.execute('SELECT legacy_enabled FROM news_key_policies WHERE provider=?',(provider,)).fetchone()
@@ -213,6 +221,8 @@ class NewsKeyRegistry:
         if not key:raise NewsKeyError('Primary news credential is missing; this source was skipped')
         validate_secret(key)
         if request_id:
+            db.execute('CREATE TABLE IF NOT EXISTS news_request_accounts(request_id TEXT PRIMARY KEY,provider TEXT,account_id TEXT,attestation_id TEXT)')
+            db.execute('INSERT INTO news_request_accounts VALUES (?,?,?,?)',(request_id,provider,account['account_id'],(account['attestation'] or {}).get('id','')))
             db.execute('INSERT INTO news_request_keys(request_id,provider,slot_id,credential_ref,reserved_at) VALUES (?,?,?,?,?)',(request_id,provider,slot,ref['credential_ref'],stamp()))
             if slot!=LEGACY:db.execute("UPDATE news_key_slots SET last_used_at=?,last_status='pending',last_error=NULL WHERE provider=? AND slot_id=?",(stamp(),provider,slot))
         return key
@@ -222,9 +232,11 @@ class NewsKeyRegistry:
         except NewsKeyError:return False
 
     def fetch(self,service,provider,topic,*,selection=CURRENT,**kwargs):
+        from .news_accounts import ensure
+        ensure(self.store)
         identities=[]
         def resolve(db,identity):
-            key=self.resolve(provider,selection=selection,transaction=db,request_id=identity)
+            key=self.resolve(provider,selection=selection,transaction=db,request_id=identity,reservation_time=service.clock())
             identities.append(identity)
             return key
         result,items=service.fetch(provider,topic,credential_resolver=resolve,**kwargs)
@@ -241,6 +253,7 @@ class NewsKeyRegistry:
 
     def finish(self,request_id,result):
         error=(None if result.status=='ok' else 'authentication' if result.http_status==401 else
+            'usage_limit' if result.http_status==402 else
             'permission_or_subscription' if result.http_status==403 else 'rate_limit' if result.http_status==429 else
             'provider_error' if result.http_status and result.http_status>=500 else 'transport_or_response_error')
         status='ok' if result.status=='ok' else 'invalid' if result.http_status==401 else 'failed'

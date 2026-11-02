@@ -47,7 +47,7 @@ def key_metadata(store,provider):
             if request:
                 row['last_used_at']=request[2];row['last_status']=request[0];row['last_error']=request[1]
             row['api_state']=('verified' if request[0]=='ok' else 'authentication' if request[0]=='invalid' else
-                'restricted' if request[1] in ('permission_or_subscription','rate_limit') else 'pending' if request[0]=='pending' else 'failed') if request else 'authentication' if row['last_status']=='invalid' else 'untested'
+                'restricted' if request[1] in ('permission_or_subscription','rate_limit','usage_limit') else 'pending' if request[0]=='pending' else 'failed') if request else 'authentication' if row['last_status']=='invalid' else 'untested'
             row['api_checked_at']=request[2] if request else ''
             row['is_primary']=slot==selected
             row['role']='Disabled' if not row['enabled'] or row['deletion_pending'] else 'Primary key' if row['is_primary'] else 'Backup key'
@@ -87,7 +87,8 @@ def source_readiness(store,provider,config,*,target='pipeline',service=None):
     with closing(store.connect()) as db:
         used=db.execute('SELECT count(*) FROM local_requests WHERE provider=? AND substr(reserved_at,1,10)=?',(provider,now.date().isoformat())).fetchone()[0]
     quota=(budget.get('utc_day')==now.date().isoformat() and type(budget.get('remaining')) is int and budget['remaining']>used)
-    status=service.source_status(provider,configured=True)
+    cap=budget.get('remaining',3) if budget.get('utc_day')==now.date().isoformat() else 3
+    status=service.source_status(provider,configured=True,application_daily_cap=cap or 3)
     checks={'primary':bool(key and key['enabled'] and not key['deletion_pending'] and key['api_state']!='authentication'),
             'local':bool(key and key['local_state']=='saved'),'preview':bool(rights.get('preview') and rights.get('reference')),
             'quota':quota,'hold':not status.blocked}

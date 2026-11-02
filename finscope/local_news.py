@@ -296,14 +296,20 @@ class LocalIngestionService:
             if now-end < timedelta(seconds=60):
                 raise FetchBlocked("Wait at least 60 seconds between provider requests")
             if status == "failed" and end.date() == now.date():
-                raise FetchBlocked("A provider failure stopped further requests for this UTC day")
+                with closing(self.store.connect()) as evidence:
+                    failure=evidence.execute('SELECT http_status FROM local_requests WHERE provider=? AND reserved_at=?',(provider,reserved)).fetchone()
+                if not failure or failure[0] not in (402,429):
+                    raise FetchBlocked("A provider failure stopped further requests for this UTC day")
+                # 429 remains governed by Retry-After/spacing above. A 402 is
+                # checked against the selected account at reservation, not
+                # waived by another credential from the same account.
             if start.date() == now.astimezone(timezone.utc).date():
                 today += 1
         if type(daily_cap) is not int or not 1<=daily_cap<=10000:raise FetchBlocked('Confirm an explicit application safety budget')
         if today >= daily_cap:
             raise FetchBlocked(f"Local safety cap reached: {daily_cap} requests/provider/UTC day")
 
-    def source_status(self, provider, *, configured):
+    def source_status(self, provider, *, configured,application_daily_cap=3):
         """No probe or reservation. Historical failures are not permanent outages."""
         if provider == "newsdata":
             return SourceStatus("Paused", "Existing manual pause; no requests allowed", True)
@@ -312,7 +318,12 @@ class LocalIngestionService:
         last = local_rows[-1] if local_rows else None
         stamp, outcome = (last[1] or last[0], last[2]) if last else ("", "")
         try:
-            self._check_holds(provider, self.clock(), local_rows)
+            self._check_holds(provider, self.clock(), local_rows,daily_cap=application_daily_cap)
+            if provider in {'marketaux','finnhub'}:
+                from .news_readiness import key_metadata
+                from .news_accounts import check
+                key=key_metadata(self.store,provider)['primary']
+                with closing(self.store.connect()) as db:check(db,provider,key['slot_id'] if key else 'legacy',self.clock())
         except (FetchBlocked, ValueError, OSError):
             import sys
             error = sys.exception()
@@ -333,6 +344,10 @@ class LocalIngestionService:
             db.execute("BEGIN IMMEDIATE")
             local_rows = db.execute("SELECT reserved_at,completed_at,status,hold_until FROM local_requests WHERE provider=?", (provider,)).fetchall()
             self._check_holds(provider, now, local_rows,daily_cap=daily_cap)
+            if credential_resolver is None:
+                from .news_accounts import check
+                try:check(db,provider,'legacy',now)
+                except ValueError as error:raise FetchBlocked(str(error)) from None
             if credential_resolver is not None:credential_resolver(db,request_id)
             db.execute("INSERT INTO local_requests(id,provider,reserved_at,status) VALUES (?,?,?,?)",
                        (request_id, provider, now.isoformat(), "pending"))
@@ -382,11 +397,19 @@ class LocalIngestionService:
             result = QueryResult(provider, topic, result.query_mode, "failed", [],
                                  http_status=result.http_status, outcome="unsafe_response", note="Response withheld")
         finished = self.clock()
+        from .api_sources import safe_usage_headers
+        from .news_accounts import ensure
+        result.rate_limit_headers=safe_usage_headers(result.rate_limit_headers)
+        ensure(self.store)
         retry = result.rate_limit_headers.get("Retry-After")
         hold = retry_deadline(retry, finished) if retry or result.http_status == 429 else None
         if result.rate_limit_headers.get("X-RateLimit-Remaining") == "0":
-            hold = max(hold or finished, finished+timedelta(hours=24))
+            # A depleted rate window is not evidence of a depleted daily plan.
+            # Preserve Retry-After; absent reset semantics use the existing
+            # conservative 60-second provider spacing, never invent 24 hours.
+            hold = max(hold or finished, finished+timedelta(seconds=60))
         with closing(self.store.connect()) as db:
+            db.execute('INSERT INTO news_usage_receipts VALUES (?,?,?,?,?)',(request_id,provider,finished.isoformat(),result.http_status,json.dumps(result.rate_limit_headers)))
             db.execute("UPDATE local_requests SET completed_at=?,status=?,http_status=?,hold_until=?,outcome=? WHERE id=?",
                        (finished.isoformat(), result.status, result.http_status, hold.isoformat() if hold else None,
                         result.outcome, request_id))
