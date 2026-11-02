@@ -18,6 +18,16 @@ authorized later batch revisits that boundary page with URL deduplication. Stabl
 time bounds prevent newer publication times shifting pages, but cannot guarantee
 snapshot isolation against supplier reindexing or backdated additions.
 
+An optional explicit historical window end (timezone-aware ISO UTC) creates a
+separate reviewed cursor, without clearing an earlier blocked cursor. Leave it
+blank for latest news. This still needs a fresh batch/account budget confirmation;
+it is not an automatic retry or a guarantee of supplier snapshot consistency.
+Receipts record result-count drift, exact repeated-page numbers and publication
+ranges without retaining additional article text. Classification cold-starts
+MiniLM with the existing 5 GiB load reserve, records RAM/VRAM before dispatched
+stages in finite storage, and releases the worker's unused FinBERT object before
+classification-only tasks. It never unloads a user's model service automatically.
+
 **Grouped company watchlist** accepts `group | symbols | optional Marketaux
 industries` lines in the existing media batch form. The six initial cohorts cover
 technology, finance, energy, healthcare, industrial and consumer companies; they

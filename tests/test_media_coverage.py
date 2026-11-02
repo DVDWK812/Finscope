@@ -98,6 +98,9 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(self.q.get(task)['status'],'partial_failed')
         self.assertEqual(self.q.get(task)['counts']['failed'],1)
         self.assertEqual(batch_receipts(self.store,task)['request_stages'],2)
+        diagnostics=self.q.step(task,'media_request:2')[1]['pagination_diagnostics']
+        self.assertEqual(diagnostics['exact_repeat_pages'],[1])
+        self.assertFalse(diagnostics['result_set_changed'])
         self.assertEqual(len(self.data.news()),5)
     def test_broad_cursor_is_separate_and_metadata_is_required(self):
         from finscope import media_broad
@@ -116,6 +119,22 @@ class CoverageTests(unittest.TestCase):
         resumed=media_broad.plan(self.store,d,self.now+timedelta(days=1))
         self.assertEqual(resumed['page'],2);self.assertEqual(resumed['before'],query['before'])
         self.assertEqual(plan(self.store,{**d,'watchlist':DEFAULT},self.now)[0]['page'],1)
+    def test_reviewed_historical_window_preserves_blocked_cursor_and_reports_drift(self):
+        from finscope import media_broad
+        from finscope.media_batch import validate
+        d=self.config()['media_batch'];d.pop('watchlist');d.update(mode='broad');d['scope']['domains']=[]
+        query=media_broad.plan(self.store,d,self.now)
+        media_broad.commit(self.store,d,query,dict(more=False,pagination_stop='Repeated page identities; stopped without retry'))
+        with self.assertRaises(ValueError):media_broad.plan(self.store,d,self.now)
+        historical=validate({**d,'window_end':(self.now-timedelta(hours=1)).isoformat()})
+        p=media_broad.plan(self.store,historical,self.now)
+        self.assertEqual(p['before'],historical['window_end']);self.assertEqual(p['page'],1)
+        with self.assertRaises(ValueError):media_broad.plan(self.store,d,self.now)
+        with self.assertRaises(ValueError):validate({**d,'window_end':'2026-01-01T00:00:00'})
+        with self.assertRaises(ValueError):media_broad.plan(self.store,{**d,'window_end':(self.now+timedelta(hours=1)).isoformat()},self.now)
+        diagnostic=media_broad.diagnostics({'found':121},[(1,{'pagination':{'found':100},'article_ids':['a','b']}),(9,{'article_ids':['c','d']})],['c','d'],['2026-01-01T01:00:00Z'])
+        self.assertEqual(diagnostic['exact_repeat_pages'],[9]);self.assertEqual(diagnostic['found_delta_from_first'],21)
+        self.assertTrue(diagnostic['result_set_changed'])
     def test_partial_window_resume_retains_bounds_page_and_no_repeat_same_batch(self):
         c=self.config(groups=DEFAULT[:1]);service=self.service();task=self.run_collect(c,service)
         options=c['media_batch'];next_query=plan(self.store,options,self.now+timedelta(days=1))[0]

@@ -47,6 +47,7 @@ def controls(q,active):
             use_domains=st.checkbox('Restrict collection to specified media',value=False)
             domains=st.text_input('Marketaux publication-domain whitelist',value='')
             window_days=int(st.number_input('Publication lookback days',1,30,7))
+            window_end=st.text_input('Optional historical window end (ISO UTC; blank = latest)',value='',max_chars=40) if source=='marketaux' and not use_watchlist else ''
         with b:
             gets=int(st.number_input('Maximum new GETs in this batch',1,50,int(d.get('max_requests',1))))
             total=int(st.number_input('Confirmed total application GET budget for the UTC day',0,10000,int(d.get('total_day_budget',0))))
@@ -67,6 +68,7 @@ def controls(q,active):
             options=dict(source=source,scope=scope,batch_id=uuid4().hex,max_requests=gets,per_request=count if source=='finnhub' and not use_watchlist else per,
                 plan_limit=plan,utc_day=day,total_day_budget=total,symbol=symbol.strip().upper() if source=='finnhub' else '',days=window_days,
                 mode='company' if use_watchlist or source=='finnhub' else 'broad')
+            if window_end.strip():options['window_end']=window_end.strip()
             if use_watchlist:options['watchlist']=parse(watchlist_text)
             config=dict(sources=[source],model='Local FinBERT',model_id='',taxonomy='US-BUSINESS-1',classifier_llm=False,
                 limit=count,budgets={},source_permissions={},media_batch=options)

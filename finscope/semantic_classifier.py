@@ -55,8 +55,10 @@ class SemanticIndustryClassifier:
     def resource_check(self,kind):
         if self.resources:return self.resources(kind)
         from .local_worker import resource_check
-        try:return resource_check('Local LM Studio' if kind=='LM Studio' else 'Local FinBERT',loading=False)
-        except ModelError as e:raise ClassifierPrerequisite('Local classifier resources unavailable') from e
+        # MiniLM is a fresh CPU subprocess for every encode, not a resident
+        # inference call. Apply the existing cold-load reserve before spawning.
+        try:return resource_check('Local LM Studio' if kind=='LM Studio' else 'Local FinBERT',loading=kind!='LM Studio')
+        except ModelError as e:raise ClassifierPrerequisite('Local classifier resources unavailable: '+str(e)) from e
     def call(self,item,stage,model_id,revision,input_text,action):
         part=self.guard(item)
         with closing(part.connect()) as db:
@@ -80,8 +82,10 @@ class SemanticIndustryClassifier:
             if old:
                 if old[0]=='ok':return json.loads(old[1])['output']
                 raise ModelError('Earlier local classification dispatch is failed/unknown; no automatic retry',kind='unknown_outcome')
-        self.resource_check('LM Studio' if stage.startswith('semantic_') else 'MiniLM')
+        resources=self.resource_check('LM Studio' if stage.startswith('semantic_') else 'MiniLM')
         identity=uuid4().hex;payload=dict(input_text=input_text,input_characters=len(input_text),input_sha256=hashlib.sha256(input_text.encode()).hexdigest())
+        if isinstance(resources,dict):
+            payload['resources_before']={k:resources[k] for k in ('ram_available','gpu_available','ram_total','gpu_total') if type(resources.get(k)) is int}
         with closing(part.connect()) as db:
             db.execute('BEGIN IMMEDIATE');part.check(item,db)
             db.execute('INSERT INTO product_classifier_calls VALUES (?,?,?,?,?,?,?,?,?,?,?)',

@@ -6,9 +6,17 @@ import hashlib,json
 SETTING='media_broad_progress_v1'
 
 def key(options):
-    return hashlib.sha256(json.dumps(['broad-v1','en',options['scope']['domains'],options['per_request']],sort_keys=True).encode()).hexdigest()
+    identity=['broad-v1','en',options['scope']['domains'],options['per_request']]
+    # An explicitly reviewed historical window has its own cursor. Never clear
+    # the blocked live-window cursor or silently reinterpret its old receipts.
+    if options.get('window_end'):identity+=['historical',options['window_end'],options['days']]
+    return hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
 
 def plan(store,options,before):
+    if options.get('window_end'):
+        end=datetime.fromisoformat(options['window_end'])
+        if end>before:raise ValueError('Historical publication window cannot end in the future')
+        before=end
     with closing(store.connect()) as db:
         row=db.execute('SELECT payload FROM product_settings WHERE name=?',(SETTING,)).fetchone()
     old=json.loads(row[0]).get(key(options),{}) if row else {}
@@ -18,6 +26,18 @@ def plan(store,options,before):
     after=before-timedelta(days=options['days'])
     if old.get('before'):after=max(after,datetime.fromisoformat(old['before'])-timedelta(minutes=5))
     return dict(after=after.isoformat(),before=before.isoformat(),page=1,size=options['per_request'])
+
+
+def diagnostics(meta,previous,ids,timestamps):
+    """IDs/counts/times only; no news, credentials or asserted root cause."""
+    exact=[page for page,receipt in previous if ids and ids==receipt.get('article_ids')]
+    earlier=[r.get('pagination',{}).get('found') for _,r in previous]
+    baseline=next((v for v in earlier if type(v) is int),None)
+    found=meta.get('found')
+    return dict(exact_repeat_pages=exact,
+        found_delta_from_first=found-baseline if type(found) is int and baseline is not None else 0,
+        result_set_changed=baseline is not None and found!=baseline,
+        publication_min=min(timestamps,default=''),publication_max=max(timestamps,default=''))
 
 def continuation(meta,raw,page,size,normalized,saved,duplicate_page=False):
     if any(k not in meta for k in ('found','returned','limit','page')):return False,'Pagination metadata missing; no inferred extra request'

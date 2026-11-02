@@ -1014,3 +1014,41 @@ permission and live-LLM limitations are documented in LOCAL_REDESIGN.md.
 - Captured eight dated local screenshots. Media capture contains counts only, with no Yahoo RAM-only publisher title/summary. Real media links remain136, saved media text/NLP0; Reuters budget/coverage and media processing rights remain explicit nonblocking follow-ups. No new source/API/RSS/LLM request, key rotation or ledger reset occurred. Full offline suite, isolated dry run and exact pushed-SHA CI accompany delivery; agent browser operation is not three-human usability evidence.
 - Late user steering separately verified quota and authorized one current-primary Reuters-domain Marketaux query. Request4f24c3223193472fb667ac9a13373ad0 at2026-11-01 07:36:19 UTC returnedHTTP200/empty/zero raw records. No retry/fallback/title-summary storage/NLP. News ledger13→14 with original rows retained; originals266, histories232 and media index136 unchanged. Added an independent reports/p3b1_reuters_20261101 audit/screenshot, preserving earlier handoff evidence. Updated current synopsis/acceptance/demo to distinguish successful query transport from still-unverified Reuters article coverage.
 - Handoff full isolated regression completed631 tests in115.596s, one platform skip; isolated benchmark dry run and local documentation-link/whitespace checks passed. Final package SHA and exact CI are recorded with delivery, separate from the runtime97f0529 acceptance baseline. No frozen evaluation rerun or model/provider behavior change.
+
+
+### P3-E offline follow-up — 2 November 2026 UTC
+
+The preserved 11-page receipt sequence uses monotonically increasing pages and
+unchanged bounds/size. Supplier `meta.found` changed 28247 → 28268 (+21), with
+2 duplicate observations on page 3 and all 3 page-11 IDs repeating page 9.
+This supports a mutable result-set/pagination explanation, not a proved supplier
+implementation defect. No new provider/model requests were made to diagnose it.
+The client now records count drift, exact repeat-page numbers and publication
+ranges. An explicitly supplied historical window end gets a separate cursor;
+the original blocked cursor and all historical receipts remain untouched.
+Historical windows mitigate late indexing but cannot guarantee snapshot isolation.
+
+Two past RAM pauses lack per-process/time-series evidence; their exact cause
+remains unconfirmed. A concrete guard mismatch was fixed: short-lived MiniLM
+cold starts previously used the 2 GiB resident-inference floor; they now require
+the existing 5 GiB cold-load reserve. Classification-only tasks release their own
+worker's unused FinBERT reference first; no user service is unloaded. Finite call
+receipts retain allowlisted RAM/VRAM metrics, and blocked errors state measured
+versus required RAM. This is guard/lifecycle remediation, not proof of eliminating
+the historical memory growth. Existing classifier cache keys/results are unchanged.
+
+Proposed next batch, not authorized or scheduled: Marketaux primary mel, broad
+English with no company/industry/search/domain filters, actual free-plan 3/GET,
+a fixed 24-hour window ending one hour before the separately approved start.
+Phase A: at most 12 GETs / 36 returned / 22 new saved, targeting 50 live originals
+including the existing 28. Phase B after reviewing A: at most 20 GETs / 60 returned /
+50 new saved, targeting 100. Distinct counts are goals, not guarantees. Stop on
+repeated pages, ambiguous/failed requests, quota, expiry or exhausted results;
+never rotate keys or clear old cursor/ledger state. Each phase needs its actual
+UTC date, account balance and daily total (including already consumed GETs).
+Only new texts use seven-day private-research storage and local analysis; existing
+expiry dates and the original 28 results are unchanged. A small newly authorized
+batch must validate resource telemetry before claiming sustained 50–100-item
+analysis. No old news inference or frozen evaluation is rerun for that validation.
+
+Validation: 683 offline tests passed (one platform skip), isolated benchmark dry run passed. Production read-only counts remained 266/232 permanent originals/analyses, 60/59 finite originals/analyses, 180 finite classifier calls and 32 news request receipts; all 171 frozen hashes matched. No live model/provider validation was performed for this fix.

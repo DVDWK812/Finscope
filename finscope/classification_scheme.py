@@ -73,6 +73,7 @@ def run_reclassification(worker,task):
     from .semantic_classifier import SemanticIndustryClassifier
     from .source_policies import authorize
     from .task_queue import Cancelled
+    worker.release_sentiment_backend()
     q=worker.queue;identity=task['id'];c=task['snapshot'];counts=task['counts'];data=worker.data
     def check():q.check_cancel(identity)
     q.update(identity,status='running',stage='reclassification: local saved text')

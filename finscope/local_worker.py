@@ -27,7 +27,7 @@ def resource_check(mode,*,loading=False):
     # The loaded Qwen is left alone; never silently unload a user's model.
     required=5*GIB if mode=='Local FinBERT' and loading else 2*GIB
     if r['ram_available']<required:
-        raise ResourceBlocked('Insufficient free RAM for this model stage; free resources or explicitly change/unload models in Settings, then resume')
+        raise ResourceBlocked(f"Insufficient free RAM for this model stage: {r['ram_available']/GIB:.2f} GiB available / {required/GIB:.2f} GiB required; free resources or explicitly change/unload models in Settings, then resume")
     if mode=='Local LM Studio' and r['gpu_available']<512*1024**2:
         raise ResourceBlocked('Insufficient free VRAM; stage paused, no model was unloaded')
     return r
@@ -37,6 +37,12 @@ class Worker:
     def __init__(self,store,*,fetch=None,infer=None,resources=resource_check):
         self.store=store;self.queue=TaskQueue(store);self.data=ProductStorage(store)
         self.fetch_override=fetch;self.infer_override=infer;self.resources=resources;self.backend=None;self.source_warnings={}
+    def release_sentiment_backend(self):
+        """Release only this worker's unused CPU model; never a user's service."""
+        if self.backend is not None:
+            self.backend=None
+            import gc
+            gc.collect()
     def fetch(self,source,c,check):
         if self.fetch_override:return self.fetch_override(source,c,check)
         from .local_collectors import SOURCES,collect_rba

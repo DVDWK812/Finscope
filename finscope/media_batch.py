@@ -10,12 +10,18 @@ from .media_use import validate as validate_scope, apply as apply_scope
 
 def validate(options):
     fields={'source','scope','batch_id','max_requests','per_request','plan_limit','utc_day','total_day_budget','symbol','days'}
-    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode'}:
+    if not isinstance(options,dict) or not fields<=set(options) or set(options)-fields-{'watchlist','mode','window_end'}:
         raise ValueError('Invalid media batch scope')
     d=dict(options)
     mode=d.get('mode','company' if d.get('watchlist') else 'broad')
     if mode not in ('broad','company'):raise ValueError('Unknown collection mode')
     if mode=='broad' and d.get('watchlist'):raise ValueError('Broad mode cannot inherit a company watchlist')
+    if d.get('window_end'):
+        if mode!='broad' or d['source']!='marketaux':raise ValueError('Historical window is only supported for broad Marketaux')
+        if not isinstance(d['window_end'],str) or len(d['window_end'])>40:raise ValueError('Invalid historical publication bound')
+        end=datetime.fromisoformat(d['window_end'])
+        if end.tzinfo is None:raise ValueError('Historical publication bound requires an explicit timezone')
+        d['window_end']=end.astimezone(timezone.utc).isoformat()
     if d['source'] not in {'marketaux','finnhub'}:raise ValueError('Choose an official supported news API')
     d['scope']=validate_scope(d['scope'])
     if d['scope']['source']!=d['source']:raise ValueError('Source and use scope differ')
@@ -176,6 +182,11 @@ def collect(worker,task,persist,check):
                 if len(ids)!=len(accepted_rows):raise FetchBlocked('Some broad records could not be saved; no pagination advance')
                 more,reason=media_broad.continuation(meta,receipt['raw_count'],window['page']+page,amount,len(rows),len(ids),bool(ids) and set(ids)<=prior_ids)
                 receipt.update(pagination=meta,broad_query={**window,'page':window['page']+page,'operation_id':identity+':'+str(page)},more=more,pagination_stop=reason)
+                previous=[]
+                for index in range(page):
+                    prior=q.step(identity,'media_request:'+str(index+1))
+                    if prior and prior[0]=='ok':previous.append((window['page']+index,prior[1]))
+                receipt['pagination_diagnostics']=media_broad.diagnostics(meta,previous,ids,[n.timestamp for n in accepted_rows if n.timestamp])
                 receipt['pagination_error']=reason not in ('Reported result window exhausted','More results within fixed window','Provider pagination bound reached','Record cap or persistence gap; page not fully consumed')
                 if receipt['pagination_error']:errors.append(reason)  # BatchRunner counts each phase error once.
             if query:

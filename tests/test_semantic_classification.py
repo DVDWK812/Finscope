@@ -23,6 +23,30 @@ class Encoder:
 
 
 class SemanticTests(unittest.TestCase):
+    def test_cold_embedding_guard_and_worker_backend_release(self):
+        from finscope.local_worker import resource_check,ResourceBlocked
+        from finscope.semantic_classifier import ClassifierPrerequisite
+        c=self.classifier();c.resources=None
+        resources=dict(ram_available=3*1024**3,gpu_available=4*1024**3)
+        with patch('finscope.lmstudio_runtime.system_resources',return_value=resources):
+            self.assertEqual(c.resource_check('LM Studio'),resources)
+            with self.assertRaisesRegex(ClassifierPrerequisite,'3.00 GiB available / 5.00 GiB required'):
+                c.resource_check('MiniLM')
+        w=Worker(self.store);w.backend=object()
+        with patch('gc.collect') as collect:
+            w.release_sentiment_backend();self.assertIsNone(w.backend);collect.assert_called_once()
+            w.release_sentiment_backend();collect.assert_called_once()
+    def test_resource_metadata_is_bounded_and_failed_preflight_never_dispatches(self):
+        from finscope.semantic_classifier import ClassifierPrerequisite
+        n=self.item();c=self.classifier();c.resources=lambda kind:dict(ram_available=9*1024**3,private='must not persist')
+        c.call(n,'test-resource','fixture','revision','authored input',lambda:'ok')
+        with closing(partition(self.store).connect()) as db:
+            payload=json.loads(db.execute("SELECT payload FROM product_classifier_calls WHERE stage='test-resource'").fetchone()[0])
+        self.assertEqual(payload['resources_before'],{'ram_available':9*1024**3})
+        c.resources=lambda kind:(_ for _ in ()).throw(ClassifierPrerequisite('low RAM'))
+        with self.assertRaises(ClassifierPrerequisite):c.call(n,'never-dispatched','fixture','revision','authored input',lambda:self.fail('dispatched'))
+        with closing(partition(self.store).connect()) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM product_classifier_calls WHERE stage='never-dispatched'").fetchone()[0],0)
     def setUp(self):
         self.now=datetime.now(timezone.utc)
         p=patch('finscope.media_use.utcnow',side_effect=lambda:self.now);p.start();self.addCleanup(p.stop)
