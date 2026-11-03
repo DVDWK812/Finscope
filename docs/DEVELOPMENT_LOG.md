@@ -1133,3 +1133,33 @@ This is local process/HTTP/read-model verification, not a new browser interactio
 extensions were performed. Real repeated-load stability remains unverified until the
 unchanged resource preflight can pass; external memory pressure may still require
 user intervention. Only local is changed.
+
+### 4 November 2026 Sydney — local delivery P0 closeout
+
+Maintenance fix: a generic classification exception previously put an article in
+`rejected`, which the sentiment loop then skipped. Remove only that cross-stage
+skip. Permission, input eligibility, language, model-resource and sentiment-cache
+checks remain. Reproduce with an eligible English authored record and a classifier
+raising ValueError: the task remains partial_failed for classification but now
+persists independent sentiment. No classifier semantics or model versions changed.
+
+| P0 check | Status | Evidence / qualification |
+| --- | --- | --- |
+| Classification failure independent of sentiment | Pass | Targeted tests plus isolated actual FinBERT batch: both authored records analyzed, including classifier-fault record. |
+| Pause/resume, persistence and cache | Pass | Injected pre-dispatch resource pause; resume from saved checkpoint; reopened SQLite has 2 records/2 analyses; replay adds zero inference. Injection is not an actual OOM claim. |
+| MiniLM / FinBERT real lifecycle | Pass | Three authored rounds; MiniLM reuses its stage child for encoding; all six model children exited with code 0 and verified exit. Available RAM start/end GiB: 5.88/5.75, 5.75/5.35, 5.33/5.35. No leak-free claim. |
+| Fresh Gemma semantic inference | Unverified | Installed model unloaded; preflight RAM 5.05 GiB versus 7.19 required. VRAM 13.54 versus 7.10 GiB. No load/inference, no threshold reduction. |
+| Formal 8511 and Worker | Pass | Running local app and current Worker heartbeat; real browser access succeeded. |
+| Three acquisition modes | Pass | Default broad mode, six media checkboxes with fixed domains/Latest, company watchlist; drafts restored to broad, no configuration saved. |
+| Update & Analyze | Pass (bounded) | Real confirmation UI opened/cancelled; saved-input authored batch exercised actual Worker/FinBERT path. Live provider acquisition intentionally not executed. |
+| Four analytics pages | Pass | Dashboard metrics; Industries financial/banks drilldown; graph bank node; News Explorer matching retained record and pinned FinBERT provenance. No publisher link fetched or media screenshot archived. |
+| Data / frozen evidence | Pass | Nine protected table digests unchanged, SQLite quick_check OK; all 171 frozen hashes match. No new news HTTP, successful-news reinference or expiry extension. |
+| Full regression / dry run | Pass | 705 tests OK, one skip; benchmark dry run passed. Exact pushed commit CI is checked separately after push. |
+
+Current private media aggregates at 2026-11-04 02:01 Sydney: 84 unexpired records,
+81 nonempty summaries, 39 classified / 37 unclassified / 8 classifier failures,
+80 sentiment results / 4 language skips. These are later local media evidence,
+not the sealed 2 November report baseline. REPORT_SYNOPSIS retains both scopes.
+Ignored local evidence: reports/p0_20261104_models.json,
+reports/p0_closeout_20261104/{result.json,gemma_preflight.json,live_aggregates.json,
+offline_tests.log,dry_run.log}. No private media text is added to Git.

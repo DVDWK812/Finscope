@@ -165,7 +165,7 @@ class BatchRunner:
             model_key=None
             for item,coverage,policy,classifier in prepared:
                 check()
-                if item.article_id in rejected:continue
+                # Classification rejection does not revoke sentiment eligibility.
                 authorize(item,('retain','local_classification','local_sentiment','local_display'))
                 eligible,reason=eligibility(item)
                 if not eligible:

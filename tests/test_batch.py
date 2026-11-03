@@ -81,6 +81,36 @@ class BatchTests(unittest.TestCase):
         self.worker(infer=lambda *a:self.fail('Unknown cancelled inference cannot replay')).run_one()
         self.assertEqual(self.store.list_analyses(),[])
 
+    def test_rejected_classification_does_not_skip_independent_sentiment(self):
+        calls=[];self.q.submit_batch('update',C,confirmed=True)
+        w=self.worker(infer=lambda *args:(calls.append(1) or prediction(*args)))
+        with patch('finscope.industry_classifier.IndustryClassifier.classify',side_effect=ValueError('Authored contract failure')):
+            w.run_one()
+            self.assertEqual(self.q.get()['status'],'partial_failed')
+            self.assertEqual(self.q.get()['counts']['failed'],1)
+            self.assertEqual(len(self.store.list_analyses()),1)
+            self.q.submit_batch('analyze',C,confirmed=True);w.run_one()
+        self.assertEqual(calls,[1])
+        self.assertEqual(len(self.store.list_analyses()),1)
+
+    def test_rejected_classification_still_respects_model_guard_and_resume(self):
+        with patch('finscope.industry_classifier.IndustryClassifier.classify',side_effect=ValueError('Authored contract failure')):
+            self.q.submit_batch('update',C,confirmed=True)
+            self.worker(resources=lambda *a,**k:(_ for _ in ()).throw(ResourceBlocked('Authored resource guard')),
+                        infer=lambda *a:self.fail('No inference below resource guard')).run_one()
+            self.assertEqual(self.q.get()['status'],'blocked')
+            self.q.resume(self.q.get()['id'])
+            self.worker(fetch=lambda *a:self.fail('No repeated fetch')).run_one()
+        self.assertEqual(len(self.store.list_analyses()),1)
+
+    def test_rejected_classification_still_skips_non_english_text(self):
+        raw=replace(fixture(),title='季度业绩',body='公司公布季度业绩。')
+        self.q.submit_batch('update',C,confirmed=True)
+        with patch('finscope.industry_classifier.IndustryClassifier.classify',side_effect=ValueError('Authored contract failure')):
+            self.worker(fetch=lambda *a:[raw],infer=lambda *a:self.fail('Language guard must remain')).run_one()
+        self.assertEqual(self.store.list_analyses(),[])
+        self.assertEqual(self.q.get()['counts']['skipped'],1)
+
     def test_store_only_does_not_probe_or_load_any_model(self):
         self.q.submit_batch('collect',C,confirmed=True)
         w=self.worker(infer=lambda *a:self.fail('No model'),resources=lambda *a,**k:self.fail('No model resources'))

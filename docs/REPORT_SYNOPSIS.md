@@ -1,12 +1,56 @@
 # FinScope — technical reference for the report team
 
-Evidence checked **1 November 2026 Australia/Sydney**. The three members write the academic report independently. This reference supplies verified technical facts and evidence, not a submission manuscript, claimed human participation or an academic interpretation.
+Evidence checked **4 November 2026 Australia/Sydney**; the 2 November handoff below remains a separate sealed historical baseline. The three members write the academic report independently. This reference supplies verified technical facts and evidence, not a submission manuscript, claimed human participation or an academic interpretation.
 
 ## Milestone and baseline
 
 **2 November 2026 18:00 Australia/Sydney** is the internal report handoff; technical readiness is due before noon. It is not the official submission deadline or a permanent feature freeze. Development continues on `local`; `main` is read only. A separate final feature freeze and full regression will precede actual submission. The historical official-deadline conflict remains unresolved; the user handles it without further agent Moodle access.
 
 The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8ae`**, with [all three exact-SHA CI jobs successful](https://github.com/DVDWK812/Finscope/actions/runs/41284045331). The dated [handoff record](REPORT_HANDOFF_20261102.md) identifies the package, screenshots, local snapshot and final delivery receipt. Later development must use separate evidence directories/commits. The consumed evaluation and all 171 protected files remain frozen; historical [delivery-freeze evidence](DELIVERY_FREEZE.md) is preserved byte-for-byte, not a current permanent product-development restriction.
+
+## Delivery closeout — 4 November 2026 Sydney
+
+The local product is now in delivery closeout, with no new feature work. The sealed
+2 November runtime baseline and its 266 originals / 232 historical analyses are
+unchanged. Later private-media observations must not be attributed to that baseline.
+
+At **2026-11-04 02:01 Sydney / 2026-11-03 15:01 UTC**, a read-only check of the live
+finite SQLite partition found **84 unexpired media originals**: Finnhub 30 and
+Marketaux 54 (52 Broad plus two earlier company-query records). **81** contain actual
+nonempty supplier summaries. Latest topic results are **39 classified, 37 unclassified,
+8 failed**; **80** distinct records have actual FinBERT results and **4** remain language
+skips. Those 80 results comprise 23 Positive, 35 Neutral and 22 Negative, not accuracy
+labels. No expired/inactive media records were included. Existing expiries span
+**8 November 17:36 UTC–9 November 17:52 UTC**; these are a dated observation, not a
+promise that the same corpus remains available at presentation time. Current overall
+storage is 350 originals including five authored development records, not 350 real
+media articles. Original publisher attribution and private-research applicability
+qualifications continue to apply; no text or per-article outputs are supplied here.
+
+The subsequent Stage A collection had reached Broad 52 before this closeout. This
+closeout made no news HTTP requests and reran no successful real-news analysis.
+A reproducible scheduler defect was fixed: a generic classification exception put
+an original in a rejected set and skipped its independent sentiment stage. Sentiment
+now still checks permissions, text eligibility, language, resources and model cache.
+Classification failure remains recorded; it is not converted into a topic label.
+
+Actual authored-input validation on 4 November completed three MiniLM/FinBERT process
+cycles, each with verified exit code 0. MiniLM reused its process within each cycle.
+System available RAM at cycle start/end was 5.88/5.75, 5.75/5.35 and 5.33/5.35 GiB;
+this does not establish a leak-free system. An isolated authored two-record Update &
+Analyze run preserved a deliberately injected pre-dispatch pause, resumed to two real
+FinBERT results (including one classification-error record), reopened both saved
+originals and reused results on a second task with zero additional sentiment inference.
+The pause/failure injection is engineering validation, not naturally observed model
+failure or real-media acceptance. Gemma was not loaded; its actual local preflight
+required 7.19 GiB RAM while 5.05 GiB was available. **Gemma rerun remains unverified**;
+no model settings, prompts, thresholds or frozen evaluation were changed.
+
+Evidence: local ignored `reports/p0_closeout_20261104/live_aggregates.json`,
+`reports/p0_20261104_models.json`, `reports/p0_closeout_20261104/result.json` and
+`reports/p0_closeout_20261104/gemma_preflight.json`. These remain local technical
+receipts; the report team should use only appropriate aggregates and licensed demo
+material. Historical media success does not grant publisher redistribution rights.
 
 ## Purpose and architecture
 
