@@ -76,6 +76,70 @@ class ShowcaseTests(unittest.TestCase):
             self.assertFalse(any("Prepare" in item.label or "Fetch news" in item.label
                                  or "Run real AI" in item.label for item in app.button))
 
+    def test_display_preferences_cover_all_six_pages_with_runtime_guards(self):
+        from finscope.showcase_theme import LIGHT_TOKENS, TOKENS
+        for language in ("en", "zh-CN"):
+            for appearance in ("dark", "light"):
+                with self.subTest(language=language, appearance=appearance):
+                    app = self.app()
+                    app.selectbox(key="showcase_language").set_value(language).run()
+                    app.radio(key="showcase_appearance").set_value(appearance).run()
+                    for page in NAV_KEYS:
+                        navigate(app, page)
+                        self.assertFalse(app.exception, (language, appearance, page))
+                        self.assertEqual(app.selectbox(key="showcase_language").value, language)
+                        self.assertEqual(app.radio(key="showcase_appearance").value, appearance)
+                        markup = "\n".join(m.value for m in app.markdown)
+                        tokens = LIGHT_TOKENS if appearance == "light" else TOKENS
+                        self.assertIn("--fs-background: " + tokens["background"], markup)
+                        self.assertIn("演示数据 / 示意预览" if language == "zh-CN"
+                                      else "Demo Data / Illustrative Preview", markup)
+                        if page == "Dashboard Preview":
+                            self.assertEqual(app.metric[0].value, "24")
+                            self.assertIn("这是示意，不是模型输出" if language == "zh-CN" else "Industry intelligence",
+                                          " ".join(c.value for c in app.caption) if language == "zh-CN"
+                                          else " ".join(h.value for h in app.subheader))
+                        if page == "Get FinScope":
+                            self.assertTrue(any("--branch local --single-branch" in c.value for c in app.code))
+                            self.assertTrue(any(c.value == "./launch_local.ps1 -Port 8501" for c in app.code))
+
+    def test_switching_language_and_appearance_preserves_filters_and_article_ids(self):
+        app = self.app()
+        navigate(app, "Dashboard Preview")
+        app.multiselect(key="preview_sectors").set_value(["Technology"]).run()
+        app.multiselect(key="preview_sentiments").set_value(["Positive"]).run()
+        self.assertEqual(app.metric[0].value, "2")
+        chosen_dates = (START, END - timedelta(days=1))
+        app.date_input(key="preview_dates").set_value(chosen_dates).run()
+        app.selectbox(key="showcase_language").set_value("zh-CN").run()
+        app.radio(key="showcase_appearance").set_value("light").run()
+        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").value, ["Technology"])
+        self.assertEqual(app.multiselect(key="preview_sentiments__display_zh").value, ["Positive"])
+        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").options[0], "科技")
+        self.assertEqual(tuple(app.date_input(key="preview_dates").value), chosen_dates)
+        self.assertEqual(app.metric[0].value, "2")
+        app.multiselect(key="preview_sentiments__display_zh").set_value(["Negative"]).run()
+        self.assertEqual(app.metric[0].value, "1")
+        app.multiselect(key="preview_sectors__display_zh").set_value(["Healthcare"]).run()
+        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").value, ["Healthcare"])
+        self.assertEqual(app.metric[0].value, "1")
+        next(b for b in app.button if b.label == "重置预览").click().run()
+        self.assertEqual(app.metric[0].value, "24")
+        navigate(app, "Knowledge Graph")
+        app.selectbox(key="graph_company").set_value("Cedar Therapeutics").run()
+        article_widget(app, "graph_article").set_value("SYN-007").run()
+        app.selectbox(key="graph_cloud_word").set_value("research").run()
+        self.assertIn("Research Centre Opens", article_widget(app, "graph_cloud_article").options)
+        matches = next(d.value for d in app.dataframe if "完整标题" in d.value.columns)
+        self.assertEqual(set(matches["标题"]), {article_label(r) for r in examples()
+                                              if r.article_id in ("SYN-002", "SYN-005", "SYN-006")})
+        app.selectbox(key="showcase_language").set_value("en").run()
+        app.radio(key="showcase_appearance").set_value("dark").run()
+        self.assertEqual(app.selectbox(key="graph_company").value, "Cedar Therapeutics")
+        self.assertEqual(article_widget(app, "graph_article").value, "SYN-007")
+        self.assertEqual(app.selectbox(key="graph_cloud_word").value, "research")
+        self.assertFalse(app.exception)
+
     def test_landing_calls_to_action_and_local_installation(self):
         app = self.app()
         next(b for b in app.button if b.label == "How it works").click().run()
@@ -334,6 +398,59 @@ class ShowcaseTests(unittest.TestCase):
 
 
 class FictionalDataTests(unittest.TestCase):
+    def test_translation_templates_preserve_values_and_preferences_are_isolated(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from string import Formatter
+        from finscope.showcase_preferences import LANGUAGE, APPEARANCE, preferences, t, localize_html
+        from finscope.showcase_zh import ZH
+        from finscope.showcase_theme import theme_tokens
+        for english, chinese in ZH.items():
+            fields = lambda text: sorted(name for _, name, _, _ in Formatter().parse(text) if name is not None)
+            self.assertEqual(fields(english), fields(chinese), english)
+        def render(language, appearance):
+            with preferences(language, appearance):
+                result = (t("Home"), theme_tokens()["background"])
+                self.assertIn('data-topic-parent="Technology"', localize_html(
+                    '<h3 data-topic-parent="Technology">Technology</h3>'))
+                return result
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            a = pool.submit(render, "zh-CN", "light")
+            b = pool.submit(render, "en", "dark")
+            self.assertEqual(a.result(), ("首页", "#f4f7fb"))
+            self.assertEqual(b.result(), ("Home", "#0b1220"))
+        with self.assertRaises(RuntimeError):
+            with preferences("zh-CN", "light"):
+                raise RuntimeError("synthetic failure")
+        self.assertEqual((LANGUAGE.get(), APPEARANCE.get()), ("en", "dark"))
+
+    def test_both_palettes_cover_graph_cloud_and_normal_text_contrast(self):
+        from finscope.showcase_preferences import preferences
+        from finscope.showcase_theme import theme_tokens
+        from finscope.showcase_visuals import relationship_markup, visible_graph, word_cloud_markup
+        def luminance(color):
+            channels = [int(color[n:n+2], 16) / 255 for n in (1, 3, 5)]
+            linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
+            return sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
+        for appearance in ("light", "dark"):
+            with preferences("zh-CN", appearance):
+                tokens = theme_tokens()
+                for foreground in ("text", "muted", "accent", "positive", "neutral", "negative", "industry", "candidate", "source"):
+                    for background in ("background", "surface", "raised"):
+                        a, b = sorted((luminance(tokens[foreground]), luminance(tokens[background])))
+                        self.assertGreaterEqual((b + .05) / (a + .05), 4.5,
+                                                (appearance, foreground, background))
+                graph_html = relationship_markup(visible_graph(graph(examples(), "Cedar Therapeutics"), False))
+                cloud_html = word_cloud_markup(word_cloud_terms(examples()))
+                self.assertIn('fill="' + tokens["raised"] + '"', graph_html)
+                self.assertIn("未验证的候选关联", graph_html)
+                self.assertIn("Research Centre Opens", graph_html)
+                # The translation pass must preserve self-closing SVG elements.
+                from xml.etree import ElementTree
+                svg = ElementTree.fromstring(re.search(r'(<svg .*?</svg>)', graph_html, re.S).group(1))
+                self.assertEqual(len(svg.findall('.//{http://www.w3.org/2000/svg}g')), 7)
+                self.assertIn("research", cloud_html)
+                self.assertIn("background:" + tokens["raised"], cloud_html)
+
     def test_every_original_headline_frequency_and_match_set_is_unchanged(self):
         # Release baseline across all 24 originals and each of the six companies.
         scopes = {"All fictional headlines": examples(),

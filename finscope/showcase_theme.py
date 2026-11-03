@@ -1,5 +1,6 @@
 """Shared public-showcase design tokens and escaped presentation primitives."""
 from html import escape
+from .showcase_preferences import APPEARANCE, t, translated_markup
 
 
 TOKENS = {
@@ -7,9 +8,27 @@ TOKENS = {
     "border": "#2c3b50", "text": "#e7edf6", "muted": "#adbbce",
     "accent": "#70d6c0", "accent_surface": "#183d3b", "button": "#27685e",
     "positive": "#70d6b4", "neutral": "#bcc9db", "negative": "#f5a09a",
-    "industry": "#dfc38b", "candidate": "#c8b5ed", "source": "#e6b0a9",
-    "radius": "14px", "space": "16px", "font": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "industry": "#dfc38b", "candidate": "#c8b5ed", "source": "#e6b0a9", "article": "#9dbfff",
+    "radius": "14px", "space": "16px", "font": 'Inter, ui-sans-serif, system-ui, "Microsoft YaHei", "PingFang SC", sans-serif',
 }
+LIGHT_TOKENS = {**TOKENS,
+    "background": "#f4f7fb", "surface": "#ffffff", "raised": "#e8eef5",
+    "border": "#c4d0dd", "text": "#14283f", "muted": "#40566f",
+    "accent": "#096655", "accent_surface": "#dcefe9", "button": "#27685e",
+    "positive": "#086246", "neutral": "#40566f", "negative": "#a42c31",
+    "industry": "#795214", "candidate": "#684095", "source": "#8d3d32", "article": "#244f9a",
+}
+
+
+def theme_tokens():
+    return LIGHT_TOKENS if APPEARANCE.get() == "light" else TOKENS
+
+
+def sentiment_colors():
+    tokens = theme_tokens()
+    return {name: tokens[name.lower()] for name in ("Positive", "Neutral", "Negative")}
+
+
 SENTIMENT_COLORS = {name: TOKENS[name.lower()] for name in ("Positive", "Neutral", "Negative")}
 NAV_ITEMS = (
     ("Home", "home", "home"), ("User Guide", "guide", "menu_book"),
@@ -20,17 +39,19 @@ NAV_ITEMS = (
 NAV_KEYS = {page: "nav_" + key for page, key, _ in NAV_ITEMS}
 
 
+@translated_markup
 def badge(text="Demo Data / Illustrative Preview"):
     return '<span class="fs-badge"><span aria-hidden="true">●</span> ' + escape(text) + '</span>'
 
 
+@translated_markup
 def brand():
     return ('<div class="fs-brand"><span class="fs-brand-mark" aria-hidden="true">F</span>'
             '<div><strong>FinScope</strong><small>NEWS INTELLIGENCE</small></div></div>')
 
 
 def eyebrow(text):
-    return '<div class="fs-eyebrow">' + escape(text) + '</div>'
+    return '<div class="fs-eyebrow">' + escape(t(text)) + '</div>'
 
 
 def line_icon(name):
@@ -45,8 +66,10 @@ def line_icon(name):
             'stroke-linejoin="round">' + paths[name] + '</svg></span>')
 
 
+@translated_markup
 def dashboard_preview(records):
     """Landing illustration computed from the same authored sample as the demo."""
+    colors = sentiment_colors()
     records = list(records)
     total = len(records)
     industries = list(dict.fromkeys(r.sector for r in records))
@@ -57,12 +80,12 @@ def dashboard_preview(records):
     bars = []
     for sector in industries:
         sample = [r for r in records if r.sector == sector]
-        counts = {tone: sum(r.sentiment == tone for r in sample) for tone in SENTIMENT_COLORS}
+        counts = {tone: sum(r.sentiment == tone for r in sample) for tone in colors}
         accessible = escape(sector + ': ' + ', '.join(f'{n} {tone}' for tone, n in counts.items()), quote=True)
-        segments = ''.join(f'<i style="width:{n / len(sample) * 100:.2f}%;background:{SENTIMENT_COLORS[tone]}"></i>'
+        segments = ''.join(f'<i style="width:{n / len(sample) * 100:.2f}%;background:{colors[tone]}"></i>'
                            for tone, n in counts.items() if n)
         bars.append(f'<div class="fs-mini-row"><span>{escape(sector)}</span><div class="fs-mini-bar" role="img" aria-label="{accessible}">{segments}</div><small>{len(sample)}</small></div>')
-    legend = ''.join(f'<span><i style="background:{color}"></i>{tone}</span>' for tone, color in SENTIMENT_COLORS.items())
+    legend = ''.join(f'<span><i style="background:{color}"></i>{tone}</span>' for tone, color in colors.items())
     return ('<section class="fs-demo-window" aria-label="Illustrative dashboard from authored sample">'
             '<div class="fs-demo-toolbar"><span>WORKSPACE OVERVIEW</span><span class="fs-demo-dot">ILLUSTRATIVE</span></div>'
             f'<div class="fs-mini-kpis" data-report-count="{total}" data-positive-count="{positive}">{kpis}</div>'
@@ -71,6 +94,7 @@ def dashboard_preview(records):
             '<div class="fs-demo-foot">Authored fictional records · Counts reflect originals</div></section>')
 
 
+@translated_markup
 def capabilities_markup(cards):
     items = []
     for icon, title, status, lead, note in cards:
@@ -82,6 +106,7 @@ def capabilities_markup(cards):
     return '<section class="fs-product-capabilities" aria-label="Local product capabilities">' + ''.join(items) + '</section>'
 
 
+@translated_markup
 def workflow_markup(steps, compact=False):
     mode = "fs-workflow-compact" if compact else "fs-workflow"
     items = ''.join('<li data-workflow-step="' + str(index) + '"><span class="fs-flow-number">'
@@ -96,6 +121,7 @@ def workflow_markup(steps, compact=False):
     return flow
 
 
+@translated_markup
 def hierarchy_markup(groups, selected_parent):
     cards = []
     for group in groups:
@@ -108,6 +134,7 @@ def hierarchy_markup(groups, selected_parent):
     return '<section class="fs-industry-tree" aria-label="Authored parent and child industry hierarchy">' + ''.join(cards) + '</section>'
 
 
+@translated_markup
 def launcher_architecture():
     return ('<section class="fs-launcher-architecture" aria-label="Windows launcher starts UI and worker">'
             '<div class="fs-launcher-root">Windows launcher</div><div class="fs-launcher-processes">'
@@ -117,8 +144,43 @@ def launcher_architecture():
 
 
 def theme_css():
-    variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in TOKENS.items())
-    return '<style>:root{' + variables + r''' }
+    variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in theme_tokens().items())
+    scheme = APPEARANCE.get()
+    return '<style>:root{color-scheme:' + scheme + ';' + variables + r''' }
+    html,body,#root{background:var(--fs-background);}
+    [data-testid="stApp"]{color:var(--fs-text);background:var(--fs-background);}
+    [data-testid="stApp"] button,[data-testid="stApp"] input,[data-testid="stApp"] textarea,
+    [data-testid="stApp"] summary,[data-baseweb="select"], [data-baseweb="popover"]{
+      color:var(--fs-text);}
+    [data-baseweb="select"]>div,[data-baseweb="input"], [data-baseweb="base-input"],
+    [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"],
+    [data-testid="stDateInput"] input,[data-testid="stTextInput"] input{
+      background:var(--fs-raised);color:var(--fs-text);border-color:var(--fs-border);}
+    [role="listbox"], [role="option"]{background:var(--fs-surface);color:var(--fs-text);}
+    [role="option"][data-focused="true"], [role="option"][aria-selected="true"]{background:var(--fs-accent-surface);}
+    [data-baseweb="popover"],[data-baseweb="popover"] ul,[data-baseweb="menu"],
+    [data-testid="stPopoverBody"],[data-testid="stDialog"]>div{
+      background:var(--fs-surface);color:var(--fs-text);}
+    [data-baseweb="option"]{background:var(--fs-surface);color:var(--fs-text);}
+    [data-baseweb="option"]:hover{background:var(--fs-raised);}
+    [role="tooltip"], [data-testid="stTooltipContent"]{background:var(--fs-surface);color:var(--fs-text);border:1px solid var(--fs-border);}
+    [data-testid="stSidebarCollapseButton"] button,[data-testid="stSidebarCollapsedControl"] button{color:var(--fs-text);}
+    [data-testid="stApp"] [data-testid="stIconMaterial"]{color:inherit;}
+    [data-baseweb="tag"]{background:var(--fs-accent-surface);color:var(--fs-accent);}
+    [data-testid="stRadio"] label,[data-testid="stCheckbox"] label{color:var(--fs-text);}
+    [data-testid="stExpander"]{background:var(--fs-surface);border-color:var(--fs-border);}
+    [data-testid="stCode"],[data-testid="stCode"] pre{background:var(--fs-raised);color:var(--fs-text);}
+    [data-testid="stCode"] code{color:var(--fs-text);}
+    [data-testid="stButton"] button[kind="secondary"], [data-testid="stLinkButton"] a[kind="secondary"],
+    [data-testid="stPopoverButton"]{background:var(--fs-raised);border-color:var(--fs-border);color:var(--fs-text);}
+    [data-testid="stButton"] button[kind="primary"], [data-testid="stLinkButton"] a[kind="primary"]{
+      background:var(--fs-button);color:#ffffff;border-color:var(--fs-button);}
+    [data-testid="stButton"] button[kind="primary"] p, [data-testid="stLinkButton"] a[kind="primary"] p{color:#ffffff;}
+    [data-testid="stMetricValue"],[data-testid="stMetricLabel"], [data-testid="stMarkdownContainer"]{color:var(--fs-text);}
+    .st-key-fs_preferences{padding:.65rem 0 1rem;}
+    .st-key-fs_preferences [data-testid="stRadio"]>div{gap:.7rem;flex-wrap:wrap;}
+    .st-key-fs_preferences [data-testid="stWidgetLabel"] p{font-size:.75rem;}
+    [data-testid="stCaptionContainer"]{opacity:1;}
     [data-testid="stAppViewContainer"]{background:var(--fs-background);color:var(--fs-text);}
     [data-testid="stHeader"]{background:var(--fs-background);}
     [data-testid="stSidebar"]{background:var(--fs-surface);border-right:1px solid var(--fs-border);
@@ -143,6 +205,9 @@ def theme_css():
     .st-key-fs_nav button:hover{background:var(--fs-raised);border-color:var(--fs-border);color:var(--fs-text);}
     .st-key-fs_nav button[kind="primary"]{background:var(--fs-accent-surface);border-color:#37665f;color:var(--fs-accent);}
     .st-key-fs_nav button[kind="primary"] p{color:var(--fs-accent);font-weight:600;}
+    .st-key-fs_nav [data-testid="stButton"] button[kind="secondary"]{background:transparent;border-color:transparent;color:var(--fs-muted);}
+    .st-key-fs_nav [data-testid="stButton"] button[kind="primary"]{background:var(--fs-accent-surface);border-color:var(--fs-accent);color:var(--fs-accent);}
+    .st-key-fs_nav [data-testid="stButton"] button:hover{background:var(--fs-raised);border-color:var(--fs-border);}
     .fs-brand{display:flex;gap:11px;align-items:center;margin:.25rem 0 2rem;}
     .fs-brand-mark{display:grid;place-items:center;width:35px;height:38px;border:1px solid #4c8c80;
       border-radius:9px;background:var(--fs-accent-surface);color:var(--fs-accent);font-size:23px;font-weight:700;}
@@ -150,7 +215,7 @@ def theme_css():
     .fs-brand small{display:block;font-size:.54rem;letter-spacing:.16em;color:var(--fs-muted);margin-top:2px;}
     .fs-eyebrow{font-size:.66rem;font-weight:650;letter-spacing:.14em;color:var(--fs-muted);text-transform:uppercase;}
     .fs-badge{display:inline-flex;align-items:center;gap:6px;font-size:.68rem;line-height:1.4;
-      border:1px solid #3d625c;border-radius:6px;padding:5px 8px;color:#b0e5d9;background:#132d2c;}
+      border:1px solid var(--fs-accent);border-radius:6px;padding:5px 8px;color:var(--fs-accent);background:var(--fs-accent-surface);}
     .fs-badge span{font-size:7px;color:var(--fs-accent);}
     .fs-header-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:.45rem;}
     .st-key-fs_page_header{padding-bottom:1rem;border-bottom:1px solid var(--fs-border);margin-bottom:1rem;}
@@ -192,7 +257,7 @@ def theme_css():
     .fs-mini-legend span{display:inline-flex;align-items:center;gap:5px;}
     .fs-mini-legend i{display:inline-block;width:6px;height:6px;border-radius:50%;}
     .fs-demo-foot{padding-top:.9rem;border-top:1px solid var(--fs-border);font-size:.62rem;color:var(--fs-muted);}
-    .fs-line-icon{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;color:var(--fs-accent);border:1px solid #365950;border-radius:8px;background:#142d2d;}
+    .fs-line-icon{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;color:var(--fs-accent);border:1px solid var(--fs-accent);border-radius:8px;background:var(--fs-accent-surface);}
     .fs-line-icon svg{width:21px;height:21px;}
     .fs-feature{border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.3rem;min-height:185px;}
     .fs-feature h3{font-size:1rem!important;margin:.85rem 0 .5rem;}

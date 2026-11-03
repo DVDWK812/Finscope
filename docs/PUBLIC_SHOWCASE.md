@@ -1,5 +1,16 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**4 November display preferences:** choose **Language / 语言** (English or 简体中文)
+and **Appearance / 外观** (Dark / 深色 or Light / 浅色) in the sidebar. The mobile
+sidebar opens from the top-left control. Choices apply to all six pages for the
+current session; a new session defaults to English/dark. UI text, charts, graph
+metadata and tables use the selected locale/palette. Original fictional English
+headlines, summaries, names, IDs, membership, commands and word frequencies are
+preserved. Native Streamlit/browser utility labels can remain English. No remote
+translation, cookies, credentials, news collection, inference or database is added.
+Shared tokens and context-local preferences keep concurrent sessions independent.
+This user-requested display exception does not authorize other feature development.
+
 **3 November visible v2 release:** the user accepted the passive local-capability
 presentation, and application source `e565645` passed both exact-commit workflows.
 After push the user separately confirmed all six hosted pages and specified new

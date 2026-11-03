@@ -1,6 +1,12 @@
 # FinScope — team report synopsis
 
-Evidence current: **3 November 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+Evidence current: **4 November 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+
+**Display-only update:** the showcase now offers English/简体中文 and dark/light
+presentation choices with English/dark defaults. Authored UI translations and
+session-specific palettes leave the 24 English fictional originals, counts,
+candidate relationships and frozen evaluation unchanged. This is interface work,
+not new model, reviewer or human-usability evidence ([scope](PUBLIC_SHOWCASE.md)).
 
 **Showcase presentation release:** the source-backed local update now has visible
 capability/status cards, a Settings → task → worker → Dashboard workflow, authored
@@ -20,8 +26,8 @@ paths and separate text-topic/sentiment histories. Dated official-source accepta
 private-research continuations and the sealed 2 November handoff are different
 evidence scopes, not current public library totals. DeepSeek remains an authored
 interface test; later resource-blocked attempts do not establish repeated-load
-stability. The passive 24-example showcase sync is a candidate awaiting browser
-acceptance/release; see the concise [capability matrix](SHOWCASE_SYNC.md). No new
+stability. The passive 24-example showcase sync was released on 3 November with
+the acceptance scope above; see the concise [capability matrix](SHOWCASE_SYNC.md). No new
 accuracy result, public private-text/receipt release or human-participation claim.
 
 **31 October public closeout:** final link/setup corrections pass 236 offline tests,

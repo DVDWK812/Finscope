@@ -1,5 +1,14 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**4 November — explicitly requested display preferences:** add English/简体中文
+and dark/light choices to the existing showcase sidebar, with session-scoped
+state and English/dark defaults. Use an authored translation catalogue and shared
+contrast-checked palettes; no translation service or dependency. Preserve original
+fictional English source text, numerical counts, stable IDs, graph memberships and
+installation commands. Localized pickers remount their display text while retaining
+canonical filter values. Main-only change; local, frozen evidence and unrelated
+edits remain excluded. Maintenance-only scope resumes after verification.
+
 **3 November — explicit showcase content-sync exception:** review pinned local
 `7e6c5158c56ac0a520119f91ddfbb2fae9041782` as source evidence only. Update the six
 existing pages without redesign or operational runtime; keep the original 24

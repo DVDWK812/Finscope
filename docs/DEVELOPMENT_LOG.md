@@ -1,5 +1,37 @@
 # Development log
 
+## Requested language and appearance choices — 4 November 2026 Sydney
+
+User explicitly authorized this narrow exception to the showcase freeze. Added
+English/简体中文 and dark/light controls to the sidebar, preserving English/dark
+defaults and session navigation. Authored translations, context-local preferences
+and shared palettes cover the six pages, charts, graph and table presentation.
+Original English fictional text, the 24 records, candidate memberships, commands
+and headline frequency/match digest are unchanged. Localized choices retain their
+canonical filters/IDs; redundant navigation tooltips were removed after browser
+checks found overlapping hover surfaces. Light-mode captions, selects and the
+mobile sidebar icon were corrected using stable selectors rather than hashed CSS.
+
+Validation: 247 offline regression tests, including 34 showcase/isolation checks;
+50 Python syntax checks and seven no-network CLI previews. All four preference
+combinations run under provider/model-import/HTTP/SQLite guards. Text and semantic
+palette contrast meets 4.5:1 on the three main surfaces. Browser acceptance covers
+all six English/dark and Chinese/light pages on desktop and 390×844 mobile,
+approximately 1280×800 desktop layout, plus the Chinese/dark guide at 768×1024.
+No page-wide overflow or exception was observed; filters/Reset, graph perspectives,
+article inspection, original-English word matches and local installation links
+remain inspectable. Browser checks are engineering evidence, not human usability
+participation. Exact-push CI and actual hosted verification follow the main push.
+
+Codex performed implementation, authored UI translation, tests and browser checks.
+Twenty-three frozen files and five unrelated edits retain their starting hashes.
+The independently maintained local refs advanced from `7e6c515` to `e90b8a1` during
+this work; that external product commit is preserved, with no local switch, edit,
+merge, reset or push by this task. The reviewed product-copy source stays pinned
+to 3 November rather than implying a new local-source review. No provider/model
+request, public database path, new dependency or private evidence publication was
+added. After release, the existing maintenance-only scope resumes.
+
 ## Visible v2 approved source release — 3 November 2026 Sydney
 
 User explicitly accepted the localhost visible v2 revision for commit/push.

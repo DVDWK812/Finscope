@@ -6,6 +6,8 @@ Local-first financial news intelligence. Run Streamlit on your own computer, fet
 
 **[Public product showcase](https://finscope-dvdwk812.streamlit.app/)** — an illustrative tour with fictional data, not the functional AI application. The root `streamlit_app.py` remains the full local product; `deploy/streamlit_app.py` runs the independent showcase. [Architecture and verification](docs/PUBLIC_SHOWCASE.md).
 
+The showcase sidebar offers **English / 简体中文** and **Dark / Light** display choices, retained while navigating the six pages in the current session. English and the existing dark palette are the defaults. Fictional headlines/summaries and headline-frequency calculations retain their original English source text; the controls and explanations are translated locally without a service or model.
+
 ## Launch locally
 
 ```powershell
