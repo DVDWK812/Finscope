@@ -32,6 +32,55 @@ class BatchTests(unittest.TestCase):
         self.store=LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']);self.q=TaskQueue(self.store);self.data=ProductStorage(self.store)
     def worker(self,fetch=None,infer=None,resources=None):
         return Worker(self.store,fetch=fetch or (lambda *a:[fixture()]),infer=infer or prediction,resources=resources or (lambda *a,**k:None))
+    def test_all_classifications_precede_sentiment_and_repeat_uses_cache(self):
+        events=[]
+        records=[replace(fixture(),url=fixture().url+str(i)) for i in range(3)]
+        from finscope.industry_classifier import IndustryClassifier
+        original=IndustryClassifier.classify
+        def classify(obj,item):events.append('class');return original(obj,item)
+        def infer(*args):events.append('sentiment');return prediction(*args)
+        self.q.submit_batch('update',C,confirmed=True)
+        with patch.object(IndustryClassifier,'classify',classify):
+            self.worker(fetch=lambda *a:records,infer=infer).run_one()
+        self.assertEqual(events,['class']*3+['sentiment']*3)
+        self.q.submit_batch('analyze',C,confirmed=True)
+        with patch.object(IndustryClassifier,'classify',side_effect=AssertionError('Cached')):
+            self.worker(infer=lambda *a:self.fail('Cached sentiment')).run_one()
+        self.assertEqual(self.q.get()['status'],'completed')
+
+    def test_candidate_phase_precedes_all_semantic_decisions(self):
+        from finscope.industry_classifier import IndustryClassifier
+        from finscope.batch_pipeline import BatchRunner
+        from finscope.media_use import apply
+        from datetime import datetime,timedelta,timezone
+        events=[];rules=IndustryClassifier();now=datetime.now(timezone.utc)
+        class Semantic:
+            cache_key=rules.cache_key
+            def candidates(self,item):events.append('candidate')
+            def classify(self,item):events.append('decision');return rules.classify(item)
+        for i in range(3):
+            raw=replace(fixture(),provider='finnhub',body='',provenance='{}',url='https://example.com/fixture'+str(i))
+            n=apply(raw,dict(source='finnhub',status='research_unverified',reference='Authored fixture',fields=['title','summary'],expires_at=(now+timedelta(days=7)).isoformat(),confirmed=True,domains=[]))
+            self.data.save(prepare(n)[0])
+        self.q.submit_batch('analyze',C,confirmed=True);task=self.q.get();task['snapshot']['classifier_options']={'fixture':True}
+        w=self.worker()
+        with patch('finscope.semantic_classifier.SemanticIndustryClassifier',return_value=Semantic()),patch.object(w.data,'cached',return_value='existing'):
+            BatchRunner(w).run(task)
+        self.assertEqual(events,['candidate']*3+['decision']*3)
+        self.assertEqual(self.q.get()['status'],'completed')
+
+    def test_cancelled_sentiment_releases_owned_backend_and_preserves_fence(self):
+        from unittest.mock import Mock
+        owned=Mock(pid=123,alive=True);self.q.submit_batch('update',C,confirmed=True)
+        w=self.worker()
+        def cancel(*args):w.backend=owned;raise Cancelled()
+        w.infer_override=cancel;w.run_one()
+        self.assertEqual(self.q.get()['status'],'cancelled');owned.close.assert_called_once()
+        self.assertIsNone(w.backend)
+        self.q.submit_batch('analyze',C,confirmed=True)
+        self.worker(infer=lambda *a:self.fail('Unknown cancelled inference cannot replay')).run_one()
+        self.assertEqual(self.store.list_analyses(),[])
+
     def test_store_only_does_not_probe_or_load_any_model(self):
         self.q.submit_batch('collect',C,confirmed=True)
         w=self.worker(infer=lambda *a:self.fail('No model'),resources=lambda *a,**k:self.fail('No model resources'))

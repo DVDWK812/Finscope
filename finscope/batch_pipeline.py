@@ -101,7 +101,11 @@ class BatchRunner:
             if c.get('classifier_options'):
                 from .semantic_classifier import SemanticIndustryClassifier
                 semantic=SemanticIndustryClassifier(self.store,c['classifier_options'],check=check)
-            model_key=None
+            self.worker.inference_check=check
+            prepared=[]
+            from .stage_resources import StageResources
+            resources=StageResources(self.worker,identity)
+            resources.begin("prepare")
             for raw in self.data.news():
                 if raw.article_id not in selected:continue
                 from .media_use import scope_of
@@ -114,6 +118,30 @@ class BatchRunner:
                 item,coverage=prepare(raw)
                 # Legacy originals may not yet have a normalized content revision.
                 item,_,_=self.data.save(item)
+                prepared.append((item,coverage,policy,classifier))
+            resources.end()
+            # Candidate vectors/results already have finite, input-fingerprinted
+            # checkpoints. No private text is copied to permanent stage markers.
+            resources.begin('candidates')
+            if semantic is not None:
+                from .embedding_process import PersistentSentenceEmbedder
+                resources.encoder=PersistentSentenceEmbedder(check=check,observe=resources.observe)
+                semantic.embedder=resources.encoder
+                semantic.resources=lambda kind:resources.classifier_resources(kind,semantic.embedder)
+            for item,coverage,policy,classifier in prepared:
+                check()
+                authorize(item,('retain','local_classification'))
+                if semantic is not None and classifier is semantic and not self.data.classification(item,classifier.cache_key):
+                    stage('candidates: saved originals')
+                    classifier.candidates(item)
+            self.queue.save_step(identity,'phase:candidates','ok',dict(article_ids=[v[0].article_id for v in prepared]))
+            resources.end()
+            if semantic is not None:semantic.embedder=None
+            resources.begin('classification')
+            rejected=set()
+            for item,coverage,policy,classifier in prepared:
+                stage('classification: saved originals')
+                authorize(item,('retain','local_classification','local_sentiment','local_display'))
                 if not self.data.classification(item,classifier.cache_key):
                     try:
                         self.data.save_classification(item,classifier.cache_key,classifier.classify(item))
@@ -125,11 +153,20 @@ class BatchRunner:
                         self.data.state(item,'blocked','Local classifier prerequisite unavailable; saved text retained')
                         raise
                     except Exception:
-                        self.data.state(item,'failed','Classification evidence validation failed');errors.append('Classification failed; original retained');counts['failed']+=1;continue
+                        self.data.state(item,'failed','Classification evidence validation failed');errors.append('Classification failed; original retained');counts['failed']+=1;rejected.add(item.article_id);continue
                 current_classification=self.data.classification(item,classifier.cache_key)
                 if current_classification and current_classification.get('status')=='failed':
                     once('batch_classifier_failed:'+item.article_id+':'+classifier.cache_key,'failed')
                     errors.append('Topic classifier failed; sentiment uses its independent text/model cache')
+            self.queue.save_step(identity,'phase:classification','ok',dict(article_ids=[v[0].article_id for v in prepared if v[0].article_id not in rejected]))
+            resources.end()
+            resources.begin('sentiment')
+            self.worker.model_observe=resources.observe
+            model_key=None
+            for item,coverage,policy,classifier in prepared:
+                check()
+                if item.article_id in rejected:continue
+                authorize(item,('retain','local_classification','local_sentiment','local_display'))
                 eligible,reason=eligibility(item)
                 if not eligible:
                     self.data.state(item,'not_applicable',reason);once('batch_na:'+item.article_id+':'+item.content_version,'skipped');continue
@@ -150,7 +187,7 @@ class BatchRunner:
                 if previous:
                     self.data.state(item,'blocked','Previous model dispatch failed/unknown; explicitly review individual reanalysis')
                     errors.append('Previous model dispatch needs review; not repeated');continue
-                try:self.worker.resources(c['model'],loading=c['model']=='Local FinBERT' and self.worker.backend is None)
+                try:resources.check_resources(c['model'],loading=c['model']=='Local FinBERT' and self.worker.backend is None)
                 except (ResourceBlocked,ModelError):
                     self.data.state(item,'blocked','Model resources unavailable; downloaded text retained for later offline analysis');raise
                 check();self.queue.save_step(identity,infer_key,'pending',{})
@@ -166,10 +203,14 @@ class BatchRunner:
                     self.data.analysis(item,model_key,result)
                     self.queue.save_step(identity,infer_key,'ok',dict(analysis_id=result.analysis_id))
                     self.data.state(item,'completed');counts['analyzed']+=1
+                except Cancelled:
+                    self.queue.save_step(identity,infer_key,'failed',{'reason':'Cancelled dispatch; outcome not replayed'})
+                    raise
                 except Exception:
                     self.queue.save_step(identity,infer_key,'failed',{'reason':'Model output failed validation/transport/token bounds'})
                     self.data.state(item,'failed','Model output failed; no sentiment label saved');errors.append('One model output failed; no automatic retry');counts['failed']+=1
                 self.queue.update(identity,counts=counts)
+            resources.end()
             self.queue.save_step(identity,'phase:analysis','ok',dict(article_ids=selected))
             self.queue.update(identity,status='partial_failed' if errors else 'completed',stage='batch finished',counts=counts,error='; '.join(dict.fromkeys(errors))[:1500])
         except Cancelled:
@@ -180,4 +221,10 @@ class BatchRunner:
             self.queue.update(identity,status='blocked',stage='analysis paused; collection retained',counts=counts,error=str(error))
         except Exception:
             self.queue.update(identity,status='partial_failed',stage='batch interrupted',counts=counts,error='Local batch failed; saved records/checkpoints retained; inspect and explicitly resume')
+        finally:
+            try:
+                if 'resources' in locals():resources.end()
+            finally:
+                self.worker.inference_check=lambda:None
+                self.worker.model_observe=lambda edge:None
         return True

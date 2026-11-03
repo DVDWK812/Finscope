@@ -1095,3 +1095,41 @@ Formal 8511 showed all three modes, six media choices with multi-selection, the
 company watchlist, default all-news selection and Unknown account balance. No form
 was submitted. Original/analysis/lifetime/request/key metadata hashes and all 171
 frozen files match the pre-change baseline; navigation only replaces the view row.
+
+
+### 3 November 2026 — staged task-owned model resources (local)
+
+Continued the uncommitted phase scheduler instead of replacing it. Candidate recall,
+classification and sentiment now run in separate cached phases; persistent bounded
+MiniLM/FinBERT children are closed on completion, cancellation and error. Windows
+launcher descendants are included in exit verification. No classification prompts,
+model identities, source requests, successful news results or finite retention dates
+were changed. Resource observations contain metrics only; resource pressure allows
+one bounded release/recheck, never reduced thresholds or unlimited reload attempts.
+LM Studio external/unknown instances are not managed. The current batch never creates
+a Gemma instance, so there is no task-owned Gemma instance to unload. Official lifecycle
+reference: https://lmstudio.ai/docs/cli/local-models/load .
+
+Read-only retained-output diagnosis: Stage A has two review quote mismatches and one
+empty-label/empty-reason contract failure, all with stop finish reasons. Its three
+language skips remain unknown (English earnings prose with insufficient detector clues,
+a short corrupted headline, and NAV tabular text). No regeneration or detector tuning.
+Local metric evidence is ignored: reports/model_lifecycle_smoke.json,
+reports/legacy_worker_release.json and reports/model_management_preservation.json.
+
+Validation: 701-test full offline regression passed (one platform skip), plus the
+additional owned-descendant timeout regression passed; benchmark dry run passed.
+The preceding authored FinBERT smoke completed at 5.24 / 4.46 / 5.12 GiB available
+RAM before / resident / after exit. Current multi-round attempts were preflight-blocked
+at approximately 4.4 GiB: no inference was performed, and no leak-fix or multi-round
+stability claim is made. Releasing the idle legacy Worker (about 1.09 GiB private,
+90 MiB working set) increased available RAM by only about 34 MiB. LM Studio's two
+catalog models were both unloaded during inspection; creation source is not inferred
+from a catalog entry. 8511 was restarted only after verifying no active task; health
+and HTML returned 200. Read-only finite data still contained 84 records, 39 classified,
+37 unclassified, 8 classifier failures, 80 sentiment results and 4 language skips.
+This is local process/HTTP/read-model verification, not a new browser interaction claim.
+171 frozen hashes matched. No news requests, successful-news reinference or expiry
+extensions were performed. Real repeated-load stability remains unverified until the
+unchanged resource preflight can pass; external memory pressure may still require
+user intervention. Only local is changed.

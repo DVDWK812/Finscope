@@ -45,13 +45,14 @@ def resource_check(mode,*,loading=False):
 class Worker:
     def __init__(self,store,*,fetch=None,infer=None,resources=resource_check):
         self.store=store;self.queue=TaskQueue(store);self.data=ProductStorage(store)
-        self.fetch_override=fetch;self.infer_override=infer;self.resources=resources;self.backend=None;self.source_warnings={}
+        self.fetch_override=fetch;self.infer_override=infer;self.resources=resources;self.backend=None;self.source_warnings={};self.inference_check=lambda:None;self.model_observe=lambda edge:None
     def release_sentiment_backend(self):
         """Release only this worker's unused CPU model; never a user's service."""
         if self.backend is not None:
+            if hasattr(self.backend,"close"):self.backend.close()
             self.backend=None
-            import gc
-            gc.collect()
+            # Legacy in-process backends are dropped; process-backed models
+            # have verified their own exit above. No periodic garbage collection.
     def fetch(self,source,c,check):
         if self.fetch_override:return self.fetch_override(source,c,check)
         from .local_collectors import SOURCES,collect_rba
@@ -108,9 +109,8 @@ class Worker:
         if self.infer_override:return self.infer_override(item,c)
         if c['model']=='Local FinBERT':
             if self.backend is None:
-                from .finbert_backend import LocalFinBERTBackend
-                from .model_assets import model_directory
-                self.backend=LocalFinBERTBackend.from_snapshot(model_directory('finbert'),accept_weight_license=True)
+                from .finbert_process import ProcessFinBERT
+                self.backend=ProcessFinBERT(check=lambda:self.inference_check(),observe=lambda edge:self.model_observe(edge))
             started=time.perf_counter();scores=self.backend.predict([item.analysis_text])[0]
             label=max(scores,key=scores.get).capitalize()
             return Analysis(uuid4().hex,item.article_id,label,'FinBERT',self.backend.manifest['model_id'],self.backend.manifest['revision'],utcnow().isoformat(),
@@ -229,6 +229,7 @@ class Worker:
             self.queue.update(identity,status='blocked',stage='local model preflight',counts=counts,error=str(error))
         except Exception:
             self.queue.update(identity,status='partial_failed',stage='failed',counts=counts,error='Local processing failed; originals/history retained; inspect configuration, then explicit resume')
+        finally:self.release_sentiment_backend()
         return True
 
 
@@ -254,7 +255,7 @@ def main(argv=None):
                         try:monitor.tick()
                         except Exception:pass
                     stop.wait(.5)
-            finally:stop.set();pulse.join(5)
+            finally:stop.set();pulse.join(5);worker.release_sentiment_backend()
     except RuntimeError:
         return 2
     return 0

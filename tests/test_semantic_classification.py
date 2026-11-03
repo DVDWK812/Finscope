@@ -34,8 +34,8 @@ class SemanticTests(unittest.TestCase):
                 c.resource_check('MiniLM')
         w=Worker(self.store);w.backend=object()
         with patch('gc.collect') as collect:
-            w.release_sentiment_backend();self.assertIsNone(w.backend);collect.assert_called_once()
-            w.release_sentiment_backend();collect.assert_called_once()
+            w.release_sentiment_backend();self.assertIsNone(w.backend);collect.assert_not_called()
+            w.release_sentiment_backend();collect.assert_not_called()
     def test_resource_metadata_is_bounded_and_failed_preflight_never_dispatches(self):
         from finscope.semantic_classifier import ClassifierPrerequisite
         n=self.item();c=self.classifier();c.resources=lambda kind:dict(ram_available=9*1024**3,private='must not persist')

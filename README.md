@@ -1,5 +1,18 @@
 # FinScope
 
+### Local model lifecycle
+
+Batch analysis completes missing candidate embeddings, then missing topic decisions,
+then missing sentiment results. MiniLM and FinBERT each use one owned, bounded CPU
+subprocess per stage, with input sent through pipes and no model download. Stage
+cleanup verifies process exit, including Windows launcher descendants. Resource
+observations record RAM, process Working Set/Private Bytes and available GPU counters;
+they never include news text or prompts. A resource failure permits one owned-resource
+release and remeasurement before preserving checkpoints and pausing. Existing cold/hot
+load thresholds remain unchanged. LM Studio instances without task ownership evidence
+are external: FinScope does not unload them or stop their service. The batch does not
+automatically create a Gemma instance; the selected instance must be available.
+
 ### Finite media text batches (local)
 
 **Broad Financial News** is the default Marketaux draft mode. It omits company,

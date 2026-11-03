@@ -23,16 +23,46 @@ class ProcessSentenceEmbedder:
         return vectors
 
 
+from .finbert_process import ProcessFinBERT
+
+
+class PersistentSentenceEmbedder(ProcessFinBERT):
+    """One owned encoder for the candidate stage; fingerprints still cache each call."""
+    module='finscope.embedding_process'
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        spec=manifest('minilm');self.model_id=spec['model_id'];self.revision=spec['revision']
+    def encode(self,texts):
+        try:return self._encode(texts)
+        except BaseException:
+            self.close();raise
+
+    def _encode(self,texts):
+        if not isinstance(texts,(tuple,list)) or not 1<=len(texts)<=32 or any(not isinstance(t,str) or not t.strip() or len(t)>2000 for t in texts):raise ValueError('Bounded embedding input required')
+        data=self.exchange(list(texts))
+        if data.get('model_id')!=self.model_id or data.get('revision')!=self.revision:raise ValueError('Pinned embedding model changed')
+        vectors=data['vectors']
+        if len(vectors)!=len(texts) or any(len(v)!=384 or any(not isinstance(x,(int,float)) or not math.isfinite(x) for x in v) for v in vectors):raise ValueError('Invalid local embedding vectors')
+        return vectors
+
+
 def main():
     try:
-        data=json.loads(sys.stdin.read(70000))
-        if set(data)!={'texts'}:raise ValueError()
-        from .embedding_backend import LocalSentenceEmbedder
-        encoder=LocalSentenceEmbedder.load();vectors=encoder.encode(data['texts'])
-        print(json.dumps(dict(model_id=encoder.model_id,revision=encoder.revision,vectors=vectors)))
+        encoder=None;persistent='--persistent' in sys.argv
+        for _ in range(600 if persistent else 1):
+            line=sys.stdin.readline(400000) if persistent else sys.stdin.read(400000)
+            if not line:return 0
+            data=json.loads(line)
+            if set(data)!={'texts'}:raise ValueError()
+            texts=data['texts']
+            if not isinstance(texts,list) or not 1<=len(texts)<=32 or any(not isinstance(t,str) or not 0<len(t)<=2000 for t in texts):raise ValueError()
+            if encoder is None:
+                from .embedding_backend import LocalSentenceEmbedder
+                encoder=LocalSentenceEmbedder.load()
+            vectors=encoder.encode(texts)
+            print(json.dumps(dict(model_id=encoder.model_id,revision=encoder.revision,vectors=vectors)),flush=True)
         return 0
-    except Exception:
-        print('Pinned local embedding process failed; no text logged',file=sys.stderr);return 2
+    except Exception:return 2
 
 
 if __name__=='__main__':raise SystemExit(main())
