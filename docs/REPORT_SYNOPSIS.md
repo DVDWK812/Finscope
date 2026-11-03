@@ -6,7 +6,9 @@ Evidence current: **4 November 2026 Sydney**. The three team members will write 
 presentation choices with English/dark defaults. Authored UI translations and
 session-specific palettes leave the 24 English fictional originals, counts,
 candidate relationships and frozen evaluation unchanged. This is interface work,
-not new model, reviewer or human-usability evidence ([scope](PUBLIC_SHOWCASE.md)).
+not new model, reviewer or human-usability evidence. Application `204f697` passes
+both exact CI workflows and actual hosted engineering checks in all four display
+combinations ([release record](SHOWCASE_FREEZE.md)).
 
 **Showcase presentation release:** the source-backed local update now has visible
 capability/status cards, a Settings → task → worker → Dashboard workflow, authored

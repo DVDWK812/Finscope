@@ -21,7 +21,21 @@ approximately 1280×800 desktop layout, plus the Chinese/dark guide at 768×1024
 No page-wide overflow or exception was observed; filters/Reset, graph perspectives,
 article inspection, original-English word matches and local installation links
 remain inspectable. Browser checks are engineering evidence, not human usability
-participation. Exact-push CI and actual hosted verification follow the main push.
+participation. Released as `204f697530d539ddfc2446e7b2327e16d36de61b`:
+[regression](https://github.com/DVDWK812/Finscope/actions/runs/41664715217) passes
+both Streamlit configurations; [isolation](https://github.com/DVDWK812/Finscope/actions/runs/41664715094)
+passes with public-only dependencies and guards.
+
+Post-push reload still served older content despite correct main/deploy coordinates.
+Used the documented Reboot app action on the existing deployment, preserving its
+URL and administration. The actual hosted six pages then passed all four display
+combinations at desktop widths, English/dark and Chinese/light at 390×844, and the
+Chinese/dark guide at 768×1024. Checks include 24→4→24 filtering/Reset, explicit
+7/17/24 illustrative hierarchy, readable Cedar article details, both graph
+perspectives and research matches of three overall/two for Cedar. Native utility
+labels and the authored source text can stay English. Screenshots and per-page
+receipts remain ignored local engineering artifacts. Restored the hosted session
+to English/dark, cleared temporary viewport overrides and closed the review tab.
 
 Codex performed implementation, authored UI translation, tests and browser checks.
 Twenty-three frozen files and five unrelated edits retain their starting hashes.
@@ -30,7 +44,8 @@ this work; that external product commit is preserved, with no local switch, edit
 merge, reset or push by this task. The reviewed product-copy source stays pinned
 to 3 November rather than implying a new local-source review. No provider/model
 request, public database path, new dependency or private evidence publication was
-added. After release, the existing maintenance-only scope resumes.
+added. The display exception is closed; maintenance-only scope resumes. This
+closeout changes documentation only; final repository HEAD/CI follow separately.
 
 ## Visible v2 approved source release — 3 November 2026 Sydney
 

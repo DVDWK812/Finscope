@@ -10,6 +10,9 @@ preserved. Native Streamlit/browser utility labels can remain English. No remote
 translation, cookies, credentials, news collection, inference or database is added.
 Shared tokens and context-local preferences keep concurrent sessions independent.
 This user-requested display exception does not authorize other feature development.
+Released application source `204f697` passes exact regression/isolation CI and
+agent hosted-browser acceptance; the existing app was refreshed in place, with
+its URL and coordinates retained. [Release and maintenance record](SHOWCASE_FREEZE.md).
 
 **3 November visible v2 release:** the user accepted the passive local-capability
 presentation, and application source `e565645` passed both exact-commit workflows.

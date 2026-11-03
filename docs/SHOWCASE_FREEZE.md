@@ -1,5 +1,36 @@
 # Public showcase freeze — 31 October 2026 Sydney
 
+## Display exception closed — 4 November 2026 Sydney
+
+**MAINTENANCE ONLY.** The explicitly requested English/简体中文 and dark/light
+display update is released. No other feature development is reopened.
+
+| Release evidence | Verified result |
+|---|---|
+| Application commit | `204f697530d539ddfc2446e7b2327e16d36de61b` |
+| Public URL | [Existing showcase](https://finscope-dvdwk812.streamlit.app/) retained; main / deploy/streamlit_app.py; Manage app access retained |
+| Exact regression | [41664715217](https://github.com/DVDWK812/Finscope/actions/runs/41664715217): success, both Streamlit configurations |
+| Exact isolation | [41664715094](https://github.com/DVDWK812/Finscope/actions/runs/41664715094): success, no provider/model/HTTP/SQLite path |
+| Offline checks | 247 tests, 34 showcase checks, 50 syntax checks, seven dry-run previews |
+| Hosted engineering acceptance | All six pages in all four display combinations; 1440×900 and 1280×800 desktop, both languages at 390×844 in dark/light respectively, Chinese/dark guide at 768×1024; no observed page exception or page-wide overflow |
+| Interactions | 24→4→24 filtering/Reset; explicitly illustrative 7/17/24 hierarchy; readable graph perspectives/article evidence; original-English research matches three overall/two for Cedar; local-product links/commands retained |
+| Refresh | Reload initially showed older content; rebooted the same app in place, preserving URL, coordinates and administration |
+
+Preferences last for the current session; new sessions default to English/dark.
+Original English fictional headlines/summaries, 24 identities, memberships and word
+frequencies remain unchanged; native Streamlit/browser utility labels can remain
+English. This is agent engineering acceptance, not model accuracy or three-human
+usability evidence. No collection, inference, credential entry, public database
+path or private annotation publication was added. Frozen evidence and five
+unrelated edits retain starting hashes. This task did not switch to, modify,
+reset, merge or push local; an independent product commit advanced its refs to
+`e90b8a1` during the work and is preserved. The web rename remains deferred.
+
+The closeout updates documentation only. Final main HEAD and its own exact-push
+CI are recorded in the local release receipt and delivery message.
+
+## Historical 31 October release
+
 **Status: MAINTENANCE ONLY.** Stop nonessential showcase development. Subsequent
 changes are limited to critical bug fixes and security updates, with regression,
 isolation CI and actual hosted acceptance required again.
