@@ -96,6 +96,35 @@ fingerprint and entrypoint hashes identify the exact source being reviewed.
 
 ## Verification and release status
 
+**Application source released:** `e565645e153c2a0afa9ec2c18ba6419b5dc7f69c`, pushed
+normally to main after explicit user acceptance. Exact-push
+[regression CI](https://github.com/DVDWK812/Finscope/actions/runs/41633144517)
+passes both Streamlit jobs;
+[showcase isolation CI](https://github.com/DVDWK812/Finscope/actions/runs/41633144638)
+passes with showcase-only dependencies and provider/model/database guards.
+All eleven committed paths were checked against the intended list; the five
+unrelated edits, 23 protected files and local refs remain preserved.
+
+The approved feature scope is closed; subsequent code work is maintenance only
+(critical bug fixes/security updates), plus finishing release verification.
+This documentation-only closeout retains the application files of the SHA above;
+its own final-HEAD CI is recorded in the release receipt/delivery.
+
+**Hosted acceptance received, 3 November:** after the push the user explicitly
+confirmed that all six pages on https://finscope-dvdwk812.streamlit.app/ load with
+Home's capability cards/architecture, the Guide worker workflow, Dashboard's
+explicitly illustrative hierarchy, Get FinScope's launcher/UI-worker diagram,
+and working Graph/Explorer. This is user-reported manual browser verification,
+separate from localhost acceptance and CI. The public taxonomy is authored demo
+data, not real-news classification or model output.
+
+No matching FinScope Edge window was available in the permitted inventory and
+no Browser/Chrome control tool was exposed; no browser input/alternate channel
+bypass was attempted. Independent agent screenshots, a per-device hosted audit
+and a server-network forensic audit are not claimed. Public isolation is supported
+by the static entry/import boundary and guarded acceptance/CI. The feature exception
+is closed and the showcase is maintenance only: critical bugs/security updates.
+
 **Visible v2 approved for commit and push, 3 November 2026 Sydney.** The user
 explicitly accepted the localhost revision. This is release approval, not a claim
 of agent-operated browser testing, supplied per-size screenshots, three-human
@@ -125,9 +154,9 @@ caption. Guarded AppTests run all six exact snapshot pages and verify their buil
 caption. Both health endpoints return 200/ok. These are functional/source/liveness
 checks, not browser screenshots or visual acceptance.
 
-Agent-operated desktop/tablet/mobile screenshots remain unavailable; user visual
-acceptance has been received. Exact-commit CI and actual hosted verification are
-post-push release gates, recorded separately in the release receipt/delivery.
+Agent-operated desktop/tablet/mobile screenshots remain unavailable. User localhost
+acceptance, exact application CI and separate manual hosted acceptance are recorded
+above; final documentation-HEAD CI is recorded in the release receipt/delivery.
 The isolated comparison and manual checklist were the authorized fallback. The
 earlier prepared snapshot, patches and test receipts remain archived unchanged.
 The Edge showcase window was found after the user opened it, but Computer Use

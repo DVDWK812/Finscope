@@ -2,12 +2,15 @@
 
 Evidence current: **3 November 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
-**Showcase presentation candidate:** the source-backed local update now has visible
+**Showcase presentation release:** the source-backed local update now has visible
 capability/status cards, a Settings → task → worker → Dashboard workflow, authored
 parent/child topic navigation and launcher architecture. All 24 originals and
-frozen evaluation claims remain unchanged. This is a presentation candidate,
-accepted by the user for release on 3 November; exact CI and hosted checks remain
-separate post-push gates. It is not a new model result or a claim that the public
+frozen evaluation claims remain unchanged. This presentation was
+accepted by the user and released as application source `e565645` on 3 November;
+both exact-commit CI workflows passed. The user then confirmed all six hosted pages
+and specified components, separately from localhost acceptance and CI. This is
+manual user-reported acceptance, not an independent screenshot/device audit, a
+new model result or a claim that the public
 website executes local capabilities ([sync record](SHOWCASE_SYNC.md)).
 
 **Source-backed product update:** pinned local

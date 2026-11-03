@@ -1,10 +1,13 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
-**3 November content-sync candidate:** the user explicitly authorized a passive
-content/preview maintenance exception, with no redesign. Pinned local evidence,
-capability qualifications, website changes and pending release gates are recorded
-in [SHOWCASE_SYNC.md](SHOWCASE_SYNC.md). The existing hosted release and acceptance
-below remain historical evidence until the candidate is browser-checked and pushed.
+**3 November visible v2 release:** the user accepted the passive local-capability
+presentation, and application source `e565645` passed both exact-commit workflows.
+After push the user separately confirmed all six hosted pages and specified new
+components, including the explicitly illustrative Dashboard hierarchy. This is
+manual user-reported hosted acceptance; no independent agent screenshot/device
+audit is claimed. [Source, qualifications and verification](SHOWCASE_SYNC.md).
+The content exception is closed; the showcase is maintenance only. Older release
+observations below remain dated history.
 
 **31 October final closeout:** the local-product download now targets
 [/tree/local](https://github.com/DVDWK812/Finscope/tree/local); the separate

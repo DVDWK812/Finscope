@@ -1,5 +1,25 @@
 # Development log
 
+## Visible v2 approved source release — 3 November 2026 Sydney
+
+User explicitly accepted the localhost visible v2 revision for commit/push.
+Committed exactly eleven intended showcase/source/test/documentation paths as
+`e565645e153c2a0afa9ec2c18ba6419b5dc7f69c` and pushed normally to main; remote SHA
+matches. Both exact-push regression jobs (41633144517) and the showcase-only
+isolation job (41633144638) passed. No tests or isolation guards were weakened;
+243 tests/30 showcase checks, syntax and seven dry-run receipts remain retained.
+Dashboard's 7 authored labels / 17 Unclassified / 24 originals are explicitly
+illustrative, not real-news classifications or model output.
+
+Five unrelated working-tree files, 23 protected evidence files and both local refs
+retain their hashes/values. No provider/model/database operation or local branch
+action was performed. The permitted window inventory had no FinScope Edge window.
+After push the user separately confirmed all six actual hosted pages and specified
+visual v2 components, including explicitly illustrative taxonomy counts and working
+Graph/Explorer. This is manual user-reported hosted acceptance, not an agent
+screenshot/device or server-network audit. The source path and guarded CI support
+public isolation. The feature exception is closed; maintenance only.
+
 ## Visible showcase revision candidate — 3 November 2026 Sydney
 
 Audited the prepared v1 patch before editing: eight tracked paths / 258 additions /
