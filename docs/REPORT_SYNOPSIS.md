@@ -42,9 +42,25 @@ Analyze run preserved a deliberately injected pre-dispatch pause, resumed to two
 FinBERT results (including one classification-error record), reopened both saved
 originals and reused results on a second task with zero additional sentiment inference.
 The pause/failure injection is engineering validation, not naturally observed model
-failure or real-media acceptance. Gemma was not loaded; its actual local preflight
-required 7.19 GiB RAM while 5.05 GiB was available. **Gemma rerun remains unverified**;
-no model settings, prompts, thresholds or frozen evaluation were changed.
+failure or real-media acceptance. At that check Gemma was not loaded: its local
+preflight required 7.19 GiB RAM while 5.05 GiB was available. A subsequent authorized
+attempt also stopped before load at 6.33 / 7.17 GiB available / required RAM.
+
+**Later user-requested Gemma retry, 4 November Sydney: basic inference and unload
+passed.** Installed `google/gemma-4-e4b` Q4_K_M loaded with context 2048 and GPU ratio
+0.8 under the unchanged resource guard. One authored fictional-bank input returned
+Banking/Finance and positive business conditions in **0.92 seconds**, with
+`finish_reason=stop`, 58 input / 31 output tokens. Available RAM before load / resident /
+after unload was **8.21 / 3.95 / 9.11 GiB**; available dedicated GPU memory was
+**14.96 / 11.30 / 14.96 GiB**. The loopback unload API completed and the subsequent
+inventory confirmed the task-created model unloaded; the LM Studio service remained
+running. These are system snapshots, not process-level leak evidence. This validates
+one basic real inference and cleanup, **not** the full MiniLM/Gemma classification
+pipeline, structured taxonomy validation, classification accuracy or sustained
+stability. No news was fetched, successful news reanalyzed, database results written,
+model downloaded, or protection threshold changed. Evidence is the actual local
+load/inference/unload tool output recorded in this chat; the earlier preflight JSON
+remains unchanged and does not contain this later success.
 
 Evidence: local ignored `reports/p0_closeout_20261104/live_aggregates.json`,
 `reports/p0_20261104_models.json`, `reports/p0_closeout_20261104/result.json` and

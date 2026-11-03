@@ -1148,7 +1148,7 @@ persists independent sentiment. No classifier semantics or model versions change
 | Classification failure independent of sentiment | Pass | Targeted tests plus isolated actual FinBERT batch: both authored records analyzed, including classifier-fault record. |
 | Pause/resume, persistence and cache | Pass | Injected pre-dispatch resource pause; resume from saved checkpoint; reopened SQLite has 2 records/2 analyses; replay adds zero inference. Injection is not an actual OOM claim. |
 | MiniLM / FinBERT real lifecycle | Pass | Three authored rounds; MiniLM reuses its stage child for encoding; all six model children exited with code 0 and verified exit. Available RAM start/end GiB: 5.88/5.75, 5.75/5.35, 5.33/5.35. No leak-free claim. |
-| Fresh Gemma semantic inference | Unverified | Installed model unloaded; preflight RAM 5.05 GiB versus 7.19 required. VRAM 13.54 versus 7.10 GiB. No load/inference, no threshold reduction. |
+| Fresh Gemma basic inference / unload | Pass (later retry) | Earlier preflight remained blocked (RAM 5.05/7.19 GiB, later 6.33/7.17). User-requested retry completed one authored-input inference in 0.92 s and verified unload. RAM before/resident/after: 8.21/3.95/9.11 GiB. Full semantic-classification pipeline remains unverified in this closeout; no accuracy claim. |
 | Formal 8511 and Worker | Pass | Running local app and current Worker heartbeat; real browser access succeeded. |
 | Three acquisition modes | Pass | Default broad mode, six media checkboxes with fixed domains/Latest, company watchlist; drafts restored to broad, no configuration saved. |
 | Update & Analyze | Pass (bounded) | Real confirmation UI opened/cancelled; saved-input authored batch exercised actual Worker/FinBERT path. Live provider acquisition intentionally not executed. |
@@ -1163,3 +1163,20 @@ not the sealed 2 November report baseline. REPORT_SYNOPSIS retains both scopes.
 Ignored local evidence: reports/p0_20261104_models.json,
 reports/p0_closeout_20261104/{result.json,gemma_preflight.json,live_aggregates.json,
 offline_tests.log,dry_run.log}. No private media text is added to Git.
+
+
+### 4 November 2026 Sydney — Gemma P0 evidence supplement
+
+Documentation only, following the user's successful local retry. Actual loopback
+`google/gemma-4-e4b` Q4_K_M inference returned Banking/Finance and positive conditions
+for one authored fictional-bank example, finish_reason stop, 58 prompt / 31 completion
+tokens, 0.92 s. Context 2048, GPU ratio 0.8; existing load guards passed. Available
+RAM bytes before/resident/after unload: 8820236288 / 4242034688 / 9781800960;
+available dedicated GPU bytes: 16059109376 / 12133978112 / 16059305984. Unload of
+this task-created instance was confirmed by a fresh inventory; service left running.
+Source: actual execution output in the local verification chat, not a rerun or a
+replacement of reports/p0_closeout_20261104/gemma_preflight.json. Earlier blocked
+attempts remain historical facts. This is a basic model/cleanup smoke only; the full
+classification pipeline and general accuracy were not tested. No production SQLite
+write, news HTTP, model download, successful-news replay or frozen evaluation change.
+REPORT_SYNOPSIS and the existing P0 table now reflect this bounded later success.
