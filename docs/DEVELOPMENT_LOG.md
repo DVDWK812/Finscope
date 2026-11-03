@@ -1,5 +1,55 @@
 # Development log
 
+## Visible showcase revision candidate — 3 November 2026 Sydney
+
+Audited the prepared v1 patch before editing: eight tracked paths / 258 additions /
+27 deletions, plus the new content module and sync record. Port 8597's nine public
+files matched the prepared snapshot (`prepared-v1-d7107bf200`); health was 200/ok.
+The near-identical appearance followed from copy edits and a collapsed topic
+panel, not an identified stale-source issue. Archived the original patch/source
+and retained its 241-test receipts.
+
+V2 adds a visible Home capability grid/architecture panel, a four-node Guide
+workflow, an always-visible counted Dashboard topic hierarchy, and a prominent
+Windows launcher with UI/worker illustration. Existing tokens/navigation/fixtures
+and graph relationships are retained; all illustrations describe local features
+without running them. Tests preserve the four workflow stages and installer
+behavior while checking visible placement and original-count partitions.
+V2 passes 243 tests (30 showcase/isolation), syntax and seven no-network previews.
+Paired public-only snapshots serve the previous f2fade9 baseline on 8598 and v2 on
+8597. Exact snapshot guarded tests run all six pages, verify the sidebar review
+IDs, and retain all original frequency/count checks; health is 200/ok for both.
+Only the previous task-owned preview process was replaced; product/worker PIDs
+and creation times remain unchanged. No browser screenshots or visual acceptance
+is claimed while permitted control is unavailable; manual comparison is required.
+The user subsequently explicitly approved visible v2 for commit/push on main.
+Only the eleven intended showcase/source/test/documentation paths are included;
+review wrappers, private receipts and unrelated edits remain excluded. Exact-SHA
+CI and actual hosted checks are separate post-push gates; no premature hosted
+success is claimed. Feature scope is closed pending release verification.
+
+## Showcase content sync candidate — 3 November 2026 Sydney
+
+Fetched current refs; main remains `f2fade938350fbe6db3fb9faeee43598eca26d14`, and
+local matches the reviewed `7e6c5158c56ac0a520119f91ddfbb2fae9041782`. Read the
+required README/latest log/synopsis/handoff, relevant acceptance documents and
+current pipeline/settings/worker/launcher source without running the product.
+The concise [capability matrix](SHOWCASE_SYNC.md) resolves historical totals and
+dated verification limits without publishing private receipts or text.
+
+Prepared six-page copy changes, source-separated guidance, full-launcher startup,
+consistent topic/model context and an explicitly authored parent/child topic list.
+The original fixtures, graph memberships, labels, sentiments, frequency inputs,
+theme and navigation are retained. New guards cover local worker/classifier imports;
+regressions cover topic selection/Reset, article context and all word scopes.
+The isolated committed-main candidate passes 241 full tests (28 showcase), syntax
+for 47 Python files and seven existing no-network CLI previews. All 23 protected
+evidence and five unrelated file hashes match; original fixture/theme/graph code
+is unchanged apart from checkout line endings. No actual model or source is run.
+Browser access remains blocked by Computer Use URL verification even though the
+user-opened Edge showcase window was found. No push, hosted screenshots, exact-CI
+success or deployment acceptance is claimed for this candidate.
+
 ## Public showcase closeout — 31 October 2026 Sydney
 
 Corrected the local-product CTA to `/tree/local` and labelled the separate

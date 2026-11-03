@@ -1,5 +1,9 @@
 """Acceptance boundaries for a public preview without the local product runtime."""
 import builtins
+import hashlib
+import json
+import re
+from html import unescape
 from datetime import timedelta
 from pathlib import Path
 import unittest
@@ -24,12 +28,21 @@ def article_widget(app, key):
     return next(widget for widget in app.selectbox if (widget.key or "").startswith(key + "__"))
 
 
+def workflow_titles(app):
+    markup = next(m.value for m in app.markdown
+                  if 'aria-label="Local workflow: Settings to Dashboard"' in m.value)
+    return [(int(index), unescape(title)) for index, title
+            in re.findall(r'<li data-workflow-step="(\d+)">.*?<h3>(.*?)</h3>', markup, re.S)]
+
+
 class ShowcaseTests(unittest.TestCase):
     def setUp(self):
         original_import = builtins.__import__
         forbidden = ("torch", "transformers", "huggingface_hub", "finscope.api_sources",
                      "finscope.product_ui", "finscope.local_news", "finscope.model_assets",
-                     "finscope.demo_runtime", "finscope.finbert_backend", "finscope.embedding_backend")
+                     "finscope.demo_runtime", "finscope.finbert_backend", "finscope.embedding_backend",
+                     "finscope.local_worker", "finscope.settings_ui", "finscope.industry_classifier",
+                     "finscope.model_providers", "finscope.media_monitor", "finscope.media_batch")
 
         def guarded_import(name, *args, **kwargs):
             if any(name == prefix or name.startswith(prefix + ".") for prefix in forbidden):
@@ -67,7 +80,8 @@ class ShowcaseTests(unittest.TestCase):
         app = self.app()
         next(b for b in app.button if b.label == "How it works").click().run()
         self.assertEqual(app.session_state["showcase_page"], "User Guide")
-        self.assertEqual(len(app.subheader), 4)
+        self.assertEqual(workflow_titles(app), [(1, "Settings"), (2, "Update & Analyze"),
+                                               (3, "Background Worker"), (4, "Dashboard")])
         navigate(app, "Get FinScope")
         content = "\n".join(code.value for code in app.code)
         self.assertIn("requirements-local.txt", content)
@@ -85,6 +99,109 @@ class ShowcaseTests(unittest.TestCase):
         self.assertIn("OPTIONAL LOCAL INTEGRATIONS", markup)
         self.assertIn("Local LM Studio", markup)
         self.assertNotIn("IN DEVELOPMENT", markup)
+        windows = "\n".join(code.value for code in app.tabs[0].code)
+        unix = "\n".join(code.value for code in app.tabs[1].code)
+        self.assertEqual(sum(c.value == "./launch_local.ps1 -Port 8501" for c in app.code), 1)
+        self.assertIn('aria-label="Windows launcher starts UI and worker"', markup)
+        self.assertNotIn("-m streamlit run", windows)
+        self.assertIn("-m finscope.local_worker", unix)
+        self.assertIn("-m streamlit run", unix)
+        self.assertTrue(any("macOS/Linux runtime acceptance is pending" in c.value for c in app.caption))
+
+    def test_reviewed_guide_keeps_scope_and_verification_qualifications(self):
+        app = self.app()
+        navigate(app, "User Guide")
+        self.assertEqual(workflow_titles(app), [(1, "Settings"), (2, "Update & Analyze"),
+                                               (3, "Background Worker"), (4, "Dashboard")])
+        text = "\n".join(m.value for m in app.markdown) + "\n" + "\n".join(c.value for c in app.caption)
+        for qualification in ("General, News sources and Analysis models", "Saving settings does not fetch",
+                              "Selected media", "Latest news only", "NewsData remains manually paused",
+                              "Unknown account balance", "not-applicable analysis", "collect-only",
+                              "DeepSeek", "not the automatic real-news pipeline",
+                              "Repeated-load stability remains unverified", "blocked by resource preflight"):
+            self.assertIn(qualification, text)
+        about = next(e for e in app.expander if e.label == "About FinScope")
+        self.assertTrue(any("3 November 2026 / 7e6c515" in c.value for c in about.caption))
+        self.assertTrue(all(not e.proto.expanded for e in app.expander))
+
+    def test_home_capabilities_are_visible_and_scoped_to_the_local_product(self):
+        app = self.app()
+        self.assertTrue(any(h.value == "Local Product Capabilities" for h in app.subheader))
+        cards = next(m.value for m in app.markdown if 'aria-label="Local product capabilities"' in m.value)
+        self.assertEqual(cards.count('<article class="fs-product-capability">'), 4)
+        for title in ("News collection", "Background processing", "Model selection", "Sector intelligence"):
+            self.assertIn('<h3>' + title + '</h3>', cards)
+        self.assertIn("Defaults + optional", cards)
+        self.assertIn("limited authored-text interface test", cards)
+        self.assertFalse(any('aria-label="Local product capabilities"' in m.value
+                             for e in app.expander for m in e.markdown))
+        self.assertTrue(any("this website does not collect news" in c.value for c in app.caption))
+        self.assertEqual(workflow_titles(app), [(1, "Settings"), (2, "Update & Analyze"),
+                                               (3, "Background Worker"), (4, "Dashboard")])
+
+    def test_visible_hierarchy_counts_follow_original_dashboard_filters(self):
+        app = self.app()
+        navigate(app, "Dashboard Preview")
+        self.assertTrue(any(h.value == "Industry intelligence" for h in app.subheader))
+        self.assertFalse(any(w.key == "preview_topic_parent" for e in app.expander for w in e.selectbox))
+        hierarchy = lambda: next(m.value for m in app.markdown
+                                 if 'aria-label="Authored parent and child industry hierarchy"' in m.value)
+        counts = lambda: [int(n) for n in re.findall(r'data-original-count="(\d+)"', hierarchy())]
+        self.assertEqual(sum(counts()), 24)
+        self.assertIn('data-topic-parent="Unclassified" data-original-count="17"', hierarchy())
+        self.assertIn("Retail operations", hierarchy())
+        app.multiselect(key="preview_sectors").set_value(["Technology"]).run()
+        self.assertEqual(sum(counts()), 4)
+        self.assertIn('data-topic-parent="Unclassified" data-original-count="3"', hierarchy())
+        self.assertEqual(app.metric[0].value, "4")
+        next(b for b in app.button if b.label == "Reset preview").click().run()
+        self.assertEqual(sum(counts()), 24)
+        self.assertEqual(app.metric[0].value, "24")
+
+    def test_topic_navigation_inherits_dashboard_selection_and_resets(self):
+        app = self.app()
+        navigate(app, "Dashboard Preview")
+        topic_table = lambda: next(d.value for d in app.dataframe if "Text topic parent" in d.value.columns)
+        self.assertEqual(len(topic_table()), 24)
+        app.selectbox(key="preview_topic_parent").set_value("Financial services").run()
+        self.assertEqual(set(topic_table()["Headline"]), {"Savings Tool Introduced", "Digital Service Expands"})
+        app.selectbox(key="preview_topic_child__Financial services").set_value("Savings products").run()
+        self.assertEqual(list(topic_table()["Headline"]), ["Savings Tool Introduced"])
+        self.assertEqual(app.metric[0].value, "24")
+        app.multiselect(key="preview_sectors").set_value(["Technology"]).run()
+        self.assertEqual(app.metric[0].value, "4")
+        self.assertTrue(any("No authored topic examples" in i.value for i in app.info))
+        next(b for b in app.button if b.label == "Reset preview").click().run()
+        self.assertEqual(app.selectbox(key="preview_topic_parent").value, "All topic parents")
+        self.assertEqual(app.selectbox(key="preview_topic_child__All topic parents").value, "All child topics")
+        self.assertEqual(len(topic_table()), 24)
+        self.assertEqual(app.metric[0].value, "24")
+        app.selectbox(key="preview_topic_parent").set_value("Unclassified").run()
+        self.assertEqual(len(topic_table()), 17)
+        self.assertTrue(all(topic_table()["Company industry"]))
+        self.assertEqual(set(topic_table()["Text topic child"]), {"No child label"})
+        self.assertTrue(app.selectbox(key="preview_topic_child__Unclassified").disabled)
+        self.assertFalse(app.exception)
+
+    def test_article_topic_context_is_consistent_without_invented_model_history(self):
+        app = self.app()
+        navigate(app, "Knowledge Graph")
+        app.selectbox(key="graph_company").set_value("Harbor Ledger Bank").run()
+        article_widget(app, "graph_article").set_value("SYN-010").run()
+        expected = "Text topic: Financial services / Savings products · authored illustration"
+        self.assertTrue(any(c.value == expected for c in app.caption))
+        app.radio(key="graph_cloud_scope").set_value("Selected company").run()
+        app.selectbox(key="graph_cloud_word").set_value("savings").run()
+        self.assertEqual(article_widget(app, "graph_cloud_article").value, "SYN-010")
+        self.assertEqual(sum(c.value == expected for c in app.caption), 2)
+        navigate(app, "News Explorer")
+        app.text_input[0].set_value("savings").run()
+        self.assertEqual(article_widget(app, "explorer_article").value, "SYN-010")
+        self.assertTrue(any(c.value == expected for c in app.caption))
+        text = "\n".join(m.value for m in app.markdown)
+        self.assertIn("Collection cohort: Not applicable", text)
+        self.assertIn("Model history: Not applicable", text)
+        self.assertFalse(app.exception)
 
     def test_dashboard_filters_raw_counts_and_reset(self):
         app = self.app()
@@ -217,6 +334,35 @@ class ShowcaseTests(unittest.TestCase):
 
 
 class FictionalDataTests(unittest.TestCase):
+    def test_every_original_headline_frequency_and_match_set_is_unchanged(self):
+        # Release baseline across all 24 originals and each of the six companies.
+        scopes = {"All fictional headlines": examples(),
+                  **{c: [r for r in examples() if r.company == c]
+                     for c in sorted({r.company for r in examples()})}}
+        data = {name: word_cloud_terms(rows, limit=10000) for name, rows in scopes.items()}
+        digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        self.assertEqual(digest, "84745a5e524f2a4ae0b0429aa3727e0193dbd11b130a29b00dc9add0617afcb4")
+
+    def test_authored_topic_evidence_and_unclassified_do_not_infer_company_industry(self):
+        from finscope.showcase_content import AUTHORED_TOPICS, topic_context, topic_select
+        rows = examples()
+        self.assertLessEqual(set(AUTHORED_TOPICS), {r.article_id for r in rows})
+        for row in rows:
+            info = topic_context(row)
+            if info["evidence"]:
+                self.assertIn(info["evidence"], (row.title + " " + row.summary).casefold())
+                self.assertEqual(info["status"], "Authored illustration")
+            else:
+                self.assertEqual(info["parent"], "Unclassified")
+                self.assertIsNone(info["child"])
+        logistics = next(r for r in rows if r.article_id == "SYN-023")
+        self.assertEqual(logistics.sector, "Consumer")
+        self.assertEqual(topic_context(logistics)["parent"], "Industrials")
+        self.assertEqual({r.article_id for r in topic_select(rows, "Consumer", "Retail operations")},
+                         {"SYN-021", "SYN-022"})
+        self.assertTrue(all(r.company == "Cedar Therapeutics" for r in rows[4:8]))
+        self.assertTrue(all(topic_context(r)["parent"] == "Unclassified" for r in rows[4:8]))
+
     def test_landing_preview_uses_real_fixture_counts_and_filtered_input(self):
         from finscope.showcase_theme import dashboard_preview
         full = dashboard_preview(examples())
@@ -237,7 +383,7 @@ class FictionalDataTests(unittest.TestCase):
             linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
             return sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
 
-        for foreground in ("text", "muted", "accent", "positive", "neutral", "negative"):
+        for foreground in ("text", "muted", "accent", "positive", "neutral", "negative", "industry"):
             for background in ("background", "surface", "raised"):
                 a, b = sorted((luminance(TOKENS[foreground]), luminance(TOKENS[background])))
                 self.assertGreaterEqual((b + .05) / (a + .05), 4.5, (foreground, background))

@@ -71,6 +71,51 @@ def dashboard_preview(records):
             '<div class="fs-demo-foot">Authored fictional records · Counts reflect originals</div></section>')
 
 
+def capabilities_markup(cards):
+    items = []
+    for icon, title, status, lead, note in cards:
+        kind = "optional" if "optional" in status else "implemented"
+        items.append('<article class="fs-product-capability">' + line_icon(icon)
+                     + f'<span class="fs-state {kind}">{escape(status)}</span>'
+                     + f'<h3>{escape(title)}</h3><p class="fs-capability-lead">{escape(lead)}</p>'
+                     + f'<p>{escape(note)}</p></article>')
+    return '<section class="fs-product-capabilities" aria-label="Local product capabilities">' + ''.join(items) + '</section>'
+
+
+def workflow_markup(steps, compact=False):
+    mode = "fs-workflow-compact" if compact else "fs-workflow"
+    items = ''.join('<li data-workflow-step="' + str(index) + '"><span class="fs-flow-number">'
+                    + f'{index:02}</span><div>' + line_icon(icon) + f'<h3>{escape(title)}</h3>'
+                    + f'<p>{escape(text)}</p></div></li>'
+                    for index, (icon, title, text) in enumerate(steps, 1))
+    flow = f'<ol class="{mode}" aria-label="Local workflow: Settings to Dashboard">{items}</ol>'
+    if compact:
+        return ('<section class="fs-demo-window"><div class="fs-demo-toolbar"><span>LOCAL PRODUCT ARCHITECTURE</span>'
+                '<span class="fs-demo-dot">ILLUSTRATION</span></div>' + flow
+                + '<div class="fs-demo-foot">Runs on your computer · This website does not execute these tasks</div></section>')
+    return flow
+
+
+def hierarchy_markup(groups, selected_parent):
+    cards = []
+    for group in groups:
+        active = " is-selected" if group["parent"] == selected_parent else ""
+        children = ''.join('<li><span>' + escape(name) + '</span><strong>' + str(count) + '</strong></li>'
+                           for name, count in sorted(group["children"].items()))
+        cards.append(f'<article class="fs-industry-branch{active}" data-topic-parent="{escape(group["parent"], quote=True)}" '
+                     f'data-original-count="{group["count"]}"><header><h3>{escape(group["parent"])}</h3>'
+                     f'<strong>{group["count"]}</strong></header><ul>{children}</ul></article>')
+    return '<section class="fs-industry-tree" aria-label="Authored parent and child industry hierarchy">' + ''.join(cards) + '</section>'
+
+
+def launcher_architecture():
+    return ('<section class="fs-launcher-architecture" aria-label="Windows launcher starts UI and worker">'
+            '<div class="fs-launcher-root">Windows launcher</div><div class="fs-launcher-processes">'
+            '<div><small>LOCAL PROCESS 01</small><h3>Streamlit UI</h3><p>Settings · Filters · Inspection</p></div>'
+            '<div><small>LOCAL PROCESS 02</small><h3>Background Worker</h3><p>Persistent tasks · Checkpoints</p></div>'
+            '</div><p class="fs-architecture-note">Local product architecture · No worker or database runs on this website.</p></section>')
+
+
 def theme_css():
     variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in TOKENS.items())
     return '<style>:root{' + variables + r''' }
@@ -159,14 +204,59 @@ def theme_css():
     .st-key-fs_explorer_detail .story{padding:0;border:0;background:transparent;}
     .fs-capability{padding:1.3rem;border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);}
     .fs-capability ul{padding-left:1.2rem;margin-bottom:0;}.fs-capability li{margin:.45rem 0;font-size:.87rem;}
+    .fs-product-capabilities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:.8rem 0 1.5rem;}
+    .fs-product-capability{position:relative;min-width:0;border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.15rem;}
+    .fs-product-capability .fs-state{display:block;width:fit-content;margin:.8rem 0 .5rem;}
+    .fs-state{font-size:.65rem;line-height:1.4;border:1px solid var(--fs-border);border-radius:5px;padding:3px 7px;}
+    .fs-state.implemented{color:var(--fs-accent);border-color:#37665f;background:var(--fs-accent-surface);}
+    .fs-state.optional{color:var(--fs-industry);border-color:#75694c;}
+    .fs-product-capability h3{font-size:1rem!important;margin:.65rem 0;}
+    .fs-product-capability p{color:var(--fs-muted);font-size:.77rem;line-height:1.55;margin:.5rem 0 0;}
+    .fs-product-capability .fs-capability-lead{color:var(--fs-text);font-size:.85rem;font-weight:500;}
+    .fs-workflow,.fs-workflow-compact{list-style:none;padding:0;margin:1rem 0;}
+    .fs-workflow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin:1.5rem 0 2rem;}
+    .fs-workflow li{position:relative;min-width:0;padding:1.15rem;border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);}
+    .fs-workflow h3{font-size:.95rem!important;line-height:1.4;margin:.85rem 0 .5rem;}
+    .fs-workflow p,.fs-workflow-compact p{color:var(--fs-muted);font-size:.79rem;line-height:1.5;margin:0;}
+    .fs-flow-number{font-size:.72rem;color:var(--fs-accent);}
+    .fs-workflow .fs-flow-number{position:absolute;right:1rem;top:1.25rem;}
+    .fs-workflow li:not(:last-child)::after{content:'→';position:absolute;right:-24px;top:calc(50% - 12px);width:24px;height:24px;line-height:24px;text-align:center;font-size:20px;color:var(--fs-accent);}
+    .fs-workflow-compact li{position:relative;display:grid;grid-template-columns:27px minmax(0,1fr);gap:12px;padding:.8rem 0;}
+    .fs-workflow-compact .fs-flow-number{display:grid;place-items:center;width:25px;height:25px;border:1px solid #37665f;border-radius:50%;background:var(--fs-accent-surface);}
+    .fs-workflow-compact .fs-line-icon{display:none;}
+    .fs-workflow-compact h3{font-size:.9rem!important;line-height:1.4;margin:0 0 .3rem;}
+    .fs-workflow-compact li:not(:last-child)::after{content:'';position:absolute;left:12px;top:40px;bottom:-8px;border-left:1px solid #37665f;}
+    .st-key-fs_industry_topics,.st-key-fs_launcher{background:var(--fs-surface);border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1.15rem;}
+    .fs-industry-tree{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:.7rem 0 1rem;}
+    .fs-industry-branch{min-width:0;background:var(--fs-raised);border:1px solid var(--fs-border);border-radius:10px;padding:.9rem;}
+    .fs-industry-branch.is-selected{border-color:var(--fs-accent);}
+    .fs-industry-branch header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+    .fs-industry-branch h3{font-size:.9rem!important;line-height:1.4;margin:0;overflow-wrap:anywhere;}
+    .fs-industry-branch header strong{font-size:1.15rem;color:var(--fs-text);}
+    .fs-industry-branch ul{list-style:none;padding:0 0 0 .65rem;margin:.7rem 0 0;border-left:1px solid #61758c;}
+    .fs-industry-branch li{display:flex;justify-content:space-between;gap:8px;color:var(--fs-muted);font-size:.76rem;}
+    .fs-launcher-root{color:var(--fs-accent);font-size:.85rem;font-weight:600;text-align:center;padding:.6rem;background:var(--fs-accent-surface);border:1px solid #37665f;border-radius:8px;}
+    .fs-launcher-root::after{content:'↓';display:block;margin-top:.2rem;}
+    .fs-launcher-processes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin:.7rem 0;}
+    .fs-launcher-processes>div{min-width:0;border:1px solid var(--fs-border);border-radius:8px;padding:.8rem;background:var(--fs-raised);}
+    .fs-launcher-processes small{font-size:.6rem;color:var(--fs-muted);}
+    .fs-launcher-processes h3{font-size:.95rem!important;line-height:1.4;margin:.4rem 0;}
+    .fs-launcher-processes p,.fs-architecture-note{font-size:.73rem;color:var(--fs-muted);margin:0;}
     #vg-tooltip-element.vg-tooltip{background:var(--fs-raised);color:var(--fs-text);border:1px solid var(--fs-border);border-radius:8px;}
     @media(max-width:1050px){
+      .fs-product-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .fs-workflow{grid-template-columns:1fr;}
+      .fs-workflow li:not(:last-child)::after{content:'↓';top:auto;right:calc(50% - 12px);bottom:-24px;}
       .st-key-fs_home_hero [data-testid="stHorizontalBlock"],.st-key-fs_explorer_layout [data-testid="stHorizontalBlock"],.st-key-fs_dashboard_charts [data-testid="stHorizontalBlock"]{flex-direction:column;}
       .st-key-fs_home_hero [data-testid="stColumn"],.st-key-fs_explorer_layout [data-testid="stColumn"],.st-key-fs_dashboard_charts [data-testid="stColumn"]{width:100%;flex:1 1 100%;}
       .st-key-fs_hero_ctas [data-testid="stHorizontalBlock"]{flex-direction:row;}
       .st-key-fs_hero_ctas [data-testid="stColumn"]{width:auto;flex:1 1 45%;}
     }
     @media(max-width:700px){
+      .fs-product-capabilities,.fs-industry-tree{grid-template-columns:1fr;}
+      .st-key-fs_industry_topics,.st-key-fs_launcher{padding:.8rem;}
+      .fs-product-capability{padding:1rem;}
+      .fs-launcher-processes{grid-template-columns:1fr;}
       [data-testid="stMainBlockContainer"]{padding:3.5rem 1rem 2rem;}
       .st-key-fs_map,.st-key-fs_graph_detail,.st-key-fs_cloud,.st-key-fs_explorer_detail{padding:.8rem;}
       .fs-header-meta{align-items:flex-start;}.fs-badge{font-size:.63rem;}

@@ -1,5 +1,15 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**3 November — explicit showcase content-sync exception:** review pinned local
+`7e6c5158c56ac0a520119f91ddfbb2fae9041782` as source evidence only. Update the six
+existing pages without redesign or operational runtime; keep the original 24
+articles/frequencies. Separate implemented, dated acceptance, configuration,
+restricted and pending claims in [the sync matrix](SHOWCASE_SYNC.md). In particular,
+historical handoff totals are not live showcase counts, DeepSeek remains an
+authored interface test and later resource-blocked attempts do not establish
+repeated-load stability. Release awaits browser acceptance; do not push on tests
+alone. No branch/deployment-coordinate change or local/frozen-data modification.
+
 **31 October — final showcase closeout:** direct product downloads and clone
 commands to local; identify main separately as showcase source. Optional local
 integrations are implemented but require configuration/rights and are not tested

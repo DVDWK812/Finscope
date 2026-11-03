@@ -9,7 +9,12 @@ import pandas as pd
 from .showcase_data import (END, START, SECTORS, SENTIMENTS, article_label,
                             candidate_groups, examples, graph, graph_overview, select, word_cloud_terms)
 from .showcase_visuals import graph_layout, relationship_markup, visible_graph, word_cloud_markup
-from .showcase_theme import TOKENS, NAV_ITEMS, NAV_KEYS, SENTIMENT_COLORS, badge, brand, dashboard_preview, eyebrow, line_icon, theme_css
+from .showcase_content import (LOCAL_REVIEW_SHA, LOCAL_REVIEW_DATE, GUIDE_STEPS, SOURCE_CARDS,
+                               MODEL_CARDS, CAPABILITIES, ALL_PARENTS, ALL_CHILDREN,
+                               topic_context, topic_select, topic_rollup)
+from .showcase_theme import (TOKENS, NAV_ITEMS, NAV_KEYS, SENTIMENT_COLORS, badge, brand,
+                             dashboard_preview, eyebrow, theme_css,
+                             capabilities_markup, workflow_markup, hierarchy_markup, launcher_architecture)
 
 REPOSITORY = "https://github.com/DVDWK812/Finscope"
 SHOWCASE_SOURCE = REPOSITORY + "/tree/main"
@@ -50,41 +55,51 @@ def home():
         intro, preview = st.columns([1.05, 1], gap="large")
         with intro:
             st.markdown('<section class="fs-hero"><h1>Financial news.<br><span class="fs-hero-accent">A clearer perspective.</span></h1>'
-                        '<p>A local workspace for financial news, sentiment and source-level inspection. '
-                        'Move from individual headlines to the context behind them.</p></section>', unsafe_allow_html=True)
+                        '<p>Collect permitted financial text, classify its topics, analyze sentiment '
+                        'and inspect originals in a persistent local workspace.</p></section>', unsafe_allow_html=True)
             with st.container(key="fs_hero_ctas"):
                 demo, install = st.columns(2)
                 demo.button("Explore Demo", key="hero_demo", icon=":material/arrow_forward:", type="primary", on_click=go, args=("Dashboard Preview",), width="stretch")
                 install.button("Get FinScope", key="hero_install", icon=":material/download:", on_click=go, args=("Get FinScope",), width="stretch")
             st.button("How it works", key="hero_guide", type="tertiary", icon=":material/menu_book:", on_click=go, args=("User Guide",))
             st.caption("Explore authored examples here. Run the complete product on your computer.")
+            st.caption("In the local app, Update & Analyze runs persistent worker tasks with saved progress and explicit resource pauses.")
         with preview:
-            st.markdown(dashboard_preview(examples()), unsafe_allow_html=True)
-    st.subheader("From individual reports to an inspectable picture")
-    cards = (("sources", "Keep the original", "Start with source reports. Preserve their wording, dates and provenance."),
-             ("analyze", "See the context", "Read sentiment, industry and time patterns without treating tone as a forecast."),
-             ("inspect", "Inspect the evidence", "Explore potential topic links and return to the reports behind every view."))
-    for column, (icon, title, text) in zip(st.columns(3), cards):
-        with column:
-            st.markdown('<article class="fs-feature">' + line_icon(icon) + f'<h3>{title}</h3><p>{text}</p></article>', unsafe_allow_html=True)
+            st.markdown(workflow_markup(GUIDE_STEPS, compact=True), unsafe_allow_html=True)
+    st.subheader("Local Product Capabilities")
+    st.caption("Implemented in the separate local application. These cards describe capabilities; this website does not collect news, start workers or run models.")
+    st.markdown(capabilities_markup(CAPABILITIES), unsafe_allow_html=True)
+    st.caption("Local defaults and configured integrations have different evidence scopes. DeepSeek is an authored-text interface test; repeated-load stability remains unverified.")
+    with st.expander("Illustrative sample overview · 24 fictional originals", expanded=False):
+        st.markdown(dashboard_preview(examples()), unsafe_allow_html=True)
 
 
 def guide():
-    heading("How FinScope works", "Four steps from approved text to an inspectable local workspace.")
-    steps = (("sources", "Choose a news source", "Use a supported connector or approved text in the local app. Credentials stay on your computer."),
-             ("model", "Choose an AI model", "Pinned FinBERT and MiniLM are the defaults. Prepare model assets explicitly before analysis."),
-             ("analyze", "Fetch and analyze", "Preview originals, confirm quota and usage rights, then opt in to storage and analysis."),
-             ("inspect", "Explore and inspect", "Read sector and time views, open original reports and review potential relationships as unverified."))
-    for offset in (0, 2):
-        columns = st.columns(2)
-        for column, index in zip(columns, (offset, offset + 1)):
-            icon, title, text = steps[index]
-            with column:
-                with st.container(key=f"fs_step_{index + 1}"):
-                    st.markdown(line_icon(icon) + eyebrow(f"STEP {index + 1:02}"), unsafe_allow_html=True)
-                    st.subheader(title)
-                    st.write(text)
+    heading("How FinScope works", "Configure once, review the scope, then update and inspect locally.")
+    st.subheader("The local workflow")
+    st.markdown(workflow_markup(GUIDE_STEPS), unsafe_allow_html=True)
+    st.caption("Settings covers General, News sources and Analysis models. Saving settings does not fetch or infer; changing filters does not fetch. The diagram is illustrative, not an operational control.")
     st.button("Try the illustrative dashboard", key="guide_demo", icon=":material/arrow_forward:", type="primary", on_click=go, args=("Dashboard Preview",))
+    with st.expander("Sources, collection modes and permissions", expanded=False):
+        st.write("Broad Financial News is the default, without company or industry query filters. Selected media uses six publisher filters and Latest news only; Company Tracking uses a saved watchlist. These are collection scopes, not inferred article industries.")
+        capability_cards(SOURCE_CARDS)
+        st.caption("Batches are bounded. Failed or unknown requests do not automatically retry or rotate keys; dated budgets do not renew themselves. No arbitrary-site crawl, universal full text, exhaustive coverage or unrestricted publisher rights is promised.")
+    with st.expander("Models, topics and provenance", expanded=False):
+        capability_cards(MODEL_CARDS, columns=3)
+        st.write("DeepSeek has a controlled three-authored-text interface test; it is not the automatic real-news pipeline or an accuracy evaluation. A response alias is not a fixed weight revision.")
+        st.caption("Repeated-load stability remains unverified: the later multi-round attempt was blocked by resource preflight before inference. Starting a local service or listing models is not loading a model.")
+    with st.expander("Advanced collection and saved-record analysis", expanded=False):
+        st.write("In the local Settings workspace, advanced collect-only actions save permitted inputs without analysis. Saved-record offline analysis reuses retained text without fetching it again. Persistent tasks retain checkpoints; explicit continuation still respects expiry, permissions, model readiness and failed/unknown dispatch holds.")
+        st.caption("Unknown account balance, Unclassified text and not-applicable analysis are distinct states. They are not zero quota, a company-industry guess or Neutral sentiment.")
+
+
+def capability_cards(cards, columns=2):
+    """Reuse the established card presentation; copy is escaped, never remote."""
+    for offset in range(0, len(cards), columns):
+        for column, (title, text) in zip(st.columns(columns), cards[offset:offset + columns]):
+            with column:
+                st.markdown('<article class="fs-feature"><h3>' + escape(title) + '</h3><p>'
+                            + escape(text) + '</p></article>', unsafe_allow_html=True)
 
 
 def reset_filters():
@@ -93,6 +108,10 @@ def reset_filters():
     st.session_state["preview_sectors"] = []
     st.session_state["preview_sentiments"] = []
     st.session_state["preview_dates"] = (START, END)
+    st.session_state["preview_topic_parent"] = ALL_PARENTS
+    for key in list(st.session_state):
+        if key.startswith("preview_topic_child__"):
+            st.session_state[key] = ALL_CHILDREN
 
 
 def preview_filters():
@@ -146,12 +165,13 @@ def dashboard():
                 ("Fictional reports", "Positive label share", "Industries", "Example days"),
                 (len(rows), f"{counts[0] / len(rows):.0%}", len({r.sector for r in rows}), (end - start).days + 1)):
             column.metric(label, value)
+    industry_topic_preview(rows)
     with st.container(key="fs_dashboard_charts"):
         a, b = st.columns([1.5, 1])
         with a:
             with st.container(key="fs_chart_sector"):
                 st.subheader("Sector sentiment distribution")
-                st.caption("Original reports by industry and preset tone")
+                st.caption("Original reports by company industry and preset tone")
                 sector_plot(rows)
         with b:
             with st.container(key="fs_chart_mix"):
@@ -190,6 +210,35 @@ def dashboard():
         st.caption("Balance = (positive − negative labels) / reports. Empty cells have no authored record; they do not measure market coverage.")
 
 
+def industry_topic_preview(rows):
+    with st.container(key="fs_industry_topics"):
+        st.subheader("Industry intelligence")
+        unclassified = sum(topic_context(r)["parent"] == "Unclassified" for r in rows)
+        st.caption(f"{len(rows) - unclassified} authored topic labels · {unclassified} Unclassified · {len(rows)} originals. This is an illustration, not model output; company industries remain separate.")
+        all_rows = examples()
+        parents = [ALL_PARENTS, *sorted({topic_context(r)["parent"] for r in all_rows})]
+        a, b = st.columns(2)
+        with a:
+            parent = st.selectbox("Topic parent", parents, key="preview_topic_parent")
+        children = sorted({topic_context(r)["child"] for r in topic_select(all_rows, parent)
+                           if topic_context(r)["child"] is not None})
+        with b:
+            child = st.selectbox("Child topic", [ALL_CHILDREN, *children], disabled=not children,
+                                 key="preview_topic_child__" + parent)
+        selected = topic_select(rows, parent, child)
+        st.markdown(hierarchy_markup(topic_rollup(rows), parent), unsafe_allow_html=True)
+        st.caption(f"{len(selected)} topic-list originals / {len(rows)} dashboard originals. Topic pickers narrow this list; the charts retain the dashboard selection.")
+        if selected:
+            with st.expander(f"Inspect topic originals ({len(selected)})", expanded=False):
+                st.dataframe([{"Headline": article_label(r), "Company industry": r.sector,
+                               "Text topic parent": topic_context(r)["parent"],
+                               "Text topic child": topic_context(r)["child"] or "No child label"} for r in selected],
+                             hide_index=True, width="stretch")
+        else:
+            st.info("No authored topic examples match this dashboard selection. Reset the preview or change the topic.")
+        st.caption("Local shared filters: date / source / parent / child / model → Dashboard · Industries · Graph · Explorer. This website uses page-specific authored-sample filters; no collection query is sent.")
+
+
 def story(row, details=False):
     if row is None:
         st.info("Select a headline to inspect its evidence.")
@@ -199,11 +248,19 @@ def story(row, details=False):
     if details:
         st.write("Complete headline: " + row.title)
         st.write(row.summary)
-        st.caption(f"{row.company} · {row.sector}")
+        st.caption(f"{row.company} · Company industry: {row.sector}")
+        topic = topic_context(row)
+        st.caption("Text topic: " + (f'{topic["parent"]} / {topic["child"]} · authored illustration'
+                                     if topic["child"] else "Unclassified · separate from company metadata"))
         group = next((g for g in candidate_groups(examples()) if row.article_id in g["article_ids"]), None)
         if group:
             st.caption(f'Unverified candidate: {group["label"]}. {group["basis"]}')
         st.caption("Fictional sample only. No publisher URL exists; no original-article link is fabricated.")
+        with st.expander("Topic and model context", expanded=False):
+            st.write("Topic basis: " + (f'authored illustration using the literal phrase “{topic["evidence"]}”.'
+                                        if topic["evidence"] else "no authored text-topic annotation; company metadata is not substituted."))
+            st.write("Collection cohort: Not applicable — authored example; no source query was sent.")
+            st.write("Model history: Not applicable — no model runs in this showcase. The local product retains separate classification and sentiment versions, input evidence and source provenance.")
         with st.expander("Technical details", expanded=False):
             st.write({"Article ID": row.article_id, "Candidate reference": row.candidate or "None"})
 
@@ -296,7 +353,7 @@ def knowledge_graph():
                 st.caption("Desktop fits the panel. On small screens, pan the map or enlarge its text.")
         data = graph(all_rows, company) if perspective == "Company focus" else graph_overview(all_rows)
         render_relationship_graph(data, include_sources=include_sources, mobile_zoom=zoom)
-        st.caption("Dashed links are unverified topic candidates, not confirmed shared events. On mobile, pan left for company context or right for related coverage.")
+        st.caption("Industry nodes show company metadata; article text topics are separate. Dashed links are unverified topic candidates, not confirmed shared events. On mobile, pan left for company context or right for related coverage.")
     if perspective == "Company focus":
         with st.container(key="fs_graph_detail"):
             st.markdown(eyebrow("ARTICLE INSPECTION"), unsafe_allow_html=True)
@@ -336,6 +393,7 @@ def explorer():
     rows = sorted(select(examples(), sectors=() if industry == "All industries" else (industry,), search=query),
                   key=lambda r: (r.day, r.article_id), reverse=True)
     st.caption(f"{len(rows)} fictional originals · preset labels · no publisher content or URLs")
+    st.caption("Inspect source evidence and authored text-topic context below. The local product also retains model/input history; no inference or model history is produced here.")
     if not rows:
         st.info("No fictional examples match. Try a different search or industry.")
         return
@@ -374,6 +432,15 @@ def get_finscope():
     heading("Make FinScope your local workspace", "A personal research application on localhost. Your sources and saved results stay in your local workspace.")
     st.link_button("Get the local product on GitHub", LOCAL_PRODUCT, icon=":material/open_in_new:", type="primary")
     st.caption("Download the functional application from the local branch. The separate main branch contains this public showcase.")
+    with st.container(key="fs_launcher"):
+        launcher, architecture = st.columns([1, 1.2], gap="large")
+        with launcher:
+            st.markdown(eyebrow("WINDOWS · AFTER SETUP"), unsafe_allow_html=True)
+            st.subheader("Start the complete local product")
+            st.code("./launch_local.ps1 -Port 8501", language="powershell", wrap_lines=True)
+            st.caption("One launcher starts the UI and its worker. Direct Streamlit startup serves only the UI.")
+        with architecture:
+            st.markdown(launcher_architecture(), unsafe_allow_html=True)
     st.subheader("Install and start")
     st.caption("Python 3.11+ · Run these commands on your own computer · Explicit model preparation")
     windows, unix = st.tabs(["Windows · PowerShell", "macOS / Linux"])
@@ -385,21 +452,31 @@ def get_finscope():
             st.markdown(eyebrow("02 / CREATE THE ENVIRONMENT"), unsafe_allow_html=True)
             st.code(f"{python} -m venv .venv-ai\n{executable} -m pip install -r requirements-local.txt", language="bash", wrap_lines=True)
             st.markdown(eyebrow("03 / PREPARE MODELS AND START"), unsafe_allow_html=True)
-            st.code(f"{executable} -m finscope.model_assets --prepare --acknowledge-model-licenses\n{executable} -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash", wrap_lines=True)
+            st.code(f"{executable} -m finscope.model_assets --prepare --acknowledge-model-licenses", language="bash", wrap_lines=True)
+            if python == "python":
+                st.caption("After setup, use the full Windows launcher shown above for daily work.")
+            else:
+                st.caption("Source-derived manual route; macOS/Linux runtime acceptance is pending. Run the worker and UI in two project-folder terminals. This is not the verified Windows launcher.")
+                st.code(f"# Terminal 1: local worker\n{executable} -m finscope.local_worker", language="bash", wrap_lines=True)
+                st.code(f"# Terminal 2: UI\n{executable} -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash", wrap_lines=True)
     st.caption("Open http://localhost:8501 after launch. Model licences and publisher-content permissions are separate.")
-    available, planned = st.columns(2)
+    available, optional = st.columns(2)
     with available:
         st.markdown('<section class="fs-capability">' + eyebrow("AVAILABLE IN THE LOCAL PRODUCT")
-                    + '<h3>Your personal news workspace</h3><ul><li>Provider fetch and preview connectors</li>'
+                    + '<h3>Your personal news workspace</h3><ul><li>Update &amp; Analyze with persistent worker tasks</li>'
+                    '<li>Configured news APIs, reviewed fixed sources and approved imports</li>'
                     '<li>Pinned local FinBERT + MiniLM</li><li>Persistent SQLite and original links</li>'
-                    '<li>Sector/time analytics, heatmap and evidence graph</li><li>Fixed RBA / ABS collectors and local imports</li></ul></section>', unsafe_allow_html=True)
-    with planned:
+                    '<li>Parent/child Industries, shared filters and model history</li>'
+                    '<li>Dashboard, evidence graph and News Explorer</li></ul></section>', unsafe_allow_html=True)
+    with optional:
         st.markdown('<section class="fs-capability">' + eyebrow("OPTIONAL LOCAL INTEGRATIONS")
                     + '<h3>Additional ways to connect</h3><ul><li>Local LM Studio</li><li>Local Ollama</li>'
                     '<li>External LLM API with explicit send consent</li></ul>'
-                    '<p>Implemented on the local branch; require configured services or an account, permitted inputs and model assets where applicable. Not exercised by this showcase.</p></section>', unsafe_allow_html=True)
+                    '<p>Require configured services/accounts, permitted inputs and installed assets. DeepSeek is a separate authored-text interface test. None runs on this website.</p></section>', unsafe_allow_html=True)
     with st.expander("Provider keys, quotas and permissions", expanded=False):
-        st.write("Configure provider keys only in the local app's masked fields or project .env. Confirm quota and input rights before fetching, retaining or analyzing text. NewsData's existing pause remains in force; external model calls require explicit transmission consent.")
+        st.write("Configure provider keys only in the local Settings editor or ignored project .env. Confirm source scope, account allowance and current UTC-day application budget before fetching. Saving settings makes no request. NewsData's pause remains in force; external model calls require explicit transmission consent. Research confirmation is not publisher permission; finite retention does not grant redistribution rights.")
+    with st.expander("Availability and remaining verification", expanded=False):
+        st.write("Local implementation is separate from what this website demonstrates. The Windows launcher and dated local workflows have acceptance evidence; other-platform startup, repeated-load stability and future larger batches are not established by this preview. Source reach, language, response fields, account plans and permissions limit coverage. See the local product documentation for current gates.")
 
 
 def main():
@@ -425,6 +502,7 @@ def main():
     with st.expander("About FinScope"):
         st.write("A noncommercial financial-text research product. This showcase uses authored fictional data and preset labels; it performs no news collection or AI inference. Local sentiment is text tone, not a price forecast. Similarity suggests candidates, not verified event deduplication or contradiction detection.")
         st.caption("Local model weights: ProsusAI FinBERT, CC BY-NC-SA 4.0; sentence-transformers MiniLM, Apache-2.0. Publisher-content permissions are separate. Software and detailed evidence are available in the repository.")
+        st.caption(f"Local product information reviewed: {LOCAL_REVIEW_DATE} / {LOCAL_REVIEW_SHA[:7]}")
 
 
 if __name__ == "__main__":

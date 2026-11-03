@@ -1,5 +1,11 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**3 November content-sync candidate:** the user explicitly authorized a passive
+content/preview maintenance exception, with no redesign. Pinned local evidence,
+capability qualifications, website changes and pending release gates are recorded
+in [SHOWCASE_SYNC.md](SHOWCASE_SYNC.md). The existing hosted release and acceptance
+below remain historical evidence until the candidate is browser-checked and pushed.
+
 **31 October final closeout:** the local-product download now targets
 [/tree/local](https://github.com/DVDWK812/Finscope/tree/local); the separate
 showcase-source link targets `/tree/main`. Both installation tabs explicitly clone

@@ -1,6 +1,25 @@
 # FinScope — team report synopsis
 
-Evidence current: **31 October 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+Evidence current: **3 November 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
+
+**Showcase presentation candidate:** the source-backed local update now has visible
+capability/status cards, a Settings → task → worker → Dashboard workflow, authored
+parent/child topic navigation and launcher architecture. All 24 originals and
+frozen evaluation claims remain unchanged. This is a presentation candidate,
+accepted by the user for release on 3 November; exact CI and hosted checks remain
+separate post-push gates. It is not a new model result or a claim that the public
+website executes local capabilities ([sync record](SHOWCASE_SYNC.md)).
+
+**Source-backed product update:** pinned local
+`7e6c5158c56ac0a520119f91ddfbb2fae9041782` implements Settings, Update & Analyze,
+persistent worker stages, three collection modes, reviewed-source/import/discovery
+paths and separate text-topic/sentiment histories. Dated official-source acceptance,
+private-research continuations and the sealed 2 November handoff are different
+evidence scopes, not current public library totals. DeepSeek remains an authored
+interface test; later resource-blocked attempts do not establish repeated-load
+stability. The passive 24-example showcase sync is a candidate awaiting browser
+acceptance/release; see the concise [capability matrix](SHOWCASE_SYNC.md). No new
+accuracy result, public private-text/receipt release or human-participation claim.
 
 **31 October public closeout:** final link/setup corrections pass 236 offline tests,
 syntax checks and seven previews; exact-commit CI for
