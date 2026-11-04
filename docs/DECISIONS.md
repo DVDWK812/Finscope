@@ -1,5 +1,11 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**5 November 2026 — Local presentation isolation:** Translate authored UI labels
+and options through the existing catalogs, including the historically Chinese
+acquisition-mode values. Preserve those internal values rather than migrating
+saved scopes. News text, provider payloads and model identifiers remain verbatim;
+language changes do not authorize requests, inference or permission changes.
+
 **2 November 2026 — P3-E broad acquisition:** Separate financial-news retrieval
 from topic classification. The default Marketaux draft has no entity, keyword or
 publisher filters. [Official documentation](https://www.marketaux.com/documentation)

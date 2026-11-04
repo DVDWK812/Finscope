@@ -1,5 +1,18 @@
 # Development log
 
+## Local language isolation — 5 November 2026
+
+- Added paired English/Simplified Chinese presentation messages for acquisition
+  modes, finite-media batches, source monitoring, account allowance and model
+  controls. Existing internal mode values, source/model identities and original
+  text remain unchanged. Removed inappropriate verbatim treatment of authored
+  scope/source labels and monitor caption prefixes.
+- Production 8511 browser checks verified English and Chinese acquisition modes
+  and scope fields, then restored English. No collection or inference was started.
+  Offline regression: 727 tests, one skip; benchmark dry run passed. After the final
+  caption additions, all 11 i18n and three media-mode tests passed. Tests cover
+  repeated language changes without altering selected mode or triggering HTTP.
+
 ## P3-E broad financial collection — 2 November 2026
 
 - Subsequent live continuation: after confirming available allowance and asking

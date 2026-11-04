@@ -35,7 +35,7 @@ def controls(q,active):
     if acquisition=='media':st.caption('Latest news only · '+', '.join(name+' → '+domain for name,domain in MEDIA_DOMAINS.items()))
     with st.form('media_text_batch'):
         source=st.selectbox('Official media API',['marketaux','finnhub'] if use_watchlist else ['marketaux'],index=1 if use_watchlist and d.get('source')=='finnhub' else 0)
-        status=st.selectbox('Use basis',['research_unverified','licensed','restricted'],format_func=lambda s:Verbatim({'licensed':'Existing licence evidence','research_unverified':'Personal research · applicability unverified','restricted':'Identified restriction blocks this use'}[s]))
+        status=st.selectbox('Use basis',['research_unverified','licensed','restricted'],format_func=lambda s:{'licensed':'Existing licence evidence','research_unverified':'Personal research · applicability unverified','restricted':'Identified restriction blocks this use'}[s])
         fields=st.selectbox('Returned text fields',['title+summary','title only'])
         reference=st.text_area('Licence evidence or research purpose and unresolved applicability',value=d.get('scope',{}).get('reference',''),max_chars=1500)
         exception=st.text_input('Specific exception evidence (only if a restriction was recorded)',max_chars=1500)

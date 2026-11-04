@@ -7,6 +7,8 @@ from datetime import datetime,timezone
 from finscope.media_modes import scope,MEDIA_DOMAINS,MODES
 from finscope.api_sources import MarketauxFilters,build_request
 from finscope.media_broad import key
+from finscope.i18n import resources
+from finscope.ui_preferences import save
 
 class ModeTests(unittest.TestCase):
     def test_three_modes_mapping_and_exclusivity(self):
@@ -28,7 +30,7 @@ class ModeUITests(unittest.TestCase):
         with patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')),patch('finscope.news_keys.NewsKeyRegistry.legacy_key',side_effect=AssertionError('No credential reads')):
             app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30).run()
             self.assertFalse(app.exception)
-            radio=app.radio(key='media_acquisition_mode');self.assertEqual(radio.options,list(MODES));self.assertEqual(radio.value,MODES[0])
+            radio=app.radio(key='media_acquisition_mode');self.assertEqual(radio.options,[resources('en')[v] for v in MODES]);self.assertEqual(radio.value,MODES[0])
             self.assertFalse(any(w.label in MEDIA_DOMAINS for w in app.checkbox))
             radio.set_value(MODES[1]).run();self.assertFalse(app.exception)
             self.assertEqual({w.label for w in app.checkbox if w.label in MEDIA_DOMAINS},set(MEDIA_DOMAINS))
@@ -38,3 +40,18 @@ class ModeUITests(unittest.TestCase):
             app.radio(key='media_acquisition_mode').set_value(MODES[2]).run();self.assertFalse(app.exception)
             self.assertTrue(any('watchlist:' in w.label for w in app.text_area))
             self.assertFalse(any(w.label in MEDIA_DOMAINS for w in app.checkbox))
+
+    def test_language_switch_preserves_mode_and_translates_scope_without_actions(self):
+        self.store.set_setting('guide_completed',True)
+        with patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')),patch('finscope.news_keys.NewsKeyRegistry.legacy_key',side_effect=AssertionError('No credential reads')):
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30).run()
+            app.radio(key='media_acquisition_mode').set_value(MODES[1]).run()
+            for locale in ('zh-CN','en','zh-CN','en'):
+                save(self.store,'ui_language',locale);app.run()
+                self.assertFalse(app.exception)
+                radio=next(r for r in app.radio if r.key.startswith('media_acquisition_mode'))
+                self.assertEqual(radio.options,[resources(locale)[v] for v in MODES])
+                self.assertEqual(radio.value,MODES[1])
+                basis=next(w for w in app.selectbox if w.label==resources(locale)['Use basis'])
+                self.assertEqual(basis.options[0],resources(locale)['Personal research · applicability unverified'])
+                self.assertEqual(basis.value,'research_unverified')

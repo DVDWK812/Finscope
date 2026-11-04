@@ -37,14 +37,14 @@ def controls(store):
         source=st.selectbox('Media feed',list(FEEDS),format_func=lambda k:Verbatim(FEEDS[k].name),key='media_source')
         s=states[source];feed=FEEDS[source]
         report=monitor.evidence(source);plan=monitor.capacity(source)
-        st.caption(Verbatim(f"Last success UTC: {monitor.success_at(source) or '—'} · {plan['status']}"))
-        if s['hold'] or s['inflight']:st.caption(Verbatim('Retained prior checkpoint: '+(s['hold'] or s['inflight'])))
+        st.caption(f"Last success UTC: {monitor.success_at(source) or '—'} · {plan['status']}")
+        if s['hold'] or s['inflight']:st.caption('Retained prior checkpoint: '+(s['hold'] or s['inflight']))
         selected=next(r for r in rows if r['Media']==feed.name)
         age=selected.get('Latest age min')
-        st.caption(Verbatim(f"HTTP latency: {report.get('latency_ms','—')} ms · Latest item age: {age if age is not None else '—'} min · Next due UTC: {s['next_due'] or '—'}"))
+        st.caption(f"HTTP latency: {report.get('latency_ms','—')} ms · Latest item age: {age if age is not None else '—'} min · Next due UTC: {s['next_due'] or '—'}")
         st.caption(Verbatim(feed.finding));st.markdown(f'[Feed]({feed.url}) · [Source terms]({feed.terms})')
         if report:st.json(report,expanded=False)
-        st.caption(Verbatim(f"{plan['used_gets']} / {s['daily_cap']} GETs used · full-day demand {plan['full_day_gets']} · {plan['rounds_available_today']} rounds available today · first/last span {plan['estimated_span_minutes']} min · expires UTC {plan['budget_expires_at']}"))
+        st.caption(f"{plan['used_gets']} / {s['daily_cap']} GETs used · full-day demand {plan['full_day_gets']} · {plan['rounds_available_today']} rounds available today · first/last span {plan['estimated_span_minutes']} min · expires UTC {plan['budget_expires_at']}")
         if s.get('recoverable') and s['inflight'] and st.button('Recover received metadata without HTTP',key='media_recover'):
             try:monitor.recover_received(source);st.rerun()
             except ValueError as error:st.info(str(error))

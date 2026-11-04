@@ -31,7 +31,7 @@ def controls(q):
         st.divider()
         st.caption('Existing official-source batches and local imports')
         c=deepcopy(saved_config(q) or DEFAULT)
-        c['sources']=st.multiselect('Reviewed batch sources',list(SOURCE_LABELS),default=c['sources'],format_func=lambda k:Verbatim(SOURCE_LABELS[k]),key='batch_sources')
+        c['sources']=st.multiselect('Reviewed batch sources',list(SOURCE_LABELS),default=c['sources'],format_func=lambda k:SOURCE_LABELS[k],key='batch_sources')
         c['limit']=int(st.number_input('Maximum records per source',1,300,c['limit'],key='batch_limit'))
         c['taxonomy']=st.selectbox('Batch topic taxonomy',['US-BUSINESS-1','CSRC-JRT0020-2024'],index=['US-BUSINESS-1','CSRC-JRT0020-2024'].index(c['taxonomy']),key='batch_taxonomy')
         c['model']=st.selectbox('Batch local sentiment model',['Local FinBERT','Local LM Studio'],index=0 if c['model']=='Local FinBERT' else 1,key='batch_model')
