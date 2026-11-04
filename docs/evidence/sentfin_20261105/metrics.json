@@ -1,0 +1,142 @@
+{
+  "version": "paired-sentiment-v1",
+  "total": 300,
+  "eligible": 300,
+  "paired": 300,
+  "excluded": [],
+  "failures": [],
+  "completed": {
+    "finbert": 300,
+    "lexicon": 300
+  },
+  "coverage": {
+    "finbert": 1.0,
+    "lexicon": 1.0
+  },
+  "lexicon_match_coverage": 0.25666666666666665,
+  "finbert": {
+    "n": 300,
+    "labels": [
+      "positive",
+      "neutral",
+      "negative"
+    ],
+    "rows_reference_columns_prediction": [
+      [
+        72,
+        25,
+        5
+      ],
+      [
+        20,
+        74,
+        13
+      ],
+      [
+        6,
+        17,
+        68
+      ]
+    ],
+    "accuracy": 0.7133333333333334,
+    "macro_f1": 0.7173462373219156,
+    "per_class_f1": {
+      "positive": 0.72,
+      "neutral": 0.6636771300448431,
+      "negative": 0.768361581920904
+    },
+    "per_class": {
+      "positive": {
+        "support": 102,
+        "precision": 0.7346938775510204,
+        "recall": 0.7058823529411765,
+        "f1": 0.72
+      },
+      "neutral": {
+        "support": 107,
+        "precision": 0.6379310344827587,
+        "recall": 0.6915887850467289,
+        "f1": 0.6636771300448431
+      },
+      "negative": {
+        "support": 91,
+        "precision": 0.7906976744186046,
+        "recall": 0.7472527472527473,
+        "f1": 0.768361581920904
+      }
+    }
+  },
+  "lexicon": {
+    "n": 300,
+    "labels": [
+      "positive",
+      "neutral",
+      "negative"
+    ],
+    "rows_reference_columns_prediction": [
+      [
+        18,
+        78,
+        6
+      ],
+      [
+        5,
+        90,
+        12
+      ],
+      [
+        2,
+        60,
+        29
+      ]
+    ],
+    "accuracy": 0.45666666666666667,
+    "macro_f1": 0.4136892849458062,
+    "per_class_f1": {
+      "positive": 0.28346456692913385,
+      "neutral": 0.5373134328358209,
+      "negative": 0.42028985507246375
+    },
+    "per_class": {
+      "positive": {
+        "support": 102,
+        "precision": 0.72,
+        "recall": 0.17647058823529413,
+        "f1": 0.28346456692913385
+      },
+      "neutral": {
+        "support": 107,
+        "precision": 0.39473684210526316,
+        "recall": 0.8411214953271028,
+        "f1": 0.5373134328358209
+      },
+      "negative": {
+        "support": 91,
+        "precision": 0.6170212765957447,
+        "recall": 0.31868131868131866,
+        "f1": 0.42028985507246375
+      }
+    }
+  },
+  "selection": {
+    "input_rows": 10753,
+    "eligible_unique": 7846,
+    "excluded_rows": 2907,
+    "exclusion_counts": {
+      "not-single-entity": 2834,
+      "invalid-annotation": 13,
+      "concordant-duplicate": 44,
+      "conflicting-duplicate-label": 16
+    },
+    "not_sampled": 7546,
+    "sample_count": 300,
+    "class_distribution": {
+      "neutral": 107,
+      "positive": 102,
+      "negative": 91
+    }
+  },
+  "dataset": "SEntFiN single-entity English headline sample",
+  "seed": 20261105,
+  "recorded_outcomes": 300
+}

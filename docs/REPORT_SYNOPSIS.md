@@ -4,6 +4,17 @@ Evidence checked **4 November 2026 Australia/Sydney**; the 2 November handoff be
 
 ## Milestone and baseline
 
+**5 November real benchmark closeout:** Step 3 is **已完成当前支持环境下的工程交付；
+干净Windows端到端安装未验证** ([engineering acceptance](STEP3_ENGINEERING_ACCEPTANCE.md)).
+The user replaced the self-built 60-item/double-annotation prerequisite with an
+authorized public SEntFiN evaluation. On 300 fixed-seed, unique single-entity titles,
+actual pinned FinBERT achieved accuracy **71.33%**, macro-F1 **0.717346**; fixed LM
+1993–2025 dictionary achieved **45.67%**, **0.413689**. Both completed 300/300 with
+zero inference failures. Labels are the dataset authors' existing annotations, not
+team labels. [Results, matrices, versions and limitations](BASELINE_RESULTS.md)
+describe this headline benchmark separately from the frozen historical evaluation
+and production news pipeline. Earlier plan-only statuses below remain dated history.
+
 **5 November annotation preparation (not evaluation):** a new private partial
 package contains three previously unused RBA title-only inputs and blank A/B and
 adjudication workbooks; 57 texts are missing against the proposed 60. Actual LM

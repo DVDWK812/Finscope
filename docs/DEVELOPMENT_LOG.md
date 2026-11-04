@@ -1276,3 +1276,34 @@ dry run completed. Actual official dictionary was hash-validated and exercised o
 on a newly authored development sentence. FinBERT tests use a mock backend, not
 real inference evidence. All three XLSX outputs rendered and visually checked;
 labels/participation cells verified blank. Exact local SHA/CI checked after push.
+
+
+## 5 November 2026 — actual SEntFiN evaluation and engineering closeout
+
+User superseded the 60-new-text/double-label/separate-run prerequisites and explicitly
+authorized public SEntFiN acquisition and real isolated inference. Download pinned
+SEntFiN commit eba43610fe3cb57a3e5773cd6c037da1f8992ad5, preserve MIT licence,
+original labels and CSV hash. 10,753 rows -> 7,846 eligible unique single-entity
+English-corpus titles; fixed seed20261105 selects300 before predictions. Exclusions:
+2834 parseable non-single-entity,13 malformed multi-entity dictionary strings,
+44 concordant duplicate rows,16 conflicting duplicate-label rows (no adjudication).
+
+Real pinned FinBERT CPU completed300 calls in owned subprocess, verified exit;
+zero failures/pauses/manual interventions. Accuracy214/300=71.33%, macro-F1 .717346;
+actual LM dictionary137/300=45.67%, macro-F1 .413689; paired coverage100%, lexical
+match coverage77/300. Both methods share exact input hashes. Counters independently
+recomputed metrics from saved predictions. Original dataset reference labels only;
+no team human annotations invented. First six fixed-order disagreements reviewed
+as engineering examples, without label changes or model/rule tuning.
+
+Raw data, locked sample, checkpoints, row-level predictions and execution logs stay
+in ignored reports/sentfin_20261105; only scripts, aggregate metrics/protocol, figures
+and technical Results/Limitations enter local Git. No production records, quota,
+expiry, news requests, external LLM or frozen evaluation changed. 171 file hashes
+and nine protected table digests match. Step3 now closes current-environment
+engineering delivery with clean Windows end-to-end still unverified. Different
+41.174s/15.082442s cache observations are not a controlled optimization result.
+
+Validation: full offline regression ran726 tests, one skip, zero failures; dry run
+passed. Both aggregate figures rendered and inspected. No new inference was used
+for validation. Final exact local SHA and three CI jobs are checked after push.
