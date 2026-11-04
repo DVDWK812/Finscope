@@ -1,5 +1,9 @@
 # New baseline evaluation plan — NOT RUN
 
+Dated follow-up: [5 November partial annotation package](ANNOTATION_PACKAGE_20261105.md)
+contains 3 actual title-only texts, not the proposed 60. Historical proposal below
+is preserved; no formal evaluation or genuine labels have been produced.
+
 This is a prospective plan, not results or human annotations. The consumed frozen
 challenge packet, labels, thresholds and evaluation remain untouched. Do not use it
 for development, sampling, prompts or this new baseline. No evaluation is authorized

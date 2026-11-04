@@ -1246,3 +1246,33 @@ industry evaluation. No actual human labels, evaluation predictions or frozen ed
 Final validation: 719 offline tests passed (one skip), benchmark dry run passed.
 Nine protected production table digests and all 171 frozen file hashes are unchanged.
 Only local is committed/pushed; exact-SHA CI is checked after push.
+
+
+## 5 November 2026 — partial independent annotation package
+
+Read-only inventory found three unused official RBA title-only records, no summaries;
+57-text shortfall against 60. Prior analyzed official records, SEC index labels,
+authored fixtures and private media were excluded without inspecting model scores.
+Existing acquisition file is frozen evidence but these titles are not in the
+consumed challenge; original bytes preserved. CC BY attribution and sources remain
+in ignored private records/manifest and three human-input workbooks. No human labels,
+attestations or completion timestamps populated; no formal predictions performed.
+
+Downloaded official LM 1993–2025 dictionary (86,553 entries; active positive347,
+negative2345), pinned hash, academic-use basis, fixed counting rule. Added isolated
+paired prediction/scoring utilities with authorization gating, input hashes, common
+tokenizer exclusions, failures and explicit paired coverage. Tests use new authored
+text/mocked model only; neither old news nor new packet inferred. The experiment's
+NFC/title-summary preprocessing differs from product NFKC/body/lead-span preprocessing.
+
+171 frozen file hashes and nine production table digests match prior preservation
+manifest. No production, model, UI or main changes. Actual packet remains ignored;
+code/tests and factual docs only enter local Git. Clean Windows/fresh dependencies/
+first weight download, sample completion, human references and formal evaluation
+remain pending. Details: ANNOTATION_PACKAGE_20261105.md.
+
+Validation: full offline suite ran 724 tests with one skip and no failures; benchmark
+dry run completed. Actual official dictionary was hash-validated and exercised only
+on a newly authored development sentence. FinBERT tests use a mock backend, not
+real inference evidence. All three XLSX outputs rendered and visually checked;
+labels/participation cells verified blank. Exact local SHA/CI checked after push.

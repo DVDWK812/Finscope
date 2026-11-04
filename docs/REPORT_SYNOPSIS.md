@@ -4,6 +4,15 @@ Evidence checked **4 November 2026 Australia/Sydney**; the 2 November handoff be
 
 ## Milestone and baseline
 
+**5 November annotation preparation (not evaluation):** a new private partial
+package contains three previously unused RBA title-only inputs and blank A/B and
+adjudication workbooks; 57 texts are missing against the proposed 60. Actual LM
+1993–2025 dictionary version/hash and isolated paired scoring utilities are ready.
+No predictions or human labels exist for this packet. See
+[dated package evidence and limitations](ANNOTATION_PACKAGE_20261105.md). Step 3
+clean-environment acceptance and step 4 sampling/reference lock/formal run remain
+unfinished; earlier plan-only statements below describe their historical dates.
+
 **2 November 2026 18:00 Australia/Sydney** is the internal report handoff; technical readiness is due before noon. It is not the official submission deadline or a permanent feature freeze. Development continues on `local`; `main` is read only. A separate final feature freeze and full regression will precede actual submission. The historical official-deadline conflict remains unresolved; the user handles it without further agent Moodle access.
 
 The accepted runtime/data baseline is **`97f0529f32bcbec012368fe1138b4187d3d7d8ae`**, with [all three exact-SHA CI jobs successful](https://github.com/DVDWK812/Finscope/actions/runs/41284045331). The dated [handoff record](REPORT_HANDOFF_20261102.md) identifies the package, screenshots, local snapshot and final delivery receipt. Later development must use separate evidence directories/commits. The consumed evaluation and all 171 protected files remain frozen; historical [delivery-freeze evidence](DELIVERY_FREEZE.md) is preserved byte-for-byte, not a current permanent product-development restriction.
