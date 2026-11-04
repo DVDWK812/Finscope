@@ -299,19 +299,10 @@ def add_news(store):
 
 
 def prepare_finbert():
-    from .model_assets import assets_present, prepare_models
-    ready = all(assets_present(kind) for kind in ("finbert", "minilm"))
-    if not ready:
-        st.info("Prepare the pinned local model files once before analysis.")
-        accepted = st.checkbox("Accept FinBERT CC BY-NC-SA 4.0 and MiniLM Apache-2.0 for noncommercial use")
-        if st.button("Prepare local models", disabled=not accepted):
-            try:
-                with st.spinner("Preparing and verifying pinned model files…"):
-                    prepare_models(acknowledge_licenses=True)
-                st.rerun()
-            except Exception:
-                st.error("Model preparation failed. No prediction was substituted.")
-    return ready
+    from .model_assets import assets_present
+    from .model_preparation import controls
+    controls('analyze_prepare')
+    return all(assets_present(kind) for kind in ('finbert','minilm'))
 
 
 def analyze(store):

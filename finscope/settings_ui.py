@@ -50,6 +50,8 @@ def source_editor(store,c):
 
 def model_editor(store,c):
     from .model_ui import controls
+    from .model_preparation import controls as preparation_controls
+    preparation_controls('settings_prepare')
     values=st.session_state.setdefault('_settings_values',{})
     for key,value in [('pipeline_model',c['model']),('pipeline_lmstudio_model',c.get('model_id') if c['model']=='Local LM Studio' else None),
                       ('pipeline_ollama_model',c.get('model_id') if c['model']=='Local Ollama' else None)]:

@@ -68,6 +68,37 @@ Evidence: local ignored `reports/p0_closeout_20261104/live_aggregates.json`,
 receipts; the report team should use only appropriate aggregates and licensed demo
 material. Historical media success does not grant publisher redistribution rights.
 
+## First-install engineering supplement — 4 November 2026 Sydney
+
+A narrow local installation exception adds Windows x64 first-install and daily-start
+entry points, explicit pinned base-model preparation in Settings, and an optional
+memory-only LM Studio authored self-check. It does not alter the hosted showcase,
+classification semantics, FinBERT weights or the sealed report/evaluation baseline.
+
+Current-machine evidence (Windows x64, Python 3.12.3): verified existing FinBERT and
+MiniLM files reused with zero download calls in **0.636 s**; a real venv was created
+and invoked under a Chinese/space path; isolated Streamlit startup reached health
+200 in **1.289 s**, returned HTML 200 and its owned process exited. Missing-Python
+selection displayed official guidance. A deliberately occupied local port stopped
+the launcher before Worker creation and preserved the occupying listener.
+
+Two **new authored** records in isolated SQLite completed dictionary classification
+and actual pinned FinBERT, with no news requests. Cold batch wall time **66.433 s**;
+individual inference timers **13,104.49 / 2,691.01 ms**; backend released. A second
+saved-input task took **41.174 s**, with zero additional classifications/inferences;
+reopening retained two originals/two analyses. Cache wall time includes resource and
+queue checks, not just lookup, and the OS file cache was not cleared. Concurrent
+regression work may affect these one-run timings; they are not throughput benchmarks.
+Evidence: ignored `reports/first_install_20261104/{result.json,server.json}`.
+
+Offline suite: **714 tests passed, one skip**; dry run passed. Download interruption,
+corruption, cancellation, mutual exclusion, double-click and installation failures
+are mocked tests, not a real first download. Clean Windows without Python, full fresh
+package installation and first real weights transfer are **pending**. Existing model
+files were never deleted for testing. The [new baseline plan and blank annotation
+form](BASELINE_PLAN_20261104.md) remain unrun and contain no human labels. Existing
+frozen accuracy figures must not be attributed to these installation smoke tests.
+
 ## Purpose and architecture
 
 **P3-E engineering, 2 November:** Broad Financial News now separates Marketaux

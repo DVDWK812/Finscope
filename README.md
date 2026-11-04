@@ -119,6 +119,53 @@ freeze. Start with the [handoff record](docs/REPORT_HANDOFF_20261102.md),
 [technical synopsis](docs/REPORT_SYNOPSIS.md) and [local demonstration](docs/DEMO_SCRIPT.md).
 Local development continues afterward; the consumed evaluation remains frozen.
 
+## First installation on Windows x64
+
+Download the **local branch** ZIP and extract it to a writable local folder (spaces
+and Chinese path characters are supported). Do not run from inside the ZIP.
+Double-click **Install FinScope.cmd**. It checks 64-bit Python 3.11 (CI validated)
+or 3.12 (current model-machine validated), write access and at least 8 GiB free disk.
+If Python is absent, install a supported 64-bit release from
+[Python's official Windows page](https://www.python.org/downloads/windows/), then retry.
+This is not a zero-dependency installer. An explicit Python can be selected with
+`./install_local.ps1 -PythonPath "C:/path with spaces/python.exe"`.
+
+Confirm the package installation prompt. The installer creates/reuses `.venv-ai`,
+installs `requirements-install.txt`, checks dependencies and starts port 8511.
+Direct dependency versions match the development machine; transitive packages are
+not a fully locked wheel set. Package installation requires Internet access.
+If interrupted, rerun the installer; it does not erase the environment or data.
+Use `-NoLaunch` for installation only. Normal daily use is **Start FinScope.cmd**;
+it checks dependencies and port availability without running pip. A busy port is
+reported, and no existing process is stopped. PowerShell is invoked with a
+process-scoped script-policy option; no persistent system policy is changed.
+
+In **Settings → Analysis models**, expand **Download and verify FinBERT + MiniLM**,
+review the exact pinned revisions/sizes and licences, then explicitly start.
+SHA-256-verified files are reused. Progress and Cancel are available; cancellation
+is checked per chunk (a stalled read may take up to 30 seconds). After interruption,
+retry explicitly: completed files are reused and incomplete files restart from zero.
+Closing the application can interrupt preparation; reopening never auto-resumes a
+network download. No incomplete or modified model is marked prepared or used for
+inference. The existing noncommercial FinBERT licence remains applicable.
+
+LM Studio is optional. Use its [official installer](https://lmstudio.ai/download),
+then the existing local service/model controls. Installation detection, service,
+downloaded files, loaded state and an explicit authored inference self-check are
+shown separately. Self-check needs a loaded selected model and the original resource
+guards; it writes no news or analysis database record. It does not load, unload or
+download models. FinScope does not offer automatic LLM weight acquisition: review
+exact revision, quantization, size and licence before separately choosing a download
+in LM Studio. Existing authentication remains enabled; a protected connection that
+cannot authenticate is reported, not bypassed. Native v1 inventory/unload and
+OpenAI-compatible local inference follow the [official API](https://lmstudio.ai/docs/developer/rest).
+
+**Acceptance scope:** the current Windows x64/Python 3.12 machine and isolated mocked
+installer/error tests are covered. A clean Windows machine without Python, a full
+fresh Internet package install and first real weight download remain **pending**.
+Do not describe development-machine reuse as new-machine acceptance. The new
+[baseline plan and blank annotation form](docs/BASELINE_PLAN_20261104.md) are not run.
+
 ## Launch locally
 
 ```powershell

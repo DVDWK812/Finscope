@@ -482,3 +482,21 @@ and validated Retry-After are recorded without arbitrary headers or response bod
 A zero usage-remaining receipt also stops collection pending renewed evidence.
 No new news HTTP, model inference, credential read or production budget change was
 performed for this implementation; real media coverage and NLP totals are unchanged.
+
+
+### 4 November 2026 — explicit local first-install exception
+
+Reuse pinned model_assets manifests/preparation and ProcessLock instead of a second
+model registry. Windows x64 Python 3.11/3.12 bootstrap is explicit; daily startup
+never installs packages. Install requirements pin exercised direct dependencies;
+transitive wheel resolution and clean-machine deployment remain qualified. Model
+preparation is cancellable with bounded read timeout, verified-file reuse, exact
+hash/size checks and cross-process locking. No automatic resume/download on page
+load. Restart requires a new explicit attempt; partial files are not trusted.
+LM Studio stays optional, using its documented native v1 model endpoints and local
+OpenAI-compatible inference. New LLM acquisition stays a separately reviewed manual
+LM Studio action; this change does not automatically download any LLM. Self-check
+uses authored text and a memory-only result sink, preserves model ownership and
+resource/authentication protections. Official references checked: Python Windows
+https://www.python.org/downloads/windows/ and LM Studio API
+https://lmstudio.ai/docs/developer/rest . No new source licence conclusion is made.

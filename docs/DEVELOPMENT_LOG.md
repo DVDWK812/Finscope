@@ -1180,3 +1180,33 @@ attempts remain historical facts. This is a basic model/cleanup smoke only; the 
 classification pipeline and general accuracy were not tested. No production SQLite
 write, news HTTP, model download, successful-news replay or frozen evaluation change.
 REPORT_SYNOPSIS and the existing P0 table now reflect this bounded later success.
+
+
+### 4 November 2026 — first installation and model readiness
+
+Local-only authorized installation scope; main untouched. Added guided installer,
+separate daily launcher, validated Python/disk/path/dependency preflight and explicit
+Settings preparation using existing pinned manifests. Fixed prepared state to require
+actual SHA-256 verification instead of directory existence/size-only readiness.
+Added cancellable task progress, duplicate-start and process mutex guards; partial
+files restart safely, complete verified files are reused. Optional LM Studio UI now
+separates CLI detection, service, catalog, loaded state and explicit memory-only
+actual-inference self-check; no automatic LLM downloads or user-model teardown.
+
+714 full offline tests passed (one skip), dry run passed; final preparation fragment
+refresh adjustment passed the 9 targeted installation tests. Existing missing-LM,
+authentication and occupied-port tests remain included. Current-machine model reuse
+0.636 s; two new authored isolated records classified and FinBERT-analyzed, cold batch
+66.433 s, per-input 13104.49/2691.01 ms, process released; cached repeat 41.174 s,
+zero new inference/classification; reopen 2 originals/2 results. Isolated server
+health 1.289 s, HTTP 200, owned process exit confirmed. Actual Unicode/space-path
+venv creation passed; an initial diagnostic print decoding failure was fixed in the
+local acceptance script using ASCII-escaped JSON, not by changing product encoding.
+Missing-Python path and deliberate occupied-port launcher checks passed. Brief normal
+8511 launcher startup also succeeded and the task-owned session was stopped; no
+news task was submitted. Clean-machine/fresh-package/fresh-weight validation remains
+pending. No model downloads, news HTTP or successful-news replay; no new evaluation.
+A new baseline plan and empty independent annotation form were added separately
+from all frozen evidence. Local receipts live under reports/first_install_20261104;
+no authored or private input corpus is committed. 171 frozen hashes and nine protected
+data table digests match the prior preservation baseline.

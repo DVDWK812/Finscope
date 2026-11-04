@@ -16,3 +16,4 @@ reports/
 *.sqlite3-*
 *.db
 .DS_Store
+.install.lock

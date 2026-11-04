@@ -18,9 +18,11 @@ def model_directory(kind):
 
 
 def assets_present(kind):
-    root=model_directory(kind)
-    return all((root/name).is_file() and (root/name).stat().st_size==entry["size"]
-               for name,entry in manifest(kind)["files"].items())
+    try:
+        verify(kind)
+        return True
+    except (ValueError,OSError):
+        return False
 
 
 def valid_file(path, expected):
@@ -39,26 +41,47 @@ def verify(kind, directory=None):
     return spec
 
 
-def prepare_models(*, acknowledge_licenses=False):
+class PreparationCancelled(Exception):
+    pass
+
+
+def prepare_models(*, acknowledge_licenses=False, progress=lambda **state:None, cancelled=lambda:False):
     if acknowledge_licenses is not True:
         raise ValueError("Acknowledge FinBERT CC BY-NC-SA 4.0 and MiniLM Apache-2.0 licences")
+    from .task_queue import ProcessLock
+    with ProcessLock(model_directory('finbert').parents[1]/'.prepare.lock'):
+        _prepare(progress, cancelled)
+
+
+def _prepare(progress, cancelled):
     import requests
-    for kind in ("finbert","minilm"):
-        spec = manifest(kind); root = model_directory(kind)
-        for name, expected in spec["files"].items():
-            target = root/name
+    def check():
+        if cancelled():raise PreparationCancelled('Preparation cancelled; verified files retained')
+    total=sum(e['size'] for k in ('finbert','minilm') for e in manifest(k)['files'].values())
+    done=0
+    for kind in ('finbert','minilm'):
+        spec=manifest(kind);root=model_directory(kind)
+        for name,expected in spec['files'].items():
+            check();target=root/name
             if valid_file(target,expected):
-                continue
+                done+=expected['size'];progress(done=done,total=total,file=kind+'/'+name);continue
             target.parent.mkdir(parents=True,exist_ok=True)
-            partial = target.with_name(target.name+".partial")
-            response = requests.get(f'https://huggingface.co/{spec["model_id"]}/resolve/{spec["revision"]}/{name}',
-                                    stream=True, timeout=(15,120))
-            response.raise_for_status()
-            with partial.open("wb") as stream:
-                for chunk in response.iter_content(1024*1024):stream.write(chunk)
-            if not valid_file(partial,expected):
-                raise ValueError("Model download integrity failed; no model loaded")
-            partial.replace(target)
+            partial=target.with_name(target.name+'.partial')
+            # Never append an unverified interrupted download. Completed files are reused.
+            if partial.is_symlink() or target.is_symlink():raise ValueError('Model path is a symlink')
+            response=requests.get(f"https://huggingface.co/{spec['model_id']}/resolve/{spec['revision']}/{name}",
+                                  stream=True,timeout=(15,30))
+            try:
+                response.raise_for_status();received=0
+                with partial.open('wb') as stream:
+                    for chunk in response.iter_content(1024*1024):
+                        check();received+=len(chunk)
+                        if received>expected['size']:raise ValueError('Model download exceeds pinned size')
+                        stream.write(chunk);progress(done=done+received,total=total,file=kind+'/'+name)
+                check()
+                if not valid_file(partial,expected):raise ValueError('Model download integrity failed')
+                partial.replace(target);done+=expected['size']
+            finally:response.close()
         verify(kind)
 
 
@@ -69,5 +92,5 @@ if __name__ == "__main__":
     args=parser.parse_args()
     if args.prepare:
         prepare_models(acknowledge_licenses=args.acknowledge_model_licenses)
-    print(json.dumps({kind:{"revision":manifest(kind)["revision"],"prepared":model_directory(kind).exists()}
+    print(json.dumps({kind:{"revision":manifest(kind)["revision"],"prepared":assets_present(kind)}
                       for kind in ("finbert","minilm")},indent=2))

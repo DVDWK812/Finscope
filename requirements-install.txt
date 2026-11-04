@@ -1,0 +1,7 @@
+# Direct versions exercised on the Windows development machine; transitive
+# packages remain resolved by pip. This is not a fully reproducible wheel lock.
+-r requirements-finbert.txt
+streamlit==1.66.1
+requests==2.34.2
+pandas==2.3.3
+python-dotenv==1.2.4

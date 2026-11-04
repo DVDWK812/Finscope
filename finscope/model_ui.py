@@ -66,7 +66,7 @@ def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''
         options.ready=all(assets_present(kind) for kind in ("finbert","minilm"))
         st.caption("Available · Local model files present · No API key" if options.ready else "Not configured · Local model files missing")
         if not options.ready:
-            st.info("Prepare the pinned models from Analyze before running FinBERT.")
+            st.info("Prepare the pinned models in Settings → Analysis models before running FinBERT.")
     elif mode=='Local LM Studio':
         lmstudio_controls(prefix,options,store=store,saved_model=saved_model if configuration else '')
     elif mode=="Local Ollama":
@@ -116,6 +116,12 @@ def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''
 
 
 def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
+    from .lmstudio_runtime import lms_executable
+    try:
+        lms_executable();st.caption('Installation: LM Studio CLI found')
+    except ModelError:st.caption('Installation: LM Studio CLI not found')
+    st.markdown('[Official LM Studio installation](https://lmstudio.ai/download) · [Local API documentation](https://lmstudio.ai/docs/developer/rest)')
+    st.caption('Optional: FinBERT works without LM Studio. This app does not download LLM weights. Before a separate download, review the exact model revision, quantization, licence and size in LM Studio.')
     reason=st.session_state.get('lmstudio_connection_error')
     st.caption(Verbatim(str(tr('Failed'))+' · '+str(tr(reason))) if reason else st.session_state.get('lmstudio_status','Service not checked.'))
     if st.session_state.get('lmstudio_operation_error'):
@@ -179,6 +185,16 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
         if st.button('Load selected LM Studio model',disabled=bool(others) or model_busy(store) or not connected,key=prefix+'_lmstudio_load'):
             lmstudio_action(lambda:LMStudioProvider().load(options.model,explicit=True,store=store))
     options.ready=bool(connected and selected['callable'])
+    if st.button('Run authored local model self-check',key=prefix+'_lmstudio_selfcheck',disabled=not options.ready or store is None or model_busy(store)):
+        try:
+            from .model_selfcheck import check
+            with st.spinner('Running one authored local inference…'):
+                st.session_state[prefix+'_selfcheck_result']=check(options.model,store)
+        except ModelError as error:
+            st.session_state[prefix+'_selfcheck_result']={'model':options.model,'status':'Failed: '+str(error)}
+    result=st.session_state.get(prefix+'_selfcheck_result')
+    if result and result.get('model')==selected['model_id']:st.caption(str(result))
+    else:st.caption('Actual inference: not tested in this session for this selection')
 
 
 def refresh_lmstudio(models=None):
