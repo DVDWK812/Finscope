@@ -149,6 +149,17 @@ Closing the application can interrupt preparation; reopening never auto-resumes 
 network download. No incomplete or modified model is marked prepared or used for
 inference. The existing noncommercial FinBERT licence remains applicable.
 
+LM Studio metadata is discovered once in the background per FinScope server process
+(on its first UI session). Reruns and additional sessions reuse the same timestamped
+inventory; restarting FinScope permits one fresh scan. Discovery only calls the
+loopback model APIs, never starts the service, loads weights, infers or changes the
+saved selection. Service-not-running, authentication failure, timeout and empty
+catalog are distinct; failed refreshes retain old metadata marked OLD RESULT.
+The existing explicit **Start service & refresh models** button is available when
+o service is connected; **Refresh models** updates a running catalog after a new
+manual model download. A separate read-only retry is available while disconnected.
+Loading and authored inference self-check remain separate explicit actions.
+
 LM Studio is optional. Use its [official installer](https://lmstudio.ai/download),
 then the existing local service/model controls. Installation detection, service,
 downloaded files, loaded state and an explicit authored inference self-check are

@@ -500,3 +500,20 @@ uses authored text and a memory-only result sink, preserves model ownership and
 resource/authentication protections. Official references checked: Python Windows
 https://www.python.org/downloads/windows/ and LM Studio API
 https://lmstudio.ai/docs/developer/rest . No new source licence conclusion is made.
+
+
+### 4 November 2026 — shared read-only startup inventory and timing
+
+Reuse LMStudioProvider.inventory and existing model UI, with one process-lifetime
+background discovery shared across sessions. No disk crawl, CLI fallback, implicit
+service startup or model change. Connection/authentication/timeout/empty states and
+stale metadata are distinct. The user's later one-click request is served by the
+existing explicit service-start and selected-model-load controls; no duplicate
+loading registry is introduced. Batch timing records exclusive metric-only buckets
+and created-to-dispatch wait; resource protection and model semantics are unchanged.
+Primary future evaluation is same-input FinBERT versus a fixed financial lexicon,
+with blinded human references and protocol freezing before inference; industry
+comparison is optional and independent. Step 3 remains clean-environment incomplete,
+step 4 remains unrun. Source for proposed lexicon and category flags:
+https://sraf.nd.edu/loughranmcdonald-master-dictionary/ (reviewed 4 November Sydney;
+no dictionary dataset downloaded and no formal evaluation run).

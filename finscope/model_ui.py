@@ -116,6 +116,8 @@ def controls(prefix="analysis", *, store=None,configuration=False,saved_model=''
 
 
 def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
+    from .model_discovery import discovery,sync_session
+    if discovery.snapshot()['checked_at']:sync_session(st.session_state)
     from .lmstudio_runtime import lms_executable
     try:
         lms_executable();st.caption('Installation: LM Studio CLI found')
@@ -127,6 +129,8 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
     if st.session_state.get('lmstudio_operation_error'):
         st.error('Last model action: '+st.session_state['lmstudio_operation_error'])
     connected=st.session_state.get('lmstudio_connected',False)
+    if not connected and st.button('Refresh model inventory (read only)',key=prefix+'_lmstudio_readonly'):
+        discovery.refresh();sync_session(st.session_state);st.rerun()
     action='Refresh models' if connected else 'Start service & refresh models'
     if st.button(action,key=prefix+'_lmstudio_refresh'):
         try:
@@ -138,6 +142,7 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
                 st.session_state['lmstudio_start_report']={k:v for k,v in report.items() if k!='models'}
                 refresh_lmstudio(report['models'])
         except ModelError as error:
+            discovery.publish(error=error)
             st.session_state['lmstudio_connected']=False
             st.session_state['lmstudio_connection_error']=str(error)
             st.session_state['lmstudio_status']='Failed · '+str(error)
@@ -200,6 +205,8 @@ def lmstudio_controls(prefix,options,*,store=None,saved_model=''):
 def refresh_lmstudio(models=None):
     from .local_news import utcnow
     if models is None:models=LMStudioProvider().inventory()
+    from .model_discovery import discovery,sync_session
+    discovery.publish(models);sync_session(st.session_state)
     st.session_state['lmstudio_models']=models
     st.session_state['lmstudio_connected']=True
     st.session_state.pop('lmstudio_connection_error',None)

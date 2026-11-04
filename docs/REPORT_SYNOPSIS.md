@@ -99,6 +99,50 @@ files were never deleted for testing. The [new baseline plan and blank annotatio
 form](BASELINE_PLAN_20261104.md) remain unrun and contain no human labels. Existing
 frozen accuracy figures must not be attributed to these installation smoke tests.
 
+## Installation follow-up status — 4 November 2026 Sydney
+
+**Step 3: code substantially implemented; clean-environment acceptance incomplete.**
+Clean Windows, a fully fresh dependency install and a first real weights download
+remain pending. **Step 4: plan only; no formal evaluation or human labels.** Its
+primary paired comparison is now pinned FinBERT versus a fixed financial sentiment
+lexicon on the same new inputs. Optional industry classification evaluation is
+separate. Historical installation and frozen challenge evidence are unchanged.
+
+LM Studio discovery now shares one read-only background inventory per server-process
+startup across UI reruns/sessions; manual refresh remains explicit. Detection failure
+is nonblocking and old successful metadata is marked stale. Native loaded-instance
+metadata, rather than compatible API visibility alone, defines loaded status. The
+user separately requested using FinScope's existing explicit service-start facility;
+that facility was exercised once after the initial connection-refused observation.
+Automatic discovery itself never starts services or loads/unloads models.
+
+Actual local metadata identified **qwen/qwen3-1.7b**, variant
+**qwen/qwen3-1.7b@q6_k**, GGUF / Q6_K, **1,673,185,778 bytes**, unloaded and not
+callable. Actual isolated FinScope browser verification found it without Refresh,
+then restarted the owned server and found it again. The stored Gemma selection
+remained unchanged. Detection timestamps were 11:59:25.910326 UTC before restart
+and 12:00:54.485234 UTC after restart; a second session reused the latter timestamp.
+Explicit manual refresh advanced it to 12:03:10.250585 UTC. All models remained
+unloaded and this acceptance performed zero inference. This is discovery evidence,
+not Qwen inference compatibility, accuracy or full classifier acceptance.
+
+The earlier **41.174 s** cached batch is preserved as its original unsplit measurement.
+A new cache-only attempt on the same isolated authored records measured **15.082442 s**
+execution plus **0.014512 s** created-to-dispatch waiting. Exclusive execution buckets:
+process/GPU observations **11.121725 s**, resource measurements **3.640361 s**, model
+state **0.128806 s**, cache lookups **0.012764 s**, instrumented database/storage
+**0.086457 s**, other work **0.092329 s**. Cache and database buckets do not double
+count nested calls; uninstrumented database/queue overhead remains within other.
+The cache attempt performed no new classification or inference and retained two
+analyses. It did not invoke inference resource guards; normal stage observations
+remained. These single-run timings do not establish an optimization or retrospectively
+explain every millisecond of the old batch. Production news/results were not replayed.
+
+Local ignored evidence: `reports/discovery_20261104/service_and_inventory.json`,
+`browser_acceptance.json`, `cached_timing.json`. Tests use fake inventory transports
+for concurrent startup, failures/stale state and API-visible-but-unloaded cases;
+actual browser evidence uses the existing machine, not a clean Windows installation.
+
 ## Purpose and architecture
 
 **P3-E engineering, 2 November:** Broad Financial News now separates Marketaux

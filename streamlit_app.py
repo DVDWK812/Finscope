@@ -351,6 +351,8 @@ def main() -> None:
     else:
         from finscope.pipeline_ui import main as local_main
     local_main()
+    from finscope.model_discovery import startup_ui
+    startup_ui()
 
 
 if __name__ == "__main__":

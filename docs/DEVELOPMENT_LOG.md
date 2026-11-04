@@ -1210,3 +1210,39 @@ A new baseline plan and empty independent annotation form were added separately
 from all frozen evidence. Local receipts live under reports/first_install_20261104;
 no authored or private input corpus is committed. 171 frozen hashes and nine protected
 data table digests match the prior preservation baseline.
+
+
+### 4 November 2026 — LM Studio startup discovery and cached-batch diagnosis
+
+Added one asynchronous read-only metadata discovery per Streamlit process lifecycle,
+shared across sessions and synced into existing UI state. Retain explicit service
+start/manual refresh/load/self-check; startup never invokes those actions. Preserve
+saved selection and stale successful metadata with its timestamp. Native inventory
+loaded_instances remains authoritative; compatible API listing alone is not loaded.
+Mocked tests cover concurrent/rerun dedup, restart, auth/offline/timeout/empty states,
+old cache, selection preservation and exclusive timing (including exceptions).
+
+Initial real API call was connection-refused. User then requested FinScope's one-click
+facility; existing explicit start_service succeeded. Actual catalog: qwen/qwen3-1.7b,
+GGUF Q6_K, variant qwen/qwen3-1.7b@q6_k, 1673185778 bytes, unloaded/not callable.
+Isolated browser startup and actual server restart discovered it without refreshing;
+second session reused the restart timestamp, saved Gemma selection persisted, manual
+refresh advanced time. Zero model loads/unloads/inferences; service left running,
+owned isolated Streamlit server/tabs closed. No claim about Qwen inference accuracy.
+
+Instrumented only a new cached task on the existing two authored isolated records:
+execution 15.082442 s; created-to-dispatch 0.014512 s; process/GPU 11.121725 s;
+resource measurement 3.640361 s; model state 0.128806 s; cache 0.012764 s; measured
+DB/storage 0.086457 s; other 0.092329 s. Zero new classification/inference, two results
+retained. Original 41.174 s receipt is not overwritten or retroactively decomposed.
+Full regression initially exposed a mock-valued timing attribute bypassing the test
+resource callback; require an actual Timing instance, preserving guard behavior.
+
+Step 3 remains code substantially complete / clean Windows, fresh dependencies and
+first weight transfer unverified. Step 4 remains plan only: now primary FinBERT vs
+fixed financial sentiment lexicon on identical new inputs, with optional separate
+industry evaluation. No actual human labels, evaluation predictions or frozen edits.
+
+Final validation: 719 offline tests passed (one skip), benchmark dry run passed.
+Nine protected production table digests and all 171 frozen file hashes are unchanged.
+Only local is committed/pushed; exact-SHA CI is checked after push.

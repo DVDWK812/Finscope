@@ -16,6 +16,10 @@ class BatchRunner:
     def run(self,task):
         from .local_worker import ResourceBlocked
         from .model_providers import ModelError
+        from .batch_timing import Timing,Measured
+        timing=Timing();timing.set_queue_wait(task.get('created'))
+        self.queue=Measured(self.worker.queue,timing);self.data=Measured(self.worker.data,timing)
+        self.worker.batch_timing=timing
         identity=task['id'];c=task['snapshot'];counts=task['counts'];errors=[]
         def check():self.queue.check_cancel(identity)
         def stage(name):check();self.queue.update(identity,stage=name,counts=counts)
@@ -173,7 +177,7 @@ class BatchRunner:
                 if item.language!='en':
                     self.data.state(item,'not_applicable','No verified language-adapted model for this text');once('batch_language:'+item.article_id+':'+item.content_version,'skipped');continue
                 if model_key is None:
-                    model_key=(self.worker.model_key(c) if not self.worker.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+__import__('finscope.text_processing',fromlist=['VERSION']).VERSION)
+                    model_key=(timing.call('model_state',self.worker.model_key,c) if not self.worker.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+__import__('finscope.text_processing',fromlist=['VERSION']).VERSION)
                 if self.data.cached(item,model_key):
                     self.data.state(item,'completed','Cached current text/model result');continue
                 stage('sentiment: saved originals')
@@ -227,4 +231,7 @@ class BatchRunner:
             finally:
                 self.worker.inference_check=lambda:None
                 self.worker.model_observe=lambda edge:None
+                self.worker.batch_timing=None
+                from uuid import uuid4
+                self.worker.queue.save_step(identity,'batch_timing:'+uuid4().hex,'ok',timing.report(task.get('created')))
         return True

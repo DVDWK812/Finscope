@@ -7,6 +7,11 @@ class StageResources:
     def __init__(self,worker,identity):
         self.worker=worker;self.identity=identity;self.active=None;self.encoder=None;self.recovered=False;self.observations=0
 
+    def timed(self,name,fn,*args,**kwargs):
+        from .batch_timing import Timing
+        timing=getattr(self.worker,'batch_timing',None)
+        return timing.call(name,fn,*args,**kwargs) if isinstance(timing,Timing) else fn(*args,**kwargs)
+
     def snapshot(self):
         backend=self.worker.backend
         result={'finbert_owned_child_pid':getattr(backend,'pid',None),
@@ -18,13 +23,13 @@ class StageResources:
         owned={os.getpid():'worker'}
         for obj,role in ((backend,'finbert_owned'),(self.encoder,'minilm_owned')):
             if getattr(obj,'pid',None):owned[obj.pid]=role
-        result.update(processes(owned))
-        result['gpu_processes']=gpu_processes({p['pid'] for p in result['processes']})
+        result.update(self.timed('process_gpu_observation',processes,owned))
+        result['gpu_processes']=self.timed('process_gpu_observation',gpu_processes,{p['pid'] for p in result['processes']})
         from .lmstudio_runtime import system_resources
-        try:result.update(system_resources());result['measurement']='actual'
+        try:result.update(self.timed('resource_measurement',system_resources));result['measurement']='actual'
         except Exception:result['measurement']='unavailable'
         from .model_providers import LMStudioProvider
-        try:result['lmstudio_resident_models']=[m['model_id'] for m in LMStudioProvider().inventory().values() if m['callable']]
+        try:result['lmstudio_resident_models']=[m['model_id'] for m in self.timed('model_state',LMStudioProvider().inventory).values() if m['callable']]
         except Exception:result['lmstudio_resident_models']='unknown'
         return result
 
@@ -57,7 +62,7 @@ class StageResources:
 
     def check_resources(self,mode,*,loading=False):
         from .model_providers import ModelError
-        try:return self.worker.resources(mode,loading=loading)
+        try:return self.timed('resource_guard',self.worker.resources,mode,loading=loading)
         except ModelError:
             if self.recovered:raise
             self.recovered=True
@@ -67,7 +72,7 @@ class StageResources:
                 self.worker.release_sentiment_backend()
                 loading=mode=='Local FinBERT'
             self.observe('pressure_after')
-            return self.worker.resources(mode,loading=loading)
+            return self.timed('resource_guard',self.worker.resources,mode,loading=loading)
 
     def classifier_resources(self,kind,encoder):
         from .model_providers import ModelError
