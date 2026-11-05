@@ -225,10 +225,10 @@ def classification_model_summary(store,config):
     if options:
         model='MiniLM + '+options['model_id']+' · '+options['version']
     elif config.get('classifier_llm'):
-        model=str(tr('Evidence rules'))+' + '+config.get('model_id','')
+        model=str(tr('Evidence rules'))+' + '+config.get('classifier_model_id',config.get('model_id',''))
     else:model=str(tr('Evidence rules'))
     st.caption(t('Classification method: {method}',method=tr('Enhanced semantic classification' if options or config.get('classifier_llm') else 'Basic rule classification')))
-    st.caption('Enhanced classification description' if options else 'Basic classification description')
+    st.caption('Enhanced classification description' if options else 'Legacy classification description' if config.get('classifier_llm') else 'Basic classification description')
     with st.expander('Model details'):
         st.caption(t('Classification model summary',model=model))
         if options:st.text(Verbatim(options.get('model_revision','')))

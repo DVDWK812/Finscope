@@ -1200,5 +1200,6 @@
   "Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.": "Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.",
   "Unverified": "Unverified",
   "Yes": "Yes",
-  "No": "No"
+  "No": "No",
+  "Legacy classification description": "Industry rules with an independently configured local LLM for evidence review. This retained legacy path does not use MiniLM retrieval."
 }

@@ -1200,5 +1200,6 @@
   "Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.": "所选模型尚未就绪。请在设置 → 分析模型中连接服务或加载模型，然后刷新清单。",
   "Unverified": "未核验",
   "Yes": "是",
-  "No": "否"
+  "No": "否",
+  "Legacy classification description": "使用行业规则及独立配置的本地 LLM 核验证据。此保留的原有流程不使用 MiniLM 候选召回。"
 }
