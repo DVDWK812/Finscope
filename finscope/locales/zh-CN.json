@@ -1155,5 +1155,15 @@
   "Exclude unknown publication dates": "排除发布日期未知的记录",
   "Data coverage and counts": "数据覆盖与统计",
   "Industry counts and definitions": "行业统计与口径",
-  "Result origins: {new} new · {reused} reused · {missing} without a current result": "结果来源：新推理 {new} · 复用 {reused} · 无当前有效结果 {missing}"
+  "Result origins: {new} new · {reused} reused · {missing} without a current result": "结果来源：新推理 {new} · 复用 {reused} · 无当前有效结果 {missing}",
+  "Select all failed records": "选择所有失败记录",
+  "Select all unanalyzed records": "选择所有未分析记录",
+  "Failed includes current classification or analysis failures. Unanalyzed means no valid result for the selected model; Not applicable is excluded. Selection does not retry failed requests.": "失败包含当前版本的分类或分析失败。未分析指所选模型尚无有效结果，不包含不适用记录。选择不会自动重试失败请求。",
+  "Could not verify the selected model or record state. Selection was kept; check Settings before trying again.": "无法核验所选模型或记录状态，已保留原选择。请先在设置中检查。",
+  "{count} records are unavailable for this offline analysis entry. Expand the reasons below.": "有 {count} 条记录不能通过此离线分析入口处理，可展开查看具体原因。",
+  "Why records are unavailable": "查看不能处理的记录及原因",
+  "Record {id} · provider {provider}": "记录 {id} · 来源类型 {provider}",
+  "Text hidden: display or retention permission is not current.": "文本已隐藏：当前展示权限或保留期限无效。",
+  "No reviewed automatic-use policy for this source": "此来源尚无经审核的自动处理策略；已有记录级授权不足以启用此批量入口。",
+  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "单次任务最多处理 300 条记录，请减少选择或分批处理。"
 }

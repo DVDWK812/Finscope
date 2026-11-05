@@ -174,6 +174,48 @@ def home(store,q):
         st.caption('Unknown account balance, Unclassified text and not-applicable analysis are distinct states. They are not zero quota, a company-industry guess or Neutral sentiment.')
 
 
+def offline_record_selection(data,config,kind):
+    """Read current evidence only when a selection shortcut is clicked."""
+    from .source_policies import authorize
+    from .batch_records import eligibility
+    items=[]
+    for item in data.news():
+        try:authorize(item,('retain','local_display','local_classification','local_sentiment'))
+        except ValueError:continue
+        items.append(item)
+    if kind=='failed':
+        from .industry_classifier import IndustryClassifier
+        from .classification_scheme import selected,cache_key
+        from .media_use import scope_of
+        taxonomy=config.get('taxonomy','US-BUSINESS-1')
+        legacy=IndustryClassifier(taxonomy,llm_model=config.get('model_id') if config.get('classifier_llm') else None)
+        classes=data.classifications(taxonomy,cache_key=legacy.cache_key)
+        options=config.get('classifier_options') or (selected(data.store) if taxonomy=='US-BUSINESS-1' else None)
+        if options:
+            finite=data.classifications(taxonomy,cache_key=cache_key(options))
+            for item in items:
+                if scope_of(item):
+                    classes.pop(item.article_id,None)
+                    if item.article_id in finite:classes[item.article_id]=finite[item.article_id]
+        states=data.states()
+        return [n.article_id for n in items if states.get((n.article_id,n.content_version),{}).get('analysis')=='failed'
+                or classes.get(n.article_id,{}).get('status')=='failed']
+    if kind!='unanalyzed':raise ValueError('Unknown saved-record selection')
+    # Reuse the worker's exact text/model cache contract. Optional local models
+    # get a read-only inventory check on this explicit click, never on navigation.
+    from .local_worker import Worker
+    key=Worker(data.store).model_key(config)
+    valid={a.analysis_id for a in data.visible_analyses(items)}
+    # Read cache metadata once per partition, not once per selected article.
+    caches={};finite=data._partition()
+    for partition in (data,finite):
+        if partition is None:continue
+        with closing(partition.store.connect()) as db:
+            caches.update({(identity,version):result for identity,version,result in db.execute(
+                'SELECT article_id,content_version,analysis_id FROM product_analysis_cache WHERE cache_key=?',(key,))})
+    return [n.article_id for n in items if eligibility(n)[0] and caches.get((n.article_id,n.content_version)) not in valid]
+
+
 def analysis_entry(store,q):
     from .batch_ui import saved_config
     from .source_policies import authorize
@@ -185,20 +227,53 @@ def analysis_entry(store,q):
     c.update(sources=[],limit=300)
     st.caption('Use saved text only. No news request is made.')
     st.caption(t('Analysis model summary',model=str(tr(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
-    items=ProductStorage(store).news();allowed={};blocked=0
+    data=ProductStorage(store);items=data.news();allowed={};blocked=[]
     for item in items:
         try:authorize(item,('retain','local_display','local_classification','local_sentiment'))
-        except ValueError:blocked+=1;continue
+        except ValueError as error:blocked.append((item,str(error)));continue
         allowed[item.article_id]=item
     task=q.get();active=bool(task and task['status'] in ACTIVE)
     selected=st.session_state.setdefault('_analysis_selection',list(allowed)[:300])
     st.session_state['offline_articles']=[identity for identity in selected if identity in allowed]
     def remember():
         st.session_state['_analysis_selection']=list(st.session_state['offline_articles'])
+    def select_group(kind):
+        current=q.get()
+        if current and current['status'] in ACTIVE:return
+        try:identities=offline_record_selection(data,c,kind)
+        except ValueError as error:
+            st.session_state['_offline_selection_error']=str(error);return
+        st.session_state.pop('_offline_selection_error',None)
+        st.session_state['_analysis_selection']=identities
+        st.session_state['offline_articles']=identities
+        # A shortcut replaces the selection, including a genuine empty match.
+        # Retire translated mirrors so the previous chip list cannot reappear.
+        st.session_state.get('_ui_mirrors',{}).pop('offline_articles',None)
+        for key in list(st.session_state):
+            if key.startswith('offline_articles__'):st.session_state.pop(key,None)
+        st.session_state['_offline_review']=None
     with st.expander('Select saved records',expanded=False):
+        left,right=st.columns(2)
+        with left:st.button('Select all failed records',key='offline_select_failed',on_click=select_group,args=('failed',),disabled=active or not allowed,width='stretch')
+        with right:st.button('Select all unanalyzed records',key='offline_select_unanalyzed',on_click=select_group,args=('unanalyzed',),disabled=active or not allowed,width='stretch')
+        st.caption('Failed includes current classification or analysis failures. Unanalyzed means no valid result for the selected model; Not applicable is excluded. Selection does not retry failed requests.')
+        if st.session_state.get('_offline_selection_error'):
+            st.warning('Could not verify the selected model or record state. Selection was kept; check Settings before trying again.')
+            st.text(Verbatim(st.session_state['_offline_selection_error']))
         ids=st.multiselect('Saved records to analyze',list(allowed),format_func=lambda k:Verbatim(allowed[k].title+' ['+k[:8]+']'),
                            key='offline_articles',on_change=remember,disabled=active)
-    if blocked:st.info(t('{count} records need permission review or have expired. Review them in Settings.',count=blocked))
+    if blocked:
+        st.info(t('{count} records are unavailable for this offline analysis entry. Expand the reasons below.',count=len(blocked)))
+        with st.expander('Why records are unavailable',expanded=False):
+            for item,reason in blocked:
+                st.caption(t('Record {id} · provider {provider}',id=item.article_id[:8],provider=item.provider))
+                try:
+                    item.rights.require('preview');item.rights.require('retain')
+                    if item.provider!='authored_synthetic':authorize(item,('retain','local_display'))
+                    st.text(Verbatim(item.title))
+                except ValueError:st.caption('Text hidden: display or retention permission is not current.')
+                st.caption(reason)
+    if len(ids)>300:st.warning('A task can contain at most 300 records. Reduce the selection or process separate batches.')
     if not allowed:st.info('No permitted saved records are available. Ask the facilitator to prepare samples, or use Settings to add permitted records.')
     review=json.dumps([c,[(identity,allowed[identity].content_version,allowed[identity].rights.reference) for identity in ids]],sort_keys=True)
     if st.session_state.get('_offline_review')!=review:

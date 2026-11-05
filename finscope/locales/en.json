@@ -1155,5 +1155,15 @@
   "Exclude unknown publication dates": "Exclude unknown publication dates",
   "Data coverage and counts": "Data coverage and counts",
   "Industry counts and definitions": "Industry counts and definitions",
-  "Result origins: {new} new · {reused} reused · {missing} without a current result": "Result origins: {new} new · {reused} reused · {missing} without a current result"
+  "Result origins: {new} new · {reused} reused · {missing} without a current result": "Result origins: {new} new · {reused} reused · {missing} without a current result",
+  "Select all failed records": "Select all failed records",
+  "Select all unanalyzed records": "Select all unanalyzed records",
+  "Failed includes current classification or analysis failures. Unanalyzed means no valid result for the selected model; Not applicable is excluded. Selection does not retry failed requests.": "Failed includes current classification or analysis failures. Unanalyzed means no valid result for the selected model; Not applicable is excluded. Selection does not retry failed requests.",
+  "Could not verify the selected model or record state. Selection was kept; check Settings before trying again.": "Could not verify the selected model or record state. Selection was kept; check Settings before trying again.",
+  "{count} records are unavailable for this offline analysis entry. Expand the reasons below.": "{count} records are unavailable for this offline analysis entry. Expand the reasons below.",
+  "Why records are unavailable": "Why records are unavailable",
+  "Record {id} · provider {provider}": "Record {id} · provider {provider}",
+  "Text hidden: display or retention permission is not current.": "Text hidden: display or retention permission is not current.",
+  "No reviewed automatic-use policy for this source": "No reviewed automatic-use policy for this source",
+  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "A task can contain at most 300 records. Reduce the selection or process separate batches."
 }

@@ -1398,3 +1398,15 @@ Browser verification also found retained search text after Reset despite cleared
 server filters. Reset now explicitly supplies empty search and the configured
 taxonomy, keeping displayed controls aligned with their active values in both
 languages. The fixture regression checks both configured taxonomy defaults.
+
+## 5 November 2026 — saved-record selection shortcuts
+
+News Update can select all current classification/analysis failures or all records
+without a valid result for the chosen analysis model. These actions only replace
+the selection and reset confirmation; task submission, failed-request fences and
+the 300-record limit remain unchanged. Selection evidence is read on click, with
+one cache-metadata read per partition and current text, permission, expiry and
+model checks. Unavailable-record details now show the actual gate reason instead
+of implying every blocked original has expired. Display-revoked text stays hidden.
+Authored regressions cover both languages, current/old classifications, text/model
+changes, revoked permissions, finite expiry, empty selection and active-task gates.

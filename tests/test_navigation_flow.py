@@ -31,6 +31,81 @@ class NavigationFlowTests(unittest.TestCase):
     def worker(self,**kwargs):
         return Worker(self.store,fetch=lambda *a:self.fail('Offline job collected news'),infer=kwargs.get('infer',prediction),resources=kwargs.get('resources',lambda *a,**k:None))
     def submit(self):return self.q.submit_batch('analyze',C,confirmed=True,article_ids=[n.article_id for n in self.items])[0]
+    def selection_fixture(self):
+        from finscope.batch_config import finbert_cache_key
+        from finscope.industry_classifier import IndustryClassifier
+        analyzed,failed,not_applicable=self.items
+        self.data.analysis(analyzed,finbert_cache_key(),replace(prediction(analyzed,C),provenance={'content_sha256':analyzed.content_version}))
+        self.data.save_classification(analyzed,IndustryClassifier().cache_key,{'taxonomy':'US-BUSINESS-1','status':'failed','labels':[]})
+        self.data.state(failed,'failed','Authored model-output failure')
+        origin=json.loads(not_applicable.provenance);origin['sentiment_eligible']=False
+        not_applicable=prepare(replace(not_applicable,title='Authored metadata-only notice',provenance=json.dumps(origin),content_version='',processed_text=''))[0]
+        self.data.save(not_applicable)
+        return analyzed,failed,not_applicable
+    def test_saved_record_shortcuts_use_current_failure_text_model_and_permissions(self):
+        from finscope.pipeline_ui import offline_record_selection
+        from finscope.batch_config import finbert_cache_key
+        analyzed,failed,na=self.selection_fixture()
+        select=lambda kind:offline_record_selection(self.data,C,kind)
+        self.assertEqual(set(select('failed')),{analyzed.article_id,failed.article_id})
+        self.assertEqual(select('unanalyzed'),[failed.article_id])
+        with patch('finscope.batch_config.finbert_cache_key',return_value=finbert_cache_key()+'-changed-revision'):
+            self.assertEqual(set(select('unanalyzed')),{analyzed.article_id,failed.article_id})
+        revised=prepare(replace(analyzed,summary='A new fictional text version.',content_version='',processed_text=''))[0]
+        self.data.save(revised)
+        self.assertEqual(select('failed'),[failed.article_id])
+        self.assertEqual(set(select('unanalyzed')),{analyzed.article_id,failed.article_id})
+        self.store.update_rights(failed.article_id,replace(failed.rights,analyze=False))
+        self.assertEqual(select('failed'),[]);self.assertEqual(select('unanalyzed'),[analyzed.article_id])
+        self.assertIsNone(self.q.get())
+    def test_selection_shortcuts_replace_chips_reset_consent_and_preserve_page_state(self):
+        from finscope.ui_preferences import save
+        analyzed,failed,na=self.selection_fixture()
+        for locale in ('en','zh-CN'):
+            with self.subTest(locale=locale):
+                save(self.store,'ui_language',locale);suffix='' if locale=='en' else '__'+locale
+                with patch('finscope.pipeline_ui.offline_record_selection',side_effect=AssertionError('Do not calculate groups on page load')):
+                    app=self.app('News Update')
+                app.checkbox(key='offline_confirm'+suffix).check().run()
+                app.button(key='offline_select_failed').click().run();self.assertFalse(app.exception)
+                self.assertEqual(set(app.multiselect(key='offline_articles'+suffix).value),{analyzed.article_id,failed.article_id})
+                self.assertFalse(app.checkbox(key='offline_confirm'+suffix).value)
+                app.checkbox(key='offline_confirm'+suffix).check().run()
+                app.button(key='offline_select_unanalyzed').click().run();self.assertFalse(app.exception)
+                self.assertEqual(app.multiselect(key='offline_articles'+suffix).value,[failed.article_id])
+                self.assertTrue(app.button(key='offline_submit').disabled)
+                app.radio(key='product_page'+suffix).set_value('Dashboard').run()
+                app.radio(key='product_page'+suffix).set_value('News Update').run()
+                self.assertEqual(app.multiselect(key='offline_articles'+suffix).value,[failed.article_id])
+                with patch('finscope.pipeline_ui.offline_record_selection',return_value=[]):
+                    app.button(key='offline_select_failed').click().run()
+                self.assertEqual(app.multiselect(key='offline_articles'+suffix).value,[])
+                with patch('finscope.pipeline_ui.offline_record_selection',side_effect=ValueError('Authored model unavailable')):
+                    app.button(key='offline_select_unanalyzed').click().run()
+                self.assertEqual(app.multiselect(key='offline_articles'+suffix).value,[])
+                self.assertTrue(any('Authored model unavailable' in text.value for text in app.text))
+                self.assertIsNone(self.q.get())
+        self.submit();app=self.app('News Update')
+        self.assertTrue(app.button(key='offline_select_failed').disabled)
+        self.assertTrue(app.button(key='offline_select_unanalyzed').disabled)
+    def test_unavailable_record_details_distinguish_source_policy_and_hide_revoked_text(self):
+        authored=prepare(replace(fixture(),provider='authored_synthetic',url=fixture().url+'authored',
+                                 title='Authored policy diagnostic fixture',provenance='{}'))[0]
+        self.data.save(authored)
+        revoked=self.items[0]
+        with closing(self.store.connect()) as db:
+            payload=json.loads(db.execute('SELECT payload FROM local_news WHERE id=?',(revoked.article_id,)).fetchone()[0])
+            payload['rights']['preview']=False
+            db.execute('UPDATE local_news SET payload=? WHERE id=?',(json.dumps(payload),revoked.article_id))
+            db.execute('INSERT INTO local_permission_history VALUES (?,?,?,?)',
+                       (revoked.article_id,'2026-11-05T00:00:00Z','{}',json.dumps(payload['rights'])));db.commit()
+        app=self.app('News Update');details=next(e for e in app.expander if e.label=='Why records are unavailable')
+        self.assertTrue(any(authored.title==v.value for v in details.get('text')))
+        self.assertFalse(any(revoked.title==v.value for v in details.get('text')))
+        self.assertTrue(any('No reviewed automatic-use policy' in v.value for v in details.get('caption')))
+        self.assertFalse(any('have expired' in v.value for v in app.info))
+        self.assertNotIn(authored.article_id,app.multiselect(key='offline_articles').options)
+        self.assertIsNone(self.q.get())
     def test_home_is_initial_and_always_accessible_with_integrated_guide(self):
         app=self.app();self.assertEqual(app.title[0].value,'Home')
         self.assertTrue(any(h.value=='How FinScope works' for h in app.subheader))
@@ -196,6 +271,15 @@ class FiniteViewSnapshotTests(unittest.TestCase):
     setUp=Fixtures.setUp
     scope=Fixtures.scope
     item=Fixtures.item
+    def test_selection_rechecks_finite_expiry_without_inference(self):
+        from finscope.pipeline_ui import offline_record_selection
+        item=self.item();self.data.save(item);self.data.state(item,'failed','Authored failure')
+        with patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')):
+            self.assertEqual(offline_record_selection(self.data,C,'failed'),[item.article_id])
+            self.assertEqual(offline_record_selection(self.data,C,'unanalyzed'),[item.article_id])
+            self.now+=timedelta(days=8)
+            self.assertEqual(offline_record_selection(self.data,C,'failed'),[])
+            self.assertEqual(offline_record_selection(self.data,C,'unanalyzed'),[])
     def test_expiry_without_write_discards_snapshot_and_derived_content(self):
         self.data.save(self.item());state={}
         snapshot=self.data.view_snapshot(state,'US-BUSINESS-1');self.assertEqual(len(snapshot['news']),1)
