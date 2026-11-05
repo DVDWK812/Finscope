@@ -217,6 +217,19 @@ def offline_record_selection(data,config,kind):
     return [n.article_id for n in items if eligibility(n)[0] and caches.get((n.article_id,n.content_version)) not in valid]
 
 
+def classification_model_summary(store,config):
+    # Saved configuration only: rendering never probes or loads a model.
+    from .classification_scheme import selected
+    taxonomy=config.get('taxonomy','US-BUSINESS-1')
+    options=config.get('classifier_options') or (selected(store) if taxonomy=='US-BUSINESS-1' else None)
+    if options:
+        model='MiniLM + '+options['model_id']+' · '+options['version']
+    elif config.get('classifier_llm'):
+        model=str(tr('Evidence rules'))+' + '+config.get('model_id','')
+    else:model=str(tr('Evidence rules'))
+    st.caption(t('Classification model summary',model=model))
+
+
 def analysis_entry(store,q):
     from .batch_ui import saved_config
     from .source_policies import authorize
@@ -228,6 +241,7 @@ def analysis_entry(store,q):
     c.update(sources=[],limit=300)
     st.caption('Use saved text only. No news request is made.')
     st.caption(t('Analysis model summary',model=str(tr(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    classification_model_summary(store,c)
     data=ProductStorage(store);items=data.news();allowed={};blocked=[]
     for item in items:
         try:authorize(item,('retain','local_display','local_classification','local_sentiment'))
@@ -374,6 +388,7 @@ def update_button(q):
     if batch:expected=batch;c=batch
     st.caption(t('Saved sources: {sources}',sources=', '.join(LABELS.get(p,p) for p in (c or {}).get('sources',[])) or str(tr('None'))))
     if c:st.caption(t('Analysis model summary',model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    if c:classification_model_summary(q.store,c)
     if not c or not c.get('sources'):st.caption('Set sources, permissions and budget in Advanced configuration before updating.')
     unsaved=not batch and st.session_state.get('_settings_edit',expected)!=expected
     if unsaved:st.caption('Unsaved changes')

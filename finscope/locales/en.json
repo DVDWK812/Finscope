@@ -810,7 +810,7 @@
   "Review update": "Review update",
   "Runnable sources": "Runnable sources: {sources}",
   "Skipped source": "{source} skipped · {reason}",
-  "Analysis model summary": "Analysis model: {model}",
+  "Analysis model summary": "Sentiment model: {model}",
   "This review uses the saved draft.": "This review uses the saved draft.",
   "Confirm update and analysis": "Confirm update and analysis",
   "Wait at least 60 seconds between provider requests": "Wait at least 60 seconds between provider requests",
@@ -1180,5 +1180,7 @@
   "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.": "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.",
   "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.": "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.",
   "I confirm one local output repair for these failed classifications": "I confirm one local output repair for these failed classifications",
-  "Repair failed classifications only": "Repair failed classifications only"
+  "Repair failed classifications only": "Repair failed classifications only",
+  "Classification model summary": "Industry classification model: {model}",
+  "Evidence rules": "Evidence rules"
 }

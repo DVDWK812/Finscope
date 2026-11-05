@@ -105,7 +105,6 @@ def render(store,q,*,section_override=None):
     if section=='general':
         language_settings(store);diagnostics(store,q,section);return
     if section=='sources' and section_override is None:
-        st.info('News collection configuration and batch actions are now in News Update.')
         from .pipeline_ui import go
         st.button('Open News Update',key='settings_news_update',on_click=go,args=('News Update',))
         diagnostics(store,q,section);return

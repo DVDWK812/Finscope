@@ -810,7 +810,7 @@
   "Review update": "确认本次更新范围",
   "Runnable sources": "本次可运行来源：{sources}",
   "Skipped source": "跳过 {source} · {reason}",
-  "Analysis model summary": "本次分析模型：{model}",
+  "Analysis model summary": "情绪分析模型：{model}",
   "This review uses the saved draft.": "本次使用已保存的草稿。",
   "Confirm update and analysis": "确认获取并分析",
   "Wait at least 60 seconds between provider requests": "来源请求之间须至少间隔 60 秒",
@@ -1180,5 +1180,7 @@
   "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.": "已经尝试过一次输出修复。请检查保留的失败详情，不再自动发送请求。",
   "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.": "仅针对已返回但校验失败的阶段，使用相同文本和模型最多追加一次本地调用。复用有效阶段及情绪结果，保留旧失败记录，不采集新闻。",
   "I confirm one local output repair for these failed classifications": "我确认对这些分类失败记录进行一次本地输出修复",
-  "Repair failed classifications only": "仅修复失败的行业分类"
+  "Repair failed classifications only": "仅修复失败的行业分类",
+  "Classification model summary": "行业分类模型：{model}",
+  "Evidence rules": "证据规则"
 }
