@@ -189,7 +189,7 @@ def offline_record_selection(data,config,kind):
         from .classification_scheme import selected,cache_key
         from .media_use import scope_of
         taxonomy=config.get('taxonomy','US-BUSINESS-1')
-        legacy=IndustryClassifier(taxonomy,llm_model=config.get('model_id') if config.get('classifier_llm') else None)
+        legacy=IndustryClassifier(taxonomy,llm_model=config.get('classifier_model_id',config.get('model_id')) if config.get('classifier_llm') else None)
         classes=data.classifications(taxonomy,cache_key=legacy.cache_key)
         options=config.get('classifier_options') or (selected(data.store) if taxonomy=='US-BUSINESS-1' else None)
         if options:
@@ -227,7 +227,12 @@ def classification_model_summary(store,config):
     elif config.get('classifier_llm'):
         model=str(tr('Evidence rules'))+' + '+config.get('model_id','')
     else:model=str(tr('Evidence rules'))
-    st.caption(t('Classification model summary',model=model))
+    st.caption(t('Classification method: {method}',method=tr('Enhanced semantic classification' if options or config.get('classifier_llm') else 'Basic rule classification')))
+    st.caption('Enhanced classification description' if options else 'Basic classification description')
+    with st.expander('Model details'):
+        st.caption(t('Classification model summary',model=model))
+        if options:st.text(Verbatim(options.get('model_revision','')))
+        st.caption(config.get('taxonomy','US-BUSINESS-1'))
 
 
 def analysis_entry(store,q):
@@ -237,10 +242,11 @@ def analysis_entry(store,q):
     from copy import deepcopy
     c=deepcopy(saved_config(q) or q.config() or DEFAULT)
     # Offline entry carries only model/classification choices, never collection settings.
-    c={k:v for k,v in c.items() if k in {'model','model_id','taxonomy','classifier_llm','classifier_options'}}
+    c={k:v for k,v in c.items() if k in {'classifier_model_id','model','model_id','taxonomy','classifier_llm','classifier_options'}}
     c.update(sources=[],limit=300)
     st.caption('Use saved text only. No news request is made.')
-    st.caption(t('Analysis model summary',model=str(tr(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    from .model_ui import sentiment_selector
+    c=sentiment_selector(store,c,'offline')
     classification_model_summary(store,c)
     data=ProductStorage(store);items=data.news();allowed={};blocked=[]
     for item in items:
@@ -308,6 +314,8 @@ def analysis_entry(store,q):
                 item=current.get(identity)
                 if not item or item.content_version!=allowed[identity].content_version:raise ValueError('Records changed; review the selection again.')
                 authorize(item,('retain','local_display','local_classification','local_sentiment'))
+            from .model_ui import sentiment_ready
+            c['sentiment_model_key']=sentiment_ready(store,c)
             identity,_=q.submit_batch('analyze',c,confirmed=True,article_ids=ids)
             st.session_state['results_task']=identity
             st.session_state['_offline_review']=None
@@ -387,7 +395,10 @@ def update_button(q):
     batch=saved_media(q.store) or saved_config(q)
     if batch:expected=batch;c=batch
     st.caption(t('Saved sources: {sources}',sources=', '.join(LABELS.get(p,p) for p in (c or {}).get('sources',[])) or str(tr('None'))))
-    if c:st.caption(t('Analysis model summary',model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    from .model_ui import sentiment_selector
+    if c:
+        c=sentiment_selector(q.store,expected,'update')
+        expected=c
     if c:classification_model_summary(q.store,c)
     if not c or not c.get('sources'):st.caption('Set sources, permissions and budget in Advanced configuration before updating.')
     unsaved=not batch and st.session_state.get('_settings_edit',expected)!=expected
@@ -409,12 +420,14 @@ def update_button(q):
             model_ready=config['model'] in ('Local FinBERT','Local LM Studio','Local Ollama') and (config['model']=='Local FinBERT' or bool(config.get('model_id')))
             if st.button('Confirm update and analysis',key='product_confirm_update',disabled=not review['ready'] or not model_ready or unsaved or bool(task and task['status'] in ACTIVE)):
                 try:
+                    from .model_ui import sentiment_ready
+                    selected_version=sentiment_ready(q.store,config)
                     if batch:
                         if (saved_media(q.store) or saved_config(q))!=config:raise ValueError('Batch settings changed; review again')
                         ready,_=source_plan(q.store,config)
                         if ready!=review['ready']:raise ValueError('Source readiness changed; review again')
-                        q.submit_batch('update',{**config,'sources':ready},confirmed=True)
-                    else:q.submit_ready(confirmed=True,expected_sources=review['ready'],expected_config=config)
+                        q.submit_batch('update',{**config,'sources':ready,'sentiment_model_key':selected_version},confirmed=True)
+                    else:q.submit_ready(confirmed=True,expected_sources=review['ready'],expected_config=config,sentiment_model_key=selected_version)
                     st.session_state.pop('_update_review',None);st.rerun()
                 except ValueError as error:st.session_state['_product_submit_error']=str(error)
             if st.button('Cancel',key='product_cancel_review'):st.session_state.pop('_update_review',None);st.rerun()

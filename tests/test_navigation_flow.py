@@ -157,7 +157,8 @@ class NavigationFlowTests(unittest.TestCase):
         self.assertTrue(any(c.value.startswith('Results model:') for c in app.caption if c not in filters.get('caption')))
         self.assertNotIn('local_search',{w.key for w in filters.get('text_input')})
         self.assertEqual(app.text_input(key='local_search').value,'')
-    def test_explicit_confirmation_one_job_and_task_results(self):
+    @patch('finscope.model_ui.sentiment_ready',return_value='mock-preflight')
+    def test_explicit_confirmation_one_job_and_task_results(self,_ready):
         app=self.app('News Update');self.assertTrue(app.button(key='offline_submit').disabled)
         app.checkbox(key='offline_confirm').check().run()
         self.assertFalse(app.button(key='offline_submit').disabled,str((app.checkbox(key='offline_confirm').value,app.multiselect(key='offline_articles').value,[x.value for x in app.info],self.q.get())))
@@ -299,3 +300,71 @@ class FiniteViewSnapshotTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class SentimentSelectionTests(unittest.TestCase):
+    setUp=NavigationFlowTests.setUp
+    app=NavigationFlowTests.app
+    submit=NavigationFlowTests.submit
+    def test_saved_choice_overlays_scopes_without_rewriting_task_snapshot(self):
+        from finscope.model_ui import save_sentiment,sentiment_config
+        identity=self.submit()
+        original=self.q.get(identity)['snapshot']
+        save_sentiment(self.store,'Local LM Studio','downloaded-model')
+        self.assertEqual(self.q.config()['model_id'],'downloaded-model')
+        self.assertEqual(sentiment_config(self.store,{'classifier_options':{'model_key':'independent'}})['classifier_options'],{'model_key':'independent'})
+        self.assertEqual(self.q.get(identity)['snapshot'],original)
+        self.assertEqual(TaskQueue(self.store).config()['model_id'],'downloaded-model')
+        save_sentiment(self.store,'Local FinBERT','')
+        self.assertEqual(self.q.config()['model'],'Local FinBERT')
+
+    def test_unloaded_models_are_blocked_without_inference(self):
+        from finscope.model_ui import sentiment_ready
+        with patch('finscope.model_ui.LMStudioProvider.inventory',return_value={'downloaded':{'loaded':False,'callable':False}}):
+            with self.assertRaisesRegex(ValueError,'not ready'):
+                sentiment_ready(self.store,{'model':'Local LM Studio','model_id':'downloaded'})
+        with patch('finscope.model_ui.OllamaProvider') as provider:
+            provider.return_value.inventory.return_value={'models':{'installed':'abc'}}
+            provider.return_value.transport.return_value={'models':[]}
+            with self.assertRaisesRegex(ValueError,'not ready'):
+                sentiment_ready(self.store,{'model':'Local Ollama','model_id':'installed'})
+            self.assertEqual(provider.return_value.transport.call_args.args[0],'GET')
+            provider.return_value.analyze.assert_not_called()
+
+    def test_selecting_provider_persists_and_does_not_submit(self):
+        app=self.app('News Update')
+        app.selectbox(key='offline_sentiment').set_value('Local Ollama').run()
+        self.assertFalse(app.exception)
+        self.assertEqual(self.q.config()['model'],'Local Ollama')
+        self.assertIsNone(self.q.get())
+        app.radio(key='product_page').set_value('Dashboard').run()
+        app.radio(key='product_page').set_value('News Update').run()
+        self.assertEqual(app.selectbox(key='offline_sentiment').value,'Local Ollama')
+        self.assertFalse(app.exception)
+
+    def test_version_change_blocks_and_classifier_choice_survives(self):
+        from finscope.settings_state import save_sentiment,sentiment_config
+        original={**C,'model':'Local LM Studio','model_id':'classifier-original','classifier_llm':True}
+        save_sentiment(self.store,'Local Ollama','sentiment-other')
+        result=sentiment_config(self.store,original)
+        self.assertEqual(result['classifier_model_id'],'classifier-original')
+        self.assertEqual(result['model_id'],'sentiment-other')
+        with patch.object(Worker,'_model_key',return_value='new-revision'):
+            with self.assertRaisesRegex(ResourceBlocked,'version changed'):
+                Worker(self.store).model_key({'sentiment_model_key':'old-revision'})
+
+    def test_new_controls_in_both_languages_and_themes(self):
+        from finscope.ui_preferences import save
+        from finscope.model_ui import save_sentiment
+        from finscope.model_discovery import Discovery
+        fake=Discovery();fake.publish({'fixture-local':{'loaded':False,'callable':False}})
+        for locale in ('en','zh-CN'):
+            for theme in ('dark','light'):
+                save(self.store,'ui_language',locale);save(self.store,'ui_theme',theme)
+                save_sentiment(self.store,'Local LM Studio','fixture-local')
+                with patch('finscope.model_discovery.discovery',fake):
+                    app=self.app('News Update')
+                    key='offline_installed'+('__zh-CN' if locale=='zh-CN' else '')
+                    self.assertEqual(app.selectbox(key=key).value,'fixture-local')
+                    self.assertTrue(any('not ready' in str(v.value) or '尚未就绪' in str(v.value) for v in app.info))
+                    self.assertIsNone(self.q.get())

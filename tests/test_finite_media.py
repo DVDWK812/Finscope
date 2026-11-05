@@ -153,7 +153,9 @@ class FiniteMediaTests(unittest.TestCase):
         _,p,*_=build_request('marketaux','technology',self.now,2,30,'AUTHORED',marketaux_plan_limit=20,marketaux_page=2)
         self.assertEqual((p['limit'],p['page'],p['group_similar']),(20,2,'false'))
     def test_long_or_external_media_backend_cannot_be_selected(self):
-        for change in (dict(model='Local LM Studio'),dict(classifier_llm=True),dict(force_reanalysis=True)):
+        for mode in ('Local LM Studio','Local Ollama'):
+            self.assertEqual(validate_config({**self.config(),'operation':'update','model':mode,'model_id':'installed'})['model'],mode)
+        for change in (dict(model='OpenAI API'),dict(classifier_llm=True),dict(force_reanalysis=True)):
             with self.assertRaises(ValueError):validate_config({**self.config(),'operation':'update',**change})
     def test_explicit_safety_cap_can_exceed_three_without_changing_legacy_default(self):
         service=self.service([])

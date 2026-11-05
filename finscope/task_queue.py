@@ -91,7 +91,7 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch','classifier_options','repair_classification'}
+    allowed={'sentiment_model_key','classifier_model_id','sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch','classifier_options','repair_classification'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
@@ -105,7 +105,7 @@ def validate_config(config):
     if 'media_batch' in c:
         from .media_batch import validate
         c['media_batch']=validate(c['media_batch'])
-        if c.get('model')!='Local FinBERT' or c.get('classifier_llm') or c.get('force_reanalysis'):
+        if c.get('model') not in ('Local FinBERT','Local LM Studio','Local Ollama') or c.get('classifier_llm') or c.get('force_reanalysis'):
             raise ValueError('Finite media batches use fixed local FinBERT and cached results only')
     batch=c.get('operation') in {'collect','analyze','update','reclassify'}
     if 'operation' in c and not batch:raise ValueError('Invalid batch operation')
@@ -141,7 +141,9 @@ def validate_config(config):
         raise ValueError('Invalid local model ID')
     if c.get('classifier_llm',False) not in (True,False):
         raise ValueError('Invalid classifier setting')
-    if c.get('classifier_llm') and c['model']!='Local LM Studio':
+    if 'sentiment_model_key' in c and (not isinstance(c['sentiment_model_key'],str) or not 1<=len(c['sentiment_model_key'])<=2000):raise ValueError('Invalid sentiment model version')
+    if c.get('classifier_model_id') and (not isinstance(c['classifier_model_id'],str) or len(c['classifier_model_id'])>200):raise ValueError('Invalid classifier model ID')
+    if c.get('classifier_llm') and not c.get('classifier_model_id') and c['model']!='Local LM Studio':
         raise ValueError('Classification enhancement must reuse the selected LM Studio model')
     for source,p in c.get('source_permissions',{}).items():
         if (source not in c['sources'] and source not in {'marketaux','newsdata','finnhub'}) or not isinstance(p,dict) or set(p)!={'preview','retain','analyze','external','reference'}:
@@ -172,7 +174,8 @@ class TaskQueue:
     def config(self):
         with closing(self.store.connect()) as db:
             row=db.execute("SELECT payload FROM product_settings WHERE name='pipeline'").fetchone()
-        return json.loads(row[0]) if row else None
+        from .settings_state import sentiment_config
+        return sentiment_config(self.store,json.loads(row[0]) if row else None)
     def configure(self,config):
         c=validate_config(config)
         from .news_keys import NewsKeyRegistry
@@ -187,7 +190,7 @@ class TaskQueue:
         guard_submit(self)
         c=validate_config(config or self.config())
         return self._enqueue(c)
-    def submit_ready(self,*,confirmed=False,expected_sources=None,expected_config=None):
+    def submit_ready(self,*,confirmed=False,expected_sources=None,expected_config=None,sentiment_model_key=None):
         if confirmed is not True:raise ValueError('Confirm the ready-source scope before starting')
         from .settings_state import editable
         from .news_readiness import source_plan
@@ -204,6 +207,7 @@ class TaskQueue:
         c['sources']=ready
         c['source_permissions']={p:v for p,v in c.get('source_permissions',{}).items() if p in ready}
         c['budgets']={p:v for p,v in c.get('budgets',{}).items() if p in ready}
+        if sentiment_model_key:c['sentiment_model_key']=sentiment_model_key
         return self._enqueue(validate_config(c))
     def submit_batch(self,operation,config,*,confirmed=False,article_ids=None):
         """Independent advanced actions; never inherit a draft API source list."""

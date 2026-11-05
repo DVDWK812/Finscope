@@ -17,7 +17,8 @@ def saved(store):
         from .classification_scheme import selected
         options=selected(store)
         if options:c['classifier_options']=options
-    return c
+    from .settings_state import sentiment_config
+    return sentiment_config(store,c)
 
 
 def controls(q,active):

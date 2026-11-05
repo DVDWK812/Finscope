@@ -66,8 +66,13 @@ def model_editor(store,c):
     if options.mode=='Local FinBERT':c['model_id']=''
     c.pop('result_model_key',None)
     c['taxonomy']=field('selectbox','Default classification catalog for new tasks','settings_taxonomy',c['taxonomy'],options=['US-BUSINESS-1','CSRC-JRT0020-2024'])
-    c['classifier_llm']=field('checkbox','Use selected local LM Studio model to verify classification candidates','settings_classifier',c.get('classifier_llm',False),disabled=c['model']!='Local LM Studio')
-    if c['model']!='Local LM Studio':c['classifier_llm']=False
+    c['classifier_llm']=field('checkbox','Use selected local LM Studio model to verify classification candidates','settings_classifier',c.get('classifier_llm',False))
+    if c.get('classifier_llm'):
+        from .model_discovery import discovery
+        models=list(discovery.snapshot()['models'])
+        previous=c.get('classifier_model_id',c.get('model_id',''))
+        if previous and previous not in models:models.append(previous)
+        c['classifier_model_id']=field('selectbox','Local industry classifier model','settings_classifier_model',previous or None,options=models,index=None)
 
 
 def diagnostics(store,q,section):
@@ -115,6 +120,9 @@ def render(store,q,*,section_override=None):
     if st.button('Save settings',key='settings_save',type='primary'):
         try:
             pending=save(q,c)
+            if section=='models':
+                from .model_ui import save_sentiment
+                save_sentiment(store,c['model'],c.get('model_id',''))
             if st.session_state.get('_external_api_edit'):
                 from .external_ui import save_external
                 save_external(store,st.session_state['_external_api_edit'])

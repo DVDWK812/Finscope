@@ -15,7 +15,7 @@ def saved(queue):
 
 
 def editable(queue):
-    return deepcopy({**DEFAULT,**(saved(queue) or queue.config() or {})})
+    return sentiment_config(queue.store,deepcopy({**DEFAULT,**(saved(queue) or queue.config() or {})}))
 
 
 def issues(config,*,store=None):
@@ -66,3 +66,21 @@ def save(queue,config):
 def guard_submit(queue):
     draft=saved(queue)
     if draft is not None:raise ValueError('Saved settings are a draft. Complete and save them in Settings before starting a task.')
+
+
+# One persisted sentiment choice; collection scopes and classifier settings remain separate.
+def sentiment_config(store, config):
+    if config is None:return None
+    with closing(store.connect()) as db:
+        row=db.execute("SELECT payload FROM product_settings WHERE name='sentiment_selection'").fetchone()
+    import json
+    config=dict(config)
+    if config.get('classifier_llm'):config.setdefault('classifier_model_id',config.get('model_id',''))
+    return {**config,**(json.loads(row[0]) if row else {})}
+
+
+def save_sentiment(store, mode, model):
+    import json
+    if mode not in ('Local FinBERT','Local LM Studio','Local Ollama'):raise ValueError('Automatic tasks require a local sentiment model')
+    with closing(store.connect()) as db:
+        db.execute("INSERT OR REPLACE INTO product_settings VALUES ('sentiment_selection',?)",(json.dumps({'model':mode,'model_id':model or ''}),));db.commit()

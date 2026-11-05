@@ -91,6 +91,11 @@ class Worker:
         if result.status!='ok':raise FetchBlocked('Source request failed; protected provider ledger retained')
         return items[:c['limit']]
     def model_key(self,c):
+        key=self._model_key(c)
+        if c.get('sentiment_model_key') and key!=c['sentiment_model_key']:
+            raise ResourceBlocked('Selected sentiment model version changed; review and submit a new task')
+        return key
+    def _model_key(self,c):
         from .model_providers import INSTRUCTIONS
         prompt_version=hashlib.sha256(INSTRUCTIONS.encode()).hexdigest()[:16]
         if c['model']=='Local FinBERT':
@@ -144,7 +149,7 @@ class Worker:
             check();self.resources(c['model'],loading=self.backend is None)
             model_key=self.model_key(c) if not self.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+VERSION
             from .industry_classifier import IndustryClassifier
-            classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
+            classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('classifier_model_id',c.get('model_id')) if c.get('classifier_llm') else None)
             any_source=False
             for source in (['saved_originals'] if c.get('article_ids') else c['sources']):
                 stage('fetch: '+source)

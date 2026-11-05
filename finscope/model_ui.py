@@ -259,3 +259,77 @@ def execute(item,store,settings):
         store.update_rights(item.article_id,updated)
         item=replace(item,rights=updated)
     return ExternalLLMProvider().analyze(item,store,api_key=credential,model=settings.model,consent=settings.consent)
+
+
+from .settings_state import sentiment_config,save_sentiment
+
+
+def sentiment_ready(store, config):
+    """Explicit submission preflight: metadata only, no loading or inference."""
+    from .local_worker import Worker,resource_check
+    if config['model']=='Local LM Studio':
+        m=LMStudioProvider().inventory().get(config.get('model_id'))
+        if not m or not m['loaded'] or not m['callable']:
+            raise ValueError('Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.')
+    elif config['model']=='Local Ollama':
+        provider=OllamaProvider();installed=provider.inventory()['models']
+        from .model_providers import OLLAMA_ORIGIN
+        loaded=provider.transport('GET',OLLAMA_ORIGIN+'/api/ps',None,None,5).get('models',[])
+        if config.get('model_id') not in installed or not any(r.get('digest')==installed[config['model_id']] for r in loaded):
+            raise ValueError('Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.')
+    else:
+        from .model_assets import assets_present
+        if not assets_present('finbert'):raise ValueError('Not configured · Local model files missing')
+    resource_check(config['model'])
+    return Worker(store).model_key(config)
+
+
+def sentiment_selector(store,config,prefix):
+    from .model_discovery import discovery
+    config=sentiment_config(store,config)
+    mode_key=prefix+'_sentiment';model_key=prefix+'_installed'
+    st.session_state[mode_key]=config['model']
+    def changed():
+        try:
+            mode=st.session_state[mode_key]
+            model=st.session_state.get(model_key,'') if mode==config['model'] else ''
+            save_sentiment(store,mode,model)
+            st.session_state.pop('_update_review',None)
+            st.session_state.pop('_offline_review',None)
+            for key in list(st.session_state):
+                if key.startswith('pipeline_') or key in ('_settings_edit','_settings_values'):
+                    st.session_state.pop(key,None)
+        except ValueError as error:st.session_state['_sentiment_error']=str(error)
+    mode=st.selectbox('Sentiment Analysis Model',MODES[:3],key=mode_key,on_change=changed,
+        format_func=lambda v:'FinBERT (recommended; benchmark available)' if v==MODES[0] else v)
+    if st.session_state.get('_sentiment_error'):st.warning(st.session_state.pop('_sentiment_error'))
+    if mode=='Local FinBERT':return config
+    if st.button('Refresh model inventory (read only)',key=prefix+'_inventory'):
+        try:
+            if mode=='Local LM Studio':discovery.refresh()
+            else:
+                provider=OllamaProvider()
+                st.session_state['_sentiment_ollama']=provider.inventory()['models']
+                from .model_providers import OLLAMA_ORIGIN
+                st.session_state['_sentiment_ollama_loaded']=provider.transport('GET',OLLAMA_ORIGIN+'/api/ps',None,None,5).get('models',[])
+        except ValueError as error:
+            st.session_state['_sentiment_ollama']={};st.warning(str(error))
+    snap=discovery.snapshot()
+    models=snap['models'] if mode=='Local LM Studio' else st.session_state.get('_sentiment_ollama',{})
+    choices=list(models)
+    previous=config.get('model_id','')
+    if previous and previous not in choices:choices.append(previous)
+    st.session_state[model_key]=previous or None
+    selected=st.selectbox('Select Installed Model',choices,index=None,key=model_key,on_change=changed)
+    m=models.get(selected)
+    if mode=='Local LM Studio':
+        loaded=bool(m and m['loaded']);ready=bool(m and m['callable'] and snap['status'] in ('ready','empty'))
+    else:
+        loaded=bool(m and any(r.get('digest')==m for r in st.session_state.get('_sentiment_ollama_loaded',[])));ready=loaded
+    st.caption(t('Model availability: downloaded {downloaded} · loaded {loaded} · callable {ready}',
+                 downloaded=tr('Yes' if m else 'Unverified'),loaded=tr('Yes' if loaded else 'No'),ready=tr('Yes' if ready else 'No')))
+    st.caption('Read-only inventory is an observation, not an inference test. Readiness and resources are checked again before submission.')
+    if not ready:st.info('Selected model is not ready. Connect or load it in Settings → Analysis models, then refresh the list.')
+    with st.expander('Model details'):
+        st.text(Verbatim(str(m or previous or '—')))
+    return config

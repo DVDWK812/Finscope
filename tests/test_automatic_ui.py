@@ -35,7 +35,8 @@ class AutomaticUITests(unittest.TestCase):
         app=self.app(None);self.assertEqual(app.title[0].value,'Home')
         app.button(key='home_analyze').click().run()
         self.assertFalse(app.exception);self.assertEqual(app.radio(key='product_page').value,'News Update');self.http.assert_not_called()
-    def test_primary_navigation_and_single_queued_task_across_rerenders(self):
+    @patch('finscope.model_ui.sentiment_ready',return_value='mock-preflight')
+    def test_primary_navigation_and_single_queued_task_across_rerenders(self,_ready):
         app=self.app('News Update');self.assertEqual(app.radio(key='product_page').options,['News Update','Dashboard','Industries','Knowledge Graph','News Explorer','Settings'])
         app.button(key='product_update').click().run();self.assertIsNone(self.q.get())
         app.button(key='product_confirm_update').click().run();key=self.q.get()['id']
@@ -49,7 +50,8 @@ class AutomaticUITests(unittest.TestCase):
         app=self.app();self.assertEqual(app.metric[0].value,'1');self.assertEqual(app.metric[1].value,'0')
         self.assertTrue(any('missing analysis is not Neutral' in x.value for x in app.info))
         app.checkbox(key='product_include_dev').check().run();self.assertEqual(app.metric[0].value,'2');self.http.assert_not_called()
-    def test_worker_results_appear_without_user_save_or_run(self):
+    @patch('finscope.model_ui.sentiment_ready',return_value='mock-preflight')
+    def test_worker_results_appear_without_user_save_or_run(self,_ready):
         from datetime import date
         app=self.app();app.date_input(key='local_dates').set_value((date(2026,10,30),)*2).run()
         app.radio(key='product_page').set_value('News Update').run()
@@ -60,7 +62,8 @@ class AutomaticUITests(unittest.TestCase):
         self.assertEqual(app.metric[0].value,'1');self.assertEqual(self.q.get()['status'],'completed')
         self.http.assert_not_called()
 
-    def test_partial_draft_is_reviewed_and_only_confirmed_ready_sources_are_queued(self):
+    @patch('finscope.model_ui.sentiment_ready',return_value='mock-preflight')
+    def test_partial_draft_is_reviewed_and_only_confirmed_ready_sources_are_queued(self,_ready):
         from finscope.settings_state import save
         c={**C,'sources':['abs_html','newsdata'],'taxonomy':'CSRC-JRT0020-2024'}
         self.assertTrue(save(self.q,c))

@@ -87,6 +87,9 @@ class LocalizedUI:
             for key in ('help','placeholder'):
                 if key in kwargs:kwargs[key]=tr(kwargs[key])
             if name in {'selectbox','multiselect','radio'}:
+                options=kwargs.get('options',args[1] if len(args)>1 else [])
+                if isinstance(options,(list,tuple)) and 'US-BUSINESS-1' in options and 'CSRC-JRT0020-2024' in options:
+                    kwargs['help']=str(tr('Business taxonomy description'))+'\n\n'+str(tr('China taxonomy description'))
                 formatter=kwargs.get('format_func',lambda v:v)
                 # Capture this render's locale: testing and widget serialization
                 # can call the formatter outside the script's context.

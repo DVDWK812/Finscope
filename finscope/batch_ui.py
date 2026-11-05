@@ -17,7 +17,8 @@ SOURCE_LABELS={'sec_submissions':'SEC EDGAR company disclosures','sec_press':'SE
 def saved_config(q):
     with closing(q.store.connect()) as db:
         row=db.execute("SELECT payload FROM product_settings WHERE name='batch_pipeline'").fetchone()
-    return json.loads(row[0]) if row else None
+    from .settings_state import sentiment_config
+    return sentiment_config(q.store,json.loads(row[0]) if row else None)
 
 
 def controls(q):
@@ -34,8 +35,8 @@ def controls(q):
         c['sources']=st.multiselect('Reviewed batch sources',list(SOURCE_LABELS),default=c['sources'],format_func=lambda k:SOURCE_LABELS[k],key='batch_sources')
         c['limit']=int(st.number_input('Maximum records per source',1,300,c['limit'],key='batch_limit'))
         c['taxonomy']=st.selectbox('Batch topic taxonomy',['US-BUSINESS-1','CSRC-JRT0020-2024'],index=['US-BUSINESS-1','CSRC-JRT0020-2024'].index(c['taxonomy']),key='batch_taxonomy')
-        c['model']=st.selectbox('Batch local sentiment model',['Local FinBERT','Local LM Studio'],index=0 if c['model']=='Local FinBERT' else 1,key='batch_model')
-        c['model_id']=st.text_input('Batch LM Studio model ID',value=c.get('model_id',''),disabled=c['model']=='Local FinBERT',key='batch_model_id') if c['model']=='Local LM Studio' else ''
+        from .model_ui import sentiment_selector
+        c=sentiment_selector(q.store,c,'batch')
         options=c.get('sec_options',DEFAULT_OPTIONS)
         st.caption('Initial watchlist: '+', '.join(WATCHLIST_LABELS.values())+'. Issuer SIC is stored separately from evidence-backed news topics.')
         cik_text=st.text_area('SEC watchlist CIKs (ten digits, comma separated)',value=','.join(options['ciks']),key='batch_ciks')
@@ -75,7 +76,10 @@ def controls(q):
                 except ValueError as error:st.error(str(error))
         with right:
             if st.button('Analyze saved records offline',key='batch_analyze',disabled=active or not ready):
-                try:q.submit_batch('analyze',c,confirmed=True);st.rerun()
+                try:
+                    from .model_ui import sentiment_ready
+                    c['sentiment_model_key']=sentiment_ready(q.store,c)
+                    q.submit_batch('analyze',c,confirmed=True);st.rerun()
                 except ValueError as error:st.error(str(error))
         st.caption('Offline analysis reads at most 300 current originals, reuses text/model caches and never requests news. Store-only batches do not inspect or load models.')
         imports(q,active)

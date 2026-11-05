@@ -107,7 +107,7 @@ class BatchRunner:
             counts['total']=len(selected)
             self.queue.update(identity,counts=counts)
             from .industry_classifier import IndustryClassifier
-            classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
+            classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('classifier_model_id',c.get('model_id')) if c.get('classifier_llm') else None)
             legacy_classifier=classifier
             semantic=None
             if c.get('classifier_options'):
