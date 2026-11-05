@@ -57,7 +57,7 @@ class ProductStorage:
         from pathlib import Path
         tables=('local_news','local_analyses','local_permission_history','product_content',
                 'product_current_content','product_classifications','product_analysis_cache',
-                'product_record_state','media_lifetimes','media_captures','product_settings')
+                'product_record_state','media_lifetimes','media_captures','product_settings','product_human_reviews')
         digest=hashlib.sha256()
         for path in (self.store.path,Path(str(self.store.path)+'.expiring')/'live.sqlite3'):
             if not Path(path).exists():continue

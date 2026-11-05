@@ -380,7 +380,9 @@ def task_results(store,q):
             st.dataframe(pd.DataFrame([{'Title':n.title,'Result origin':('New inference' if receipts.get(n.article_id,{}).get('state')=='new' else 'Reused result') if n.article_id in results else 'No current result',
                         'Sentiment':results[n.article_id].label if n.article_id in results else 'Not analyzed'} for n in news]),hide_index=True)
         catalog=load_taxonomy(task['snapshot'].get('taxonomy','US-BUSINESS-1'))
-        article_list(news,results,store,data.classifications(catalog['id']),catalog,'task_results')
+        from .human_review import HumanReviews
+        classes=HumanReviews(store).overlay(news,catalog['id'],data.classifications(catalog['id']))
+        article_list(news,results,store,classes,catalog,'task_results')
     if st.button('Browse all saved records',key='results_library'):
         st.session_state['explorer_task_scope']=False;st.rerun()
 
@@ -458,8 +460,10 @@ def reanalyze(item,store,prefix='product'):
 def details(item,result,store,classifications,catalog,context='product',keyword=None):
     from html import escape
     c=classifications.get(item.article_id,{})
-    if c.get('classifier_version','').startswith('semantic-'):
-        st.caption('Topic classifier: '+c['classifier_version']+' · '+c.get('status','')+(' · '+c['unclassified_reason'] if c.get('unclassified_reason') else ''))
+    automated=ProductStorage(store).classifications(catalog['id']).get(item.article_id,{}) if c.get('human_review_id') else c
+    if c.get('human_review_id'):st.caption('Displayed industry source: Local user review')
+    if automated.get('classifier_version','').startswith('semantic-'):
+        st.caption('Topic classifier: '+automated['classifier_version']+' · '+automated.get('status','')+(' · '+automated['unclassified_reason'] if automated.get('unclassified_reason') else ''))
     from .media_use import scope_of,authorize as media_authorize
     scope=scope_of(item)
     if scope:
@@ -498,8 +502,11 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
             st.caption('Permitted article body' if n.body else 'Supplied summary')
             st.markdown('<div class="fs-news-copy">'+escape(content)+'</div>',unsafe_allow_html=True)
     article_details(item,result,store,context=context,background=True,content_renderer=text,show_legacy_sectors=False)
+    if st.session_state.get('product_page')=='News Explorer':
+        from .human_review_ui import render as review_industry
+        review_industry(item,store,catalog,automated,context)
     with st.expander('Classification evidence'):
-        st.json({'current':c,'history':ProductStorage(store).classification_history(item.article_id,catalog['id'])})
+        st.json({'automated':automated,'displayed':c,'history':ProductStorage(store).classification_history(item.article_id,catalog['id'])})
         if scope:
             from .expiring_media import partition
             part=partition(store)
@@ -675,6 +682,11 @@ def main():
         with search_slot,st.spinner('Loading saved records and checking current permissions…'):
             snapshot=data.view_snapshot(st.session_state,mode)
         classes=snapshot['classes'][mode]
+        from .human_review import HumanReviews
+        classes=HumanReviews(store).overlay(snapshot['news'],mode,classes)
+        review_signature=tuple(sorted((k,v.get('human_review_id')) for k,v in classes.items() if v.get('human_review_id')))
+        if snapshot.get('review_signature')!=review_signature:
+            snapshot['computed'].clear();snapshot['review_signature']=review_signature
         from .classification_scheme import selected as selected_scheme,cache_key as classifier_key
         scheme=selected_scheme(store) if mode=='US-BUSINESS-1' else None
         signature=classifier_key(scheme) if scheme else 'legacy-rules'
@@ -727,6 +739,8 @@ def main():
     else:st.caption(t('Selection: {records} records · {analyzed} analyzed · {unclassified} Unclassified · {na} Not applicable',
                      records=len(news),analyzed=len(results),unclassified=unclassified,na=not_applicable))
     st.caption(t('Results model: {model}',model=str(display(st.session_state.get('local_result_model','')))))
+    reviewed=sum(bool(classes.get(n.article_id,{}).get('human_review_id')) for n in news)
+    if reviewed:st.caption(t('Industry display: {count} Local user review records; remaining labels are automated. Human reviews are excluded from model evaluation.',count=reviewed))
     active=[label for key,label in (('local_sectors','Sectors'),('local_sources','Sources'),('local_sentiments','Sentiment'),
             ('product_children','Subindustries'),('batch_status_filter','Analysis status')) if st.session_state.get(key)]
     if kind!='all':active.append('Source type scope')

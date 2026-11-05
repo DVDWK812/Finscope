@@ -57,6 +57,9 @@ class ExpiringMediaStore:
     def _purge(self, db):
         ids = [r[0] for r in db.execute('SELECT article_id FROM media_lifetimes WHERE live=1 AND expires_at<=?', (self.clock().isoformat(),))]
         for identity in ids:
+            # Human annotations carry quotes and obey the same finite lifetime.
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='product_human_reviews'").fetchone():
+                db.execute('DELETE FROM product_human_reviews WHERE article_id=?', (identity,))
             for table in TEXT_TABLES:
                 db.execute('DELETE FROM ' + table + ' WHERE ' + ('id' if table == 'local_news' else 'article_id') + '=?', (identity,))
             db.execute('DELETE FROM local_permission_history WHERE article_id=?', (identity,))
