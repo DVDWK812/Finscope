@@ -45,7 +45,7 @@ def publication_label(item):
     return 'Publication date unknown'
 
 
-def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, sector_options=None,model_choices=None,model_widget_key='local_result_model'):
+def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, sector_options=None,model_choices=None,model_widget_key='local_result_model',search_container=None):
     restore_filters()
     dates = sorted(date.fromisoformat(n.published_day) for n in news if n.published_day)
     start, end = (dates[0], dates[-1]) if dates else (datetime.now(timezone.utc).date(),)*2
@@ -68,7 +68,9 @@ def shared_filters(news, analyses, *, for_analysis=False, analysis_model=None, s
             st.session_state['local_unknown_dates']=True
             remember_filter('local_unknown_dates')
         st.button('Include unknown publication dates',on_click=include_unknown)
-    left, middle, right = st.columns([2, 2, 2])
+    if search_container is None:left, middle, right = st.columns([2, 2, 2])
+    else:
+        left,middle=st.columns(2);right=search_container
     with left:
         date_label='Publication / filing date range (UTC)' if any(n.timestamp_kind=='filed' for n in news) else 'Publication date range (UTC)'
         selected = st.date_input(date_label, value=(start,end), key="local_dates",on_change=remember_filter,args=('local_dates',),

@@ -44,6 +44,35 @@ class NavigationFlowTests(unittest.TestCase):
         for page in ('Dashboard','Industries','Knowledge Graph','News Explorer','Settings'):
             app.radio(key='product_page').set_value(page).run();self.assertFalse(app.exception)
             self.assertFalse(any(b.key in {'product_update','batch_analyze','product_resume','product_cancel'} for b in app.button))
+    def test_folded_configuration_keeps_actions_and_failure_reasons_accessible(self):
+        identity=self.submit();self.q.update(identity,status='blocked',error='Authored permission review required')
+        app=self.app('News Update')
+        advanced=next(e for e in app.expander if e.label=='Advanced configuration')
+        self.assertFalse(advanced.proto.expanded)
+        advanced_buttons={b.key for b in advanced.get('button')}
+        self.assertTrue({'batch_collect','batch_analyze','settings_save'}<=advanced_buttons)
+        self.assertFalse({'product_update','offline_submit','product_resume','task_results'}&advanced_buttons)
+        details=next(e for e in app.expander if e.label=='Task details')
+        self.assertFalse(details.proto.expanded);self.assertFalse(details.get('warning'))
+        self.assertTrue(any(w.value=='Authored permission review required' for w in app.warning))
+        self.assertEqual(self.q.get()['id'],identity)
+    def test_folded_counts_keep_model_revision_and_not_applicable_visible(self):
+        item=self.items[0];origin=json.loads(item.provenance)
+        origin.update(sentiment_eligible=False,ineligible_reason='Authored metadata only')
+        # Saved content versions are immutable; a new authored revision carries
+        # the not-applicable metadata into the current view.
+        revised=prepare(replace(item,title='Authored metadata-only notice',provenance=json.dumps(origin)))[0]
+        self.data.save(revised)
+        app=self.app('Dashboard')
+        coverage=next(e for e in app.expander if e.label=='Data coverage and counts')
+        filters=next(e for e in app.expander if e.label=='Filters and model')
+        self.assertFalse(coverage.proto.expanded);self.assertFalse(filters.proto.expanded)
+        self.assertEqual(len(coverage.get('metric')),4)
+        self.assertEqual(len(app.metric),8)
+        self.assertTrue(any('1 Not applicable' in c.value for c in app.caption if c not in coverage.get('caption')))
+        self.assertTrue(any(c.value.startswith('Results model:') for c in app.caption if c not in filters.get('caption')))
+        self.assertNotIn('local_search',{w.key for w in filters.get('text_input')})
+        self.assertEqual(app.text_input(key='local_search').value,'')
     def test_explicit_confirmation_one_job_and_task_results(self):
         app=self.app('News Update');self.assertTrue(app.button(key='offline_submit').disabled)
         app.checkbox(key='offline_confirm').check().run()

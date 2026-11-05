@@ -85,7 +85,9 @@ def task_progress(store,show_diagnostics=True):
     from .ui_preferences import bootstrap
     bootstrap(store)
     q=TaskQueue(store);task=q.get()
-    if not task:return
+    if not task:
+        if show_diagnostics:st.caption('No task yet. Update news or analyze saved records below.')
+        return
     counts=task['counts'];signature=json.dumps([task['id'],task['status'],counts],sort_keys=True)
     previous=st.session_state.get('product_task_signature')
     st.session_state['product_task_signature']=signature
@@ -103,9 +105,8 @@ def task_progress(store,show_diagnostics=True):
                 st.session_state['_results_changed']=False;st.rerun()
         return
     st.subheader(t('Task status: {status}',status=tr(label)))
-    st.caption(t('Task {identity} · submitted {created}',identity=task['id'][:8],created=task['created']))
     st.write(next_step)
-    st.caption(t('Current stage: {stage}',stage=task_stage(task['stage'])))
+    if task['status'] in ACTIVE:st.caption(t('Current stage: {stage}',stage=task_stage(task['stage'])))
     receipts=q.outcomes(task['id'])
     total=counts.get('total')
     if total is None and task['snapshot'].get('article_ids') and not task['snapshot'].get('operation'):
@@ -116,10 +117,12 @@ def task_progress(store,show_diagnostics=True):
     else:st.caption('A reliable total is not available yet; no completion percentage is shown.')
     st.caption(t('New inference: {new} · Valid results reused: {reused} · Failed: {failed} · Skipped: {skipped}',
                  new=counts.get('analyzed',0),reused=counts.get('reused',sum(r['state']=='reused' for r in receipts.values())),failed=counts.get('failed',0),skipped=counts.get('skipped',0)))
-    st.caption(t('New originals: {new} · Existing originals: {duplicates} · Classified: {classified}',
-                 new=counts.get('new',0),duplicates=counts.get('duplicates',0),classified=counts.get('classified',0)))
+    with st.expander('Task details',expanded=False):
+        st.caption(t('Task {identity} · submitted {created}',identity=task['id'][:8],created=task['created']))
+        st.caption(t('New originals: {new} · Existing originals: {duplicates} · Classified: {classified}',
+                     new=counts.get('new',0),duplicates=counts.get('duplicates',0),classified=counts.get('classified',0)))
+        st.caption(t('Current stage: {stage}',stage=task_stage(task['stage'])))
     if task['error']:
-        st.warning('Some stages need attention; completed results are retained.')
         st.warning(task['error'])
     if not q.worker_alive() and task['status'] in ACTIVE:st.warning('The local worker is not connected. Ask the facilitator to start it; do not submit again.')
     if task['status'] in ACTIVE:
@@ -145,7 +148,6 @@ def home(store,q):
         left,right=st.columns(2)
         with left:st.button('Analyze existing records',type='primary',on_click=go,args=('News Update',),key='home_analyze',width='stretch')
         with right:st.button('View results',on_click=go,args=('News Explorer',),key='home_results',width='stretch')
-        st.caption('News Update submits persistent local tasks with saved progress and explicit resource pauses.')
         st.caption('Sentiment describes the text. It is not a price forecast or investment advice.')
     steps=(('sources','News Update','Choose sources, permissions and current budgets, or select permitted saved records.'),
            HOME_GUIDE_STEPS[1],HOME_GUIDE_STEPS[2],
@@ -155,8 +157,6 @@ def home(store,q):
     st.markdown(home_capabilities(HOME_CAPABILITIES),unsafe_allow_html=True)
     st.caption('Local defaults and configured integrations have different evidence scopes. DeepSeek is an authored-text interface test; repeated-load stability remains unverified.')
     st.subheader('How FinScope works')
-    st.write('Configure once, review the scope, then update and inspect locally.')
-    st.markdown(home_workflow(steps),unsafe_allow_html=True)
     st.caption('News Update contains collection and offline analysis. Settings contains language, model management and diagnostics. Saving settings or changing filters does not collect news or run inference.')
     def cards(values):
         for title,copy in values:
@@ -183,8 +183,8 @@ def analysis_entry(store,q):
     # Offline entry carries only model/classification choices, never collection settings.
     c={k:v for k,v in c.items() if k in {'model','model_id','taxonomy','classifier_llm','classifier_options'}}
     c.update(sources=[],limit=300)
-    st.write('Choose saved records, review the scope, then confirm once. No news will be collected.')
-    st.caption(t('Analysis model summary',model=c['model']+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    st.caption('Use saved text only. No news request is made.')
+    st.caption(t('Analysis model summary',model=str(tr(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
     items=ProductStorage(store).news();allowed={};blocked=0
     for item in items:
         try:authorize(item,('retain','local_display','local_classification','local_sentiment'))
@@ -195,8 +195,9 @@ def analysis_entry(store,q):
     st.session_state['offline_articles']=[identity for identity in selected if identity in allowed]
     def remember():
         st.session_state['_analysis_selection']=list(st.session_state['offline_articles'])
-    ids=st.multiselect('Saved records to analyze',list(allowed),format_func=lambda k:Verbatim(allowed[k].title+' ['+k[:8]+']'),
-                       key='offline_articles',on_change=remember,disabled=active)
+    with st.expander('Select saved records',expanded=False):
+        ids=st.multiselect('Saved records to analyze',list(allowed),format_func=lambda k:Verbatim(allowed[k].title+' ['+k[:8]+']'),
+                           key='offline_articles',on_change=remember,disabled=active)
     if blocked:st.info(t('{count} records need permission review or have expired. Review them in Settings.',count=blocked))
     if not allowed:st.info('No permitted saved records are available. Ask the facilitator to prepare samples, or use Settings to add permitted records.')
     review=json.dumps([c,[(identity,allowed[identity].content_version,allowed[identity].rights.reference) for identity in ids]],sort_keys=True)
@@ -204,11 +205,10 @@ def analysis_entry(store,q):
         st.session_state['_offline_review']=review
         st.session_state['offline_confirm']=False
         st.session_state.get('_ui_mirrors',{}).pop('offline_confirm',None)
-    st.subheader('Review and confirm')
     st.write(t('Selected records: {count}. Existing valid results will be reused; missing results will be analyzed.',count=len(ids)))
     ready=st.checkbox('I confirm local analysis of these selected records under their recorded permissions',key='offline_confirm',disabled=active)
-    if active:st.info('A task is already active. Follow its progress above or view saved results.')
-    elif not ready:st.info('Analysis is blocked until you confirm the selected scope. You can still view saved results.')
+    if active:st.caption('A task is already active. Follow its progress above or view saved results.')
+    elif not ready:st.caption('Analysis is blocked until you confirm the selected scope. You can still view saved results.')
     if st.button('Confirm and start analysis',type='primary',key='offline_submit',disabled=active or not ready or not 1<=len(ids)<=300):
         try:
             # Re-read rights and versions at submission, not just when opening the page.
@@ -222,7 +222,6 @@ def analysis_entry(store,q):
             st.session_state['_offline_review']=None
             st.rerun()
         except ValueError as error:st.error(str(error))
-    st.button('View results',on_click=go,args=('News Explorer',),key='analysis_results')
 
 
 def task_results(store,q):
@@ -245,9 +244,14 @@ def task_results(store,q):
             news.append(item)
         results=data.task_results(q,task);receipts=q.outcomes(identity)
         st.write(t('This task: {total} selected · {valid} current results available',total=len(ids),valid=len(results)))
+        fresh=sum(receipts.get(k,{}).get('state')=='new' for k in results)
+        st.caption(t('Result origins: {new} new · {reused} reused · {missing} without a current result',
+                     new=fresh,reused=len(results)-fresh,missing=len(ids)-len(results)))
+        if results:st.caption(t('Results model: {model}',model='; '.join(sorted({model_key(a) for a in results.values()}))))
         if len(results)<len(ids):st.info('Pending, blocked, expired or changed records are not shown as successful results. See the task status and record details.')
-        st.dataframe(pd.DataFrame([{'Title':n.title,'Result origin':('New inference' if receipts.get(n.article_id,{}).get('state')=='new' else 'Reused result') if n.article_id in results else 'No current result',
-                    'Sentiment':results[n.article_id].label if n.article_id in results else 'Not analyzed'} for n in news]),hide_index=True)
+        with st.expander('Result origins and counts',expanded=False):
+            st.dataframe(pd.DataFrame([{'Title':n.title,'Result origin':('New inference' if receipts.get(n.article_id,{}).get('state')=='new' else 'Reused result') if n.article_id in results else 'No current result',
+                        'Sentiment':results[n.article_id].label if n.article_id in results else 'Not analyzed'} for n in news]),hide_index=True)
         catalog=load_taxonomy(task['snapshot'].get('taxonomy','US-BUSINESS-1'))
         article_list(news,results,store,data.classifications(catalog['id']),catalog,'task_results')
     if st.button('Browse all saved records',key='results_library'):
@@ -263,6 +267,9 @@ def update_button(q):
     from .media_batch_ui import saved as saved_media
     batch=saved_media(q.store) or saved_config(q)
     if batch:expected=batch;c=batch
+    st.caption(t('Saved sources: {sources}',sources=', '.join(LABELS.get(p,p) for p in (c or {}).get('sources',[])) or str(tr('None'))))
+    if c:st.caption(t('Analysis model summary',model=str(display(c['model']))+(' / '+c.get('model_id','') if c.get('model_id') else '')))
+    if not c or not c.get('sources'):st.caption('Set sources, permissions and budget in Advanced configuration before updating.')
     unsaved=not batch and st.session_state.get('_settings_edit',expected)!=expected
     if unsaved:st.caption('Unsaved changes')
     if st.button('Update & Analyze',type='primary',disabled=unsaved or not c or not c.get('sources') or bool(task and task['status'] in ACTIVE),key='product_update'):
@@ -378,12 +385,14 @@ def article_list(news,results,store,classes,catalog,context,keyword=None):
         selections=st.session_state.setdefault('selected_articles',{})
         current=article_selection(ids,st.session_state.get(key,selections.get(context)))
         with left:
+            st.caption(t('Original records: {count}',count=len(ordered)))
             clicked=interactive_chart('articles',{'rows':article_rows(ordered,results)},key=context+'_rows',selected=current)
             st.session_state[key]=article_selection(ids,current,clicked)
             with st.expander('Accessible article picker'):
                 identity=st.selectbox('Select original article',ids,format_func=lambda k:Verbatim(next(n.title for n in ordered if n.article_id==k)),key=key)
                 selections[context]=identity
         with right:
+            st.caption('Selected original')
             with st.container(key='story_detail_'+context):
                 details(next(n for n in ordered if n.article_id==identity),results.get(identity),store,classes,catalog,context,keyword)
 
@@ -414,11 +423,13 @@ def network(news,results,store,classes,catalog):
         companies=sorted({e['name'] for n in news for e in classes.get(n.article_id,{}).get('entities',[]) if e['name'] not in institutions})
         company=st.selectbox('Mentioned entity',companies,index=None,format_func=Verbatim,key='graph_company')
         if not company:st.info('No selected text-evidenced company; publisher/government institutions are not presented as companies. Issuer main business remains unverified.');return
-    expanded=st.checkbox('Expand graph',key='graph_expanded')
-    publishers=st.checkbox('Show publisher institutions mentioned in text',value=False,key='graph_publishers')
+    with st.expander('Graph options and interpretation',expanded=False):
+        expanded=st.checkbox('Expand graph',key='graph_expanded')
+        publishers=st.checkbox('Show publisher institutions mentioned in text',value=False,key='graph_publishers')
+        st.caption('Edges retain text/catalog evidence; no causal or supply-chain claims.')
     data=view_compute('graph',news,results,(catalog['id'],expanded,company,publishers),lambda:evidence_graph(news,results,classifications=classes,taxonomy=catalog,article_limit=30 if expanded else 8,node_limit=120 if expanded else 45,company=company,show_publisher_entities=publishers))
     full=view_compute('graph-full',news,results,(catalog['id'],company,publishers),lambda:evidence_graph(news,results,classifications=classes,taxonomy=catalog,article_limit=len(news),node_limit=100000,company=company,show_publisher_entities=publishers))
-    st.caption(f"Showing {len(data['nodes'])}/{len(full['nodes'])} nodes; {sum(n['kind']=='Article' for n in data['nodes'])} displayed originals. Edges retain text/catalog evidence; no causal or supply-chain claims.")
+    st.caption(t('Graph coverage: {shown}/{total} nodes · {articles} originals',shown=len(data['nodes']),total=len(full['nodes']),articles=sum(n['kind']=='Article' for n in data['nodes'])))
     scope=chart_scope('graph',data)
     if st.session_state.get('product_graph_scope')!=scope:st.session_state['product_graph_selected']=None;st.session_state['product_graph_scope']=scope
     with st.container(key='product_map'):
@@ -437,8 +448,8 @@ def network(news,results,store,classes,catalog):
         accessible=st.selectbox('Graph node',data['nodes'],index=None,format_func=lambda n:Verbatim(str(tr(n['kind']))+' · '+str(display(n['label']) if n['kind'] in {'Sector','Subindustry','Keyword theme'} else n['label'])))
         if accessible:
             ids=graph_members(full,accessible['id']);article_list([n for n in news if n.article_id in ids],results,store,classes,catalog,'graph_accessible')
-    with st.container(key='product_cloud'):
-        st.subheader('News keywords');cloud(news,results,store,classes,catalog)
+    with st.expander('News keywords',expanded=False):
+        with st.container(key='product_cloud'):cloud(news,results,store,classes,catalog)
 
 
 def sector_plot(rows):
@@ -477,28 +488,37 @@ def main():
     if page=='Home':
         home(store,q);save_view(store);return
     if page=='News Update':
-        analysis_entry(store,q)
+        with st.container(key='update_actions'):
+            update,offline=st.columns(2,gap='large')
+            with update:
+                with st.container(border=True):
+                    st.subheader('Update news')
+                    st.caption('Collect from saved sources, then analyze permitted text.')
+                    update_button(q)
+            with offline:
+                with st.container(border=True):
+                    st.subheader('Analyze saved records')
+                    analysis_entry(store,q)
+        st.button('View results',on_click=go,args=('News Explorer',),key='analysis_results')
         selected=st.session_state.get('_reanalysis_article')
         if selected:
             item=next((n for n in data.news() if n.article_id==selected),None)
             if item:
                 with st.expander('Reanalyze this original',expanded=True):
                     st.write(Verbatim(item.title));reanalyze(item,store)
-        st.divider()
-        update_button(q)
         from .settings_ui import render as configuration
-        with st.expander('News collection configuration',expanded=False):
-            configuration(store,q,section_override='sources')
         from .batch_ui import controls
-        controls(q)
         from .media_ui import controls as media_controls
-        media_controls(store)
+        with st.expander('Advanced configuration',expanded=False):
+            with st.expander('News collection configuration',expanded=False):
+                configuration(store,q,section_override='sources')
+            controls(q)
+            media_controls(store)
         save_view(store);return
     if page=='News Explorer' and st.session_state.get('explorer_task_scope'):
         task_results(store,q);save_view(store);return
     for key,value in st.session_state.get('product_view_preferences',{}).items():
         if key not in st.session_state:st.session_state[key]=value
-    st.caption('Filters apply only to this page and are kept when you return.')
     def reset_page():
         from .view_preferences import view_key
         for key in list(st.session_state):
@@ -506,61 +526,86 @@ def main():
         for key in list(st.session_state.get('_ui_mirrors',{})):
             if view_key(key):st.session_state['_ui_mirrors'].pop(key,None)
         st.session_state.setdefault('page_views',{})[page]={}
-    st.button('Reset this page’s filters',on_click=reset_page,key='reset_page_filters')
     kpis=st.container(key='product_kpis') if page=='Dashboard' else None
-    c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
-    catalog=load_taxonomy(mode)
-    with st.spinner('Loading saved records and checking current permissions…'):
-        snapshot=data.view_snapshot(st.session_state,mode)
-    classes=snapshot['classes'][mode]
-    from .classification_scheme import selected as selected_scheme,cache_key as classifier_key
-    scheme=selected_scheme(store) if mode=='US-BUSINESS-1' else None
-    signature=classifier_key(scheme) if scheme else 'legacy-rules'
-    if st.session_state.get('_classification_view_key')!=signature:
-        for key in ('product_children','local_sectors','graph_selected','industry_selected','heatmap_selected'):
-            st.session_state.pop(key,None)
-            st.session_state.get('_ui_mirrors',{}).pop(key,None)
-            for presentation in list(st.session_state):
-                if presentation.startswith(key+'__'):st.session_state.pop(presentation,None)
-        st.session_state['_classification_view_key']=signature
-    if scheme:st.caption('Finite-media classification version: '+signature+' · sentiment history unchanged')
-    news=snapshot['news']
-    all_record_count=len(news)
-    with st.expander('Development records',expanded=False):include_dev=st.checkbox('Include synthetic development records',value=False,key='product_include_dev')
-    if not include_dev:news=[n for n in news if n.provider!='authored_synthetic']
-    library_news=list(news);states=snapshot['states']
-    missing=sum(n.article_id not in classes for n in news)
-    if missing:
-        st.info(f"{missing}/{len(news)} originals have no saved classification for {mode}; industry relevance is not yet determined.")
-    news=view_compute('project',news,{},mode,lambda:project_news(news,classes,catalog))
-    current={n.article_id:n for n in news}
-    analyses=data.visible_analyses(news,snapshot['analyses'])
-    parent_names=[node_label(n) for n in catalog['nodes'] if n['parent_id'] is None]+['Unclassified']
-    from .local_analytics import result_models
-    choices=result_models(analyses)
-    preferred=st.session_state.get('product_preferred_model') or c.get('result_model_key')
-    if preferred and preferred not in choices:choices.append(preferred)
-    if preferred and 'local_result_model' not in st.session_state and 'local_result_model' not in st.session_state.get('filter_preferences',{}):
-        st.session_state['local_result_model']=preferred
-    import hashlib
-    widget_key='product_result_model_'+hashlib.sha256(c.get('result_model_key','default').encode()).hexdigest()[:10]
-    with st.container(key='product_filters'):
-        news,results,start,end=shared_filters(news,analyses,sector_options=parent_names,model_choices=choices,model_widget_key=widget_key)
-    from .batch_records import TYPES,source_type,analysis_status,statistics
-    kind=st.selectbox('Source type scope',['all',*TYPES],format_func=lambda k:Verbatim('All types (separate counts)' if k=='all' else TYPES[k]),key='batch_source_type_filter')
-    if kind!='all':news=[n for n in news if source_type(n)==kind]
-    status_filter=st.multiselect('Analysis status',['Analyzed','Not analyzed','Not applicable','Permission required','Failed','Blocked'],key='batch_status_filter')
-    if status_filter:news=[n for n in news if analysis_status(n,results.get(n.article_id),states) in status_filter]
-    results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
-    children=[n for n in catalog['nodes'] if n['parent_id'] and (not st.session_state.get('local_sectors') or node_label(next(p for p in catalog['nodes'] if p['id']==n['parent_id'])) in st.session_state['local_sectors'])]
-    valid=[n['id'] for n in children]
-    if any(k not in valid for k in st.session_state.get('product_children',[])):st.session_state['product_children']=[k for k in st.session_state['product_children'] if k in valid]
-    child_ids=st.multiselect('Subindustries',valid,format_func=lambda k:node_label(next(n for n in children if n['id']==k)),key='product_children')
-    st.session_state['product_view_preferences']={k:st.session_state[k] for k in ('product_taxonomy','product_children','product_include_dev','batch_source_type_filter','batch_status_filter','batch_chart_type') if k in st.session_state}
-    if child_ids:news=[n for n in news if set(child_ids)&{v['id'] for v in classes.get(n.article_id,{}).get('labels',[])}];results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
-    st.caption(f"{sum(n.sectors==('Unclassified',) for n in news)} unclassified originals · {len(news)-len(results)} without a current selected-model result; neither is Neutral by default.")
-    st.caption('Counts below use distinct local originals and keep media, company releases, regulatory disclosures and government announcements separate.')
-    st.dataframe(pd.DataFrame(statistics(news,results,classes,states)),hide_index=True,width='stretch')
+    with st.container(key='analysis_toolbar'):
+        search,reset=st.columns([3,1],vertical_alignment='bottom')
+        search_slot=search.container()
+        with reset:st.button('Reset filters',on_click=reset_page,key='reset_page_filters',width='stretch')
+    with st.expander('Filters and model',expanded=False):
+        st.caption('Filters apply only to this page and are kept when you return.')
+        c=q.config() or {};mode=st.selectbox('Classification mode (view)',list(CATALOGS),index=list(CATALOGS).index(c.get('taxonomy','US-BUSINESS-1')),key='product_taxonomy')
+        catalog=load_taxonomy(mode)
+        with search_slot,st.spinner('Loading saved records and checking current permissions…'):
+            snapshot=data.view_snapshot(st.session_state,mode)
+        classes=snapshot['classes'][mode]
+        from .classification_scheme import selected as selected_scheme,cache_key as classifier_key
+        scheme=selected_scheme(store) if mode=='US-BUSINESS-1' else None
+        signature=classifier_key(scheme) if scheme else 'legacy-rules'
+        if st.session_state.get('_classification_view_key')!=signature:
+            for key in ('product_children','local_sectors','graph_selected','industry_selected','heatmap_selected'):
+                st.session_state.pop(key,None)
+                st.session_state.get('_ui_mirrors',{}).pop(key,None)
+                for presentation in list(st.session_state):
+                    if presentation.startswith(key+'__'):st.session_state.pop(presentation,None)
+            st.session_state['_classification_view_key']=signature
+        if scheme:st.caption('Finite-media classification version: '+signature+' · sentiment history unchanged')
+        news=snapshot['news']
+        all_record_count=len(news)
+        with st.expander('Development records',expanded=False):include_dev=st.checkbox('Include synthetic development records',value=False,key='product_include_dev')
+        if not include_dev:news=[n for n in news if n.provider!='authored_synthetic']
+        library_news=list(news);states=snapshot['states']
+        missing=sum(n.article_id not in classes for n in news)
+        if missing:
+            st.info(f"{missing}/{len(news)} originals have no saved classification for {mode}; industry relevance is not yet determined.")
+        news=view_compute('project',news,{},mode,lambda:project_news(news,classes,catalog))
+        current={n.article_id:n for n in news}
+        analyses=data.visible_analyses(news,snapshot['analyses'])
+        parent_names=[node_label(n) for n in catalog['nodes'] if n['parent_id'] is None]+['Unclassified']
+        from .local_analytics import result_models
+        choices=result_models(analyses)
+        preferred=st.session_state.get('product_preferred_model') or c.get('result_model_key')
+        if preferred and preferred not in choices:choices.append(preferred)
+        if preferred and 'local_result_model' not in st.session_state and 'local_result_model' not in st.session_state.get('filter_preferences',{}):
+            st.session_state['local_result_model']=preferred
+        import hashlib
+        widget_key='product_result_model_'+hashlib.sha256(c.get('result_model_key','default').encode()).hexdigest()[:10]
+        with st.container(key='product_filters'):
+            news,results,start,end=shared_filters(news,analyses,sector_options=parent_names,model_choices=choices,model_widget_key=widget_key,search_container=search_slot)
+        from .batch_records import TYPES,source_type,analysis_status,statistics
+        kind=st.selectbox('Source type scope',['all',*TYPES],format_func=lambda k:Verbatim('All types (separate counts)' if k=='all' else TYPES[k]),key='batch_source_type_filter')
+        if kind!='all':news=[n for n in news if source_type(n)==kind]
+        status_filter=st.multiselect('Analysis status',['Analyzed','Not analyzed','Not applicable','Permission required','Failed','Blocked'],key='batch_status_filter')
+        if status_filter:news=[n for n in news if analysis_status(n,results.get(n.article_id),states) in status_filter]
+        results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
+        children=[n for n in catalog['nodes'] if n['parent_id'] and (not st.session_state.get('local_sectors') or node_label(next(p for p in catalog['nodes'] if p['id']==n['parent_id'])) in st.session_state['local_sectors'])]
+        valid=[n['id'] for n in children]
+        if any(k not in valid for k in st.session_state.get('product_children',[])):st.session_state['product_children']=[k for k in st.session_state['product_children'] if k in valid]
+        child_ids=st.multiselect('Subindustries',valid,format_func=lambda k:node_label(next(n for n in children if n['id']==k)),key='product_children')
+        st.session_state['product_view_preferences']={k:st.session_state[k] for k in ('product_taxonomy','product_children','product_include_dev','batch_source_type_filter','batch_status_filter','batch_chart_type') if k in st.session_state}
+        if child_ids:news=[n for n in news if set(child_ids)&{v['id'] for v in classes.get(n.article_id,{}).get('labels',[])}];results={n.article_id:results[n.article_id] for n in news if n.article_id in results}
+    unclassified=sum(n.sectors==('Unclassified',) for n in news)
+    statuses={n.article_id:analysis_status(n,results.get(n.article_id),states) for n in news}
+    not_applicable=sum(v=='Not applicable' for v in statuses.values())
+    if page=='Dashboard':st.caption(t('{unclassified} Unclassified · {na} Not applicable',unclassified=unclassified,na=not_applicable))
+    else:st.caption(t('Selection: {records} records · {analyzed} analyzed · {unclassified} Unclassified · {na} Not applicable',
+                     records=len(news),analyzed=len(results),unclassified=unclassified,na=not_applicable))
+    st.caption(t('Results model: {model}',model=str(display(st.session_state.get('local_result_model','')))))
+    active=[label for key,label in (('local_sectors','Sectors'),('local_sources','Sources'),('local_sentiments','Sentiment'),
+            ('product_children','Subindustries'),('batch_status_filter','Analysis status')) if st.session_state.get(key)]
+    if kind!='all':active.append('Source type scope')
+    dates=sorted(n.published_day for n in library_news if n.published_day)
+    if dates and (start.isoformat(),end.isoformat())!=(dates[0],dates[-1]):active.append('Date range')
+    if not st.session_state.get('local_unknown_dates',True):active.append('Exclude unknown publication dates')
+    if include_dev:active.append('Development records')
+    if active:st.caption(t('Active filters: {filters}',filters=' · '.join(str(tr(v)) for v in active)))
+    attention={label:sum(v==label for v in statuses.values())
+               for label in ('Permission required','Failed','Blocked')}
+    if any(attention.values()):st.warning(' · '.join(str(tr(label))+': '+str(count) for label,count in attention.items() if count))
+    coverage=st.expander('Data coverage and counts',expanded=False)
+    with coverage:
+        st.caption(f"{sum(n.sectors==('Unclassified',) for n in news)} unclassified originals · {len(news)-len(results)} without a current selected-model result; neither is Neutral by default.")
+        st.caption('Counts below use distinct local originals and keep media, company releases, regulatory disclosures and government announcements separate.')
+        st.dataframe(pd.DataFrame(statistics(news,results,classes,states)),hide_index=True,width='stretch')
     chart_news=news;chart_results=results
     kinds=[k for k in TYPES if any(source_type(n)==k for n in news)]
     if len(kinds)>1 and page!='News Explorer':
@@ -576,6 +621,7 @@ def main():
                            else ['Original articles','Analyzed articles'])
             for col,label,value in zip(st.columns(4),[*record_labels,'Business topics','Sources'],[len(news),len(results),visible_topic_count,len({n.source for n in news})]):
                 with col:st.metric(label,value)
+        with coverage:
             from .batch_records import eligibility
             for col,label,value in zip(st.columns(4),['Local total records','Media news records','Regulatory disclosures','Analyzable records'],
                 [all_record_count,sum(source_type(n)=='media_news' for n in library_news),sum(source_type(n)=='regulatory_disclosure' for n in library_news),sum(eligibility(n)[0] for n in news)]):
@@ -599,14 +645,19 @@ def main():
             with st.container(key='product_chart_heatmap'):
                 heatmap(chart_news,chart_results,start,end,store,sectors_override=parent_names,background=True)
     elif page=='Industries':
-        sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
+        with st.container(key='product_chart_sector'):
+            st.subheader('Industry sentiment')
+            sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
         visible=[r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)]
         if visible:
-            st.dataframe(pd.DataFrame([{'Industry':r['Industry'],'Articles':r['Articles'],'Analyzed':r['Articles']-r['Not analyzed'],
-                **{k:r[k] for k in ('Positive','Neutral','Negative','Not analyzed')}} for r in visible]),hide_index=True,width='stretch')
-        else:st.info('No saved industry assignments in this selection; originals awaiting classification remain below.')
-        st.caption('Parent counts deduplicate article IDs across child topics. Unknown sector is not CSRC S/91.')
+            with st.expander('Industry counts and definitions',expanded=False):
+                st.dataframe(pd.DataFrame([{'Industry':r['Industry'],'Articles':r['Articles'],'Analyzed':r['Articles']-r['Not analyzed'],
+                    **{k:r[k] for k in ('Positive','Neutral','Negative','Not analyzed')}} for r in visible]),hide_index=True,width='stretch')
+                st.caption('Parent counts deduplicate article IDs across child topics. Unknown sector is not CSRC S/91.')
+        st.subheader('Original records')
         article_list(chart_news,chart_results,store,classes,catalog,'industries')
     elif page=='Knowledge Graph':network(chart_news,chart_results,store,classes,catalog)
-    else:article_list(news,results,store,classes,catalog,'explorer')
+    else:
+        st.subheader('Original records')
+        article_list(news,results,store,classes,catalog,'explorer')
     save_view(store,dict(st.session_state))

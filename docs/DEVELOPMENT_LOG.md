@@ -1361,3 +1361,24 @@ USER_TEST.md now assigns isolation/ports to the facilitator and gives participan
 four browser-only tasks. This Codex-assisted engineering check does not replace
 human retesting. Stop after the local release; information reduction awaits user
 acceptance of this structure. Main and unrelated edits remain untouched.
+
+## 5 November 2026 — local information hierarchy (phase 2)
+
+After the user's phase-1 acceptance, Codex simplified presentation only: paired
+News Update actions, collapsed advanced configuration/task metadata, four default
+Dashboard metrics, visible search with expandable filters/counts, clearer original
+and detail sections, folded graph options/keywords, and one Home workflow instead
+of two. Permissions, errors, source evidence, model revisions, Unclassified and
+Not applicable remain accessible; task execution and snapshot invalidation are unchanged.
+
+Isolated regression: 743 tests, one existing skip. Actual desktop/narrow browser
+checks covered all seven pages, English/Chinese new copy, expanded controls,
+independent search, selected records and mock task completion/results. Navigation
+rechecks with 120 authored records measured 104.78/108.87/90.66/107.55 ms before
+and 99.51/111.44/96.61/112.60 ms after (Dashboard/Industries/Graph/Explorer;
+warm AppTest medians, with run-to-run timing variation, not end-to-end latency).
+SELECT counts remain 23/25/23/25; warm projection/industry/graph computations
+remain zero. Receipts and before/after screenshots stay in ignored .test-results/ux2-*.
+All 171 frozen file hashes, nine protected table digests and USER_TEST.xlsx match
+their prior values. No benchmark, live news request or real model inference ran.
+This is engineering verification, not human retesting; stop for user acceptance.

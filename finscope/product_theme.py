@@ -164,6 +164,11 @@ def css():
     .fs-news-copy,.fs-match-excerpt{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;color:var(--fs-text);font-size:.93rem}
     .fs-match-excerpt{padding:.8rem;border-left:3px solid var(--fs-accent);background:var(--fs-raised);border-radius:6px}.fs-match-excerpt mark{background:var(--fs-accent-surface);color:var(--fs-accent);font-weight:650;padding:0 2px}
     .stButton button,.stLinkButton a{min-height:44px;border-radius:9px}
+    .stButton button:disabled{opacity:.65}
+    .st-key-update_actions [data-testid="stVerticalBlockBorderWrapper"]{height:100%}
+    .st-key-analysis_toolbar{margin-top:.4rem}
+    .st-key-update_actions [data-testid="stCaptionContainer"] p,.st-key-analysis_toolbar p{overflow-wrap:anywhere}
+    @media(max-width:900px){.st-key-update_actions>[data-testid="stHorizontalBlock"]{flex-direction:column}.st-key-update_actions>[data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{width:100%;flex:1 1 100%}}
     button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--fs-accent)!important;outline-offset:3px}
     #vg-tooltip-element.vg-tooltip{background:var(--fs-raised);color:var(--fs-text);border:1px solid var(--fs-border)}
     @media(max-width:1050px){.st-key-product_dashboard_charts [data-testid="stHorizontalBlock"],[class*="st-key-story_layout_"] [data-testid="stHorizontalBlock"],.st-key-product_filters [data-testid="stHorizontalBlock"]{flex-direction:column}.st-key-product_dashboard_charts [data-testid="stColumn"],[class*="st-key-story_layout_"] [data-testid="stColumn"],.st-key-product_filters [data-testid="stColumn"]{width:100%;flex:1 1 100%}}
