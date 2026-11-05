@@ -1,5 +1,21 @@
 # Phase 1 / 1.5 decision memo — 2026-10-26 Sydney
 
+**5 November — language-consistency correction:** the user's strict locale
+requirement supersedes the earlier English-fictional-display exception. Keep raw
+fixtures/IDs/counts unchanged; translate the display catalogue, all 24 fictional
+articles, names and word labels. The glossary maps original tokens one-to-one;
+it does not recalculate Chinese frequencies or merge counts. Use Chinese semantic
+tables/date-range/copy controls where native utilities expose English. Chinese
+single choices use a compact popover/radio list and small multi-choices use
+checkboxes; these avoid untranslated search/Select all utilities on the supported
+Streamlit versions without changing English controls. The
+[Streamlit dataframe documentation](https://docs.streamlit.io/develop/concepts/design/dataframes)
+documents native menus and limits on individual toolbar configuration. No new
+translation service/dependency/runtime. A browser-policy rejection at the hosted
+internal error page stops browser input. The user subsequently accepted preview
+`locale-0c85fef203` and authorized main commit/push. Exact-push CI and separate
+hosted acceptance are required; the preview approval does not establish deployment.
+
 **4 November — explicitly requested display preferences:** add English/简体中文
 and dark/light choices to the existing showcase sidebar, with session-scoped
 state and English/dark defaults. Use an authored translation catalogue and shared

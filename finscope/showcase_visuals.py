@@ -84,8 +84,9 @@ def relationship_markup(data, height=None, mobile_zoom=1.0):
         x2 -= sizes[edge["to_id"]][0] / 2 + 9
         mid = (x + x2) / 2
         key, _, color, dash = relation_style(edge["relationship"])
-        headlines = "; ".join(edge.get("headlines", ()))
-        title = escape(f'{edge["relationship"]} · {edge["count"]} fictional report(s) · {headlines}')
+        headlines = "; ".join(t(label) for label in edge.get("headlines", ()))
+        title = escape(t(edge["relationship"]) + " · "
+                       + t("{count} fictional report(s)", count=edge["count"]) + " · " + headlines)
         svg.append(f'<path d="M{x:.1f},{y:.1f} C{mid:.1f},{y:.1f} {mid:.1f},{y2:.1f} {x2:.1f},{y2:.1f}" '
                    f'fill="none" stroke="{color}" stroke-width="1.5" stroke-opacity=".7" '
                    f'stroke-dasharray="{dash}" marker-end="url(#fs-arrow-{key})"><title>{title}</title></path>')
@@ -143,10 +144,10 @@ def word_cloud_markup(terms):
     words = []
     for item in terms:
         count = item["count"]
-        label = escape(t('{term}: {count} fictional headline(s)', term=item['term'], count=count), quote=True)
+        label = escape(t('{term}: {count} fictional headline(s)', term=t(item['term']), count=count), quote=True)
         words.append(f'<span role="listitem" aria-label="{label}" title="{label}" '
                      f'style="font-size:{min(32, 18 + 5 * (count - 1))}px;'
-                     f'color:{theme_tokens()["accent"] if count > 1 else theme_tokens()["muted"]}">{escape(item["term"])}'
+                     f'color:{theme_tokens()["accent"] if count > 1 else theme_tokens()["muted"]}">{escape(t(item["term"]))}'
                      f'<sup>{count}</sup></span>')
     return f'''<style>
     .fs-word-cloud{{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:.7rem 1.3rem;

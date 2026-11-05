@@ -1,5 +1,45 @@
 # Development log
 
+## Single-language correction — 5 November 2026 Sydney
+
+Prepared the explicitly requested locale-consistency correction on main. English
+settings contain no Chinese text, including the language-choice menu. Chinese
+settings, all 24 fictional labels/headlines/summaries, company/source names, graph
+tooltips, term labels and dates have authored display translations. Search and
+inspection resolve stable original IDs. Original-token word counts/match sets and
+the golden digest are retained; singular/plural term entries remain distinct.
+Vega structural fields/types remain canonical rather than passing through the
+display glossary. Generic technical terms are translated while product names,
+technical identifiers and executable commands retain their spelling.
+
+Chinese tables avoid untranslated native menus and retain the accessible headline
+picker. Compact popover/radio choices and short checkbox filter lists avoid
+English native search/Select all messages on supported Streamlit versions;
+dates use a localized range slider and code-copy status is Chinese. Old
+English inspection/filter tests remain, and the former Chinese-English display
+assertions now check the explicitly requested Chinese values. New checks inspect
+all 24 Chinese detail panels, translated search, both preference menus, absence of
+Chinese in English copy, and original-token/match preservation. 250 regression
+tests, 37 showcase checks, 51 syntax checks and seven offline previews pass in an
+isolated main export excluding unrelated working-tree changes. The 37 showcase
+checks also pass separately on Streamlit 1.50.0. No model, provider
+or public database operation was introduced; frozen/unrelated hashes are retained.
+
+Browser Use `mcp__cua_repl.js` / `cua.getTab('1', {browser:'2'})` rejected the hosted
+tab's internal `data:text/html;…` error page with “Blocked browser navigation by
+Browser Use URL policy”. The browser error content reports ERR_TOO_MANY_REDIRECTS
+at Streamlit's auth redirect. This is not evidence of explicit site-access denial
+or a verified login problem. Browser input stopped; no alternate channel was
+used to bypass it. An isolated current-source preview is prepared on port 8603.
+The user manually accepted preview `locale-0c85fef203` and explicitly authorized
+main commit/push. Exact-push CI and separate hosted verification remain pending
+at this release checkpoint. The earlier manual-confirmation fallback is satisfied. Codex
+authored code, translations, tests and documentation; no human participation is
+fabricated. Approval applies to the exact approved source hashes in the receipt.
+The separate local branch advanced independently during this work; no local
+branch action was performed here. All 23 protected-file hashes and five unrelated
+working-tree file hashes still match the initial preservation receipt.
+
 ## Requested language and appearance choices — 4 November 2026 Sydney
 
 User explicitly authorized this narrow exception to the showcase freeze. Added

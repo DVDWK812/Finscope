@@ -1,6 +1,6 @@
 """Shared public-showcase design tokens and escaped presentation primitives."""
 from html import escape
-from .showcase_preferences import APPEARANCE, t, translated_markup
+from .showcase_preferences import APPEARANCE, LANGUAGE, t, translated_markup
 
 
 TOKENS = {
@@ -81,7 +81,7 @@ def dashboard_preview(records):
     for sector in industries:
         sample = [r for r in records if r.sector == sector]
         counts = {tone: sum(r.sentiment == tone for r in sample) for tone in colors}
-        accessible = escape(sector + ': ' + ', '.join(f'{n} {tone}' for tone, n in counts.items()), quote=True)
+        accessible = escape(t(sector) + ': ' + ', '.join(f'{n} {t(tone)}' for tone, n in counts.items()), quote=True)
         segments = ''.join(f'<i style="width:{n / len(sample) * 100:.2f}%;background:{colors[tone]}"></i>'
                            for tone, n in counts.items() if n)
         bars.append(f'<div class="fs-mini-row"><span>{escape(sector)}</span><div class="fs-mini-bar" role="img" aria-label="{accessible}">{segments}</div><small>{len(sample)}</small></div>')
@@ -146,7 +146,14 @@ def launcher_architecture():
 def theme_css():
     variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in theme_tokens().items())
     scheme = APPEARANCE.get()
-    return '<style>:root{color-scheme:' + scheme + ';' + variables + r''' }
+    native = '[data-testid="stCode"] [data-testid="stElementToolbarButton"]{display:none!important;}' if LANGUAGE.get() == 'zh-CN' else ''
+    return '<style>' + native + ':root{color-scheme:' + scheme + ';' + variables + r''' }
+    #MainMenu,[data-testid="stAppDeployButton"],[data-testid="stToolbarActions"],[data-testid="stElementToolbar"]{display:none!important;}
+    .fs-local-table{overflow:auto;max-height:350px;border:1px solid var(--fs-border);border-radius:9px;}
+    .fs-local-table table{width:100%;border-collapse:collapse;font-size:.8rem;color:var(--fs-text);}
+    .fs-local-table th{position:sticky;top:0;background:var(--fs-raised);text-align:left;white-space:nowrap;}
+    .fs-local-table th,.fs-local-table td{padding:.65rem .8rem;border-bottom:1px solid var(--fs-border);}
+    .fs-local-table td{min-width:90px;line-height:1.55;}
     html,body,#root{background:var(--fs-background);}
     [data-testid="stApp"]{color:var(--fs-text);background:var(--fs-background);}
     [data-testid="stApp"] button,[data-testid="stApp"] input,[data-testid="stApp"] textarea,

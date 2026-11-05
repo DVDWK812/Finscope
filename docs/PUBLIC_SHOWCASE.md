@@ -1,5 +1,33 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
+**5 November single-language correction — preview accepted for release:** English mode
+uses Language / Appearance / English / Chinese (Simplified) / Dark / Light;
+Chinese mode uses 语言 / 外观 / 英语 / 简体中文 / 深色 / 浅色. All 24 fictional
+headlines, summaries, display names, sources and graph text have authored Chinese
+display translations. Dates and term labels follow the selected language; the
+word-cloud counts/matches still use the exact original headline tokens, with a
+one-to-one Chinese display glossary. Search and article inspection use translated
+display fields while retaining stable IDs. Brand names, technical identifiers and
+executable commands keep their spelling.
+
+Chinese tables use semantic HTML with the headline picker for article inspection,
+avoiding untranslated framework column menus. Chinese pickers use compact
+popover/radio lists, and the two short multi-select filters use checkboxes, so
+native English search/Select all utilities cannot appear. The Chinese date range
+uses a localized range slider; command-copy controls use Chinese status text. Framework
+toolbar utilities are hidden without hiding the sidebar opener. This is a narrow
+localization correction, with no new provider/runtime/dependency or data change.
+250 offline tests (37 showcase checks), 51 syntax checks and seven dry runs pass.
+The 37 showcase checks also pass separately on Streamlit 1.50.0.
+Hosted browser inspection was rejected at an internal error-page URL reporting
+too many redirects; browser input stopped. The user manually accepted preview
+`locale-0c85fef203` and explicitly authorized main commit/push. Exact-push CI and
+separate hosted verification remain pending at this release checkpoint. Streamlit's
+external authentication/administration pages are controlled by that service.
+
+**Historical 4 November release:** the behavior below describes the released
+version before the stricter language requirement.
+
 **4 November display preferences:** choose **Language / 语言** (English or 简体中文)
 and **Appearance / 外观** (Dark / 深色 or Light / 浅色) in the sidebar. The mobile
 sidebar opens from the top-left control. Choices apply to all six pages for the

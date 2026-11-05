@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from html import unescape
+from html.parser import HTMLParser
 from datetime import timedelta
 from pathlib import Path
 import unittest
@@ -25,7 +26,70 @@ def navigate(app, page):
 
 
 def article_widget(app, key):
-    return next(widget for widget in app.selectbox if (widget.key or "").startswith(key + "__"))
+    return next(widget for widget in [*app.selectbox, *app.radio]
+                if (widget.key or "").startswith(key + "__"))
+
+
+def display_widget(widgets, key):
+    return next(widget for widget in widgets if widget.key in (key, key + "__display_zh"))
+
+
+def single_widget(app, key):
+    return display_widget([*app.selectbox, *app.radio], key)
+
+
+def chinese_checks(app, key):
+    return [widget for widget in app.checkbox
+            if (widget.key or "").startswith(key + "__display_zh__")]
+
+
+def html_tables(app):
+    class Table(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.rows, self.row, self.cell = [], [], None
+        def handle_starttag(self, tag, attrs):
+            if tag == "tr": self.row = []
+            if tag in ("td", "th"): self.cell = ""
+        def handle_data(self, data):
+            if self.cell is not None: self.cell += data
+        def handle_endtag(self, tag):
+            if tag in ("td", "th"):
+                self.row.append(self.cell); self.cell = None
+            if tag == "tr": self.rows.append(self.row)
+    tables = []
+    for item in app.markdown:
+        if 'class="fs-local-table"' in item.value:
+            parser = Table(); parser.feed(item.value)
+            tables.append([dict(zip(parser.rows[0], row)) for row in parser.rows[1:]])
+    return tables
+
+
+def rendered_copy(app):
+    class Text(HTMLParser):
+        def __init__(self): super().__init__(); self.skip = 0; self.parts = []
+        def handle_starttag(self, tag, attrs):
+            self.skip += tag in ("style", "script")
+            if not self.skip:
+                self.parts.extend(value for key, value in attrs if key in ("aria-label", "title") and value)
+        def handle_endtag(self, tag): self.skip -= tag in ("style", "script")
+        def handle_data(self, data):
+            if not self.skip: self.parts.append(data)
+    parser = Text()
+    for item in app.markdown: parser.feed(item.value)
+    for item in app.get("iframe"): parser.feed(item.proto.srcdoc)
+    for item in app.get("html"): parser.feed(item.proto.body)
+    for widgets in (app.button, app.selectbox, app.multiselect, app.radio, app.text_input, app.checkbox):
+        for widget in widgets:
+            parser.parts.append(widget.label)
+            if hasattr(widget, "options"): parser.parts.extend(widget.options)
+    for kind in ("title", "header", "subheader", "caption", "info", "warning", "error",
+                 "success", "text", "metric", "expander", "popover"):
+        for item in app.get(kind):
+            for field in ("label", "value"):
+                value = getattr(item, field, None)
+                if isinstance(value, str): parser.parts.append(value)
+    return " ".join(parser.parts)
 
 
 def workflow_titles(app):
@@ -83,12 +147,12 @@ class ShowcaseTests(unittest.TestCase):
                 with self.subTest(language=language, appearance=appearance):
                     app = self.app()
                     app.selectbox(key="showcase_language").set_value(language).run()
-                    app.radio(key="showcase_appearance").set_value(appearance).run()
+                    display_widget(app.radio, "showcase_appearance").set_value(appearance).run()
                     for page in NAV_KEYS:
                         navigate(app, page)
                         self.assertFalse(app.exception, (language, appearance, page))
-                        self.assertEqual(app.selectbox(key="showcase_language").value, language)
-                        self.assertEqual(app.radio(key="showcase_appearance").value, appearance)
+                        self.assertEqual(single_widget(app, "showcase_language").value, language)
+                        self.assertEqual(display_widget(app.radio, "showcase_appearance").value, appearance)
                         markup = "\n".join(m.value for m in app.markdown)
                         tokens = LIGHT_TOKENS if appearance == "light" else TOKENS
                         self.assertIn("--fs-background: " + tokens["background"], markup)
@@ -112,32 +176,82 @@ class ShowcaseTests(unittest.TestCase):
         chosen_dates = (START, END - timedelta(days=1))
         app.date_input(key="preview_dates").set_value(chosen_dates).run()
         app.selectbox(key="showcase_language").set_value("zh-CN").run()
-        app.radio(key="showcase_appearance").set_value("light").run()
-        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").value, ["Technology"])
-        self.assertEqual(app.multiselect(key="preview_sentiments__display_zh").value, ["Positive"])
-        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").options[0], "科技")
-        self.assertEqual(tuple(app.date_input(key="preview_dates").value), chosen_dates)
+        display_widget(app.radio, "showcase_appearance").set_value("light").run()
+        self.assertEqual([w.label for w in chinese_checks(app, "preview_sectors") if w.value], ["科技"])
+        self.assertEqual([w.label for w in chinese_checks(app, "preview_sentiments") if w.value], ["正面"])
+        self.assertFalse(app.multiselect)
+        self.assertFalse(app.selectbox)
+        dates = next(w for w in app.select_slider if w.key.startswith("preview_dates__display_zh_"))
+        self.assertEqual(tuple(dates.value), chosen_dates)
         self.assertEqual(app.metric[0].value, "2")
-        app.multiselect(key="preview_sentiments__display_zh").set_value(["Negative"]).run()
+        next(w for w in chinese_checks(app, "preview_sentiments") if w.label == "正面").uncheck().run()
+        next(w for w in chinese_checks(app, "preview_sentiments") if w.label == "负面").check().run()
         self.assertEqual(app.metric[0].value, "1")
-        app.multiselect(key="preview_sectors__display_zh").set_value(["Healthcare"]).run()
-        self.assertEqual(app.multiselect(key="preview_sectors__display_zh").value, ["Healthcare"])
+        next(w for w in chinese_checks(app, "preview_sectors") if w.label == "科技").uncheck().run()
+        next(w for w in chinese_checks(app, "preview_sectors") if w.label == "医疗保健").check().run()
+        self.assertEqual(app.session_state["preview_sectors"], ["Healthcare"])
         self.assertEqual(app.metric[0].value, "1")
         next(b for b in app.button if b.label == "重置预览").click().run()
         self.assertEqual(app.metric[0].value, "24")
         navigate(app, "Knowledge Graph")
-        app.selectbox(key="graph_company").set_value("Cedar Therapeutics").run()
+        single_widget(app, "graph_company").set_value("Cedar Therapeutics").run()
         article_widget(app, "graph_article").set_value("SYN-007").run()
-        app.selectbox(key="graph_cloud_word").set_value("research").run()
-        self.assertIn("Research Centre Opens", article_widget(app, "graph_cloud_article").options)
-        matches = next(d.value for d in app.dataframe if "完整标题" in d.value.columns)
-        self.assertEqual(set(matches["标题"]), {article_label(r) for r in examples()
-                                              if r.article_id in ("SYN-002", "SYN-005", "SYN-006")})
-        app.selectbox(key="showcase_language").set_value("en").run()
+        single_widget(app, "graph_cloud_word").set_value("research").run()
+        self.assertIn("研究中心启用", article_widget(app, "graph_cloud_article").options)
+        matches = next(table for table in html_tables(app) if table and "完整标题" in table[0])
+        self.assertEqual({row["标题"] for row in matches}, {"研究设施公布", "研究中心启用", "研究日程发布"})
+        single_widget(app, "showcase_language").set_value("en").run()
         app.radio(key="showcase_appearance").set_value("dark").run()
         self.assertEqual(app.selectbox(key="graph_company").value, "Cedar Therapeutics")
         self.assertEqual(article_widget(app, "graph_article").value, "SYN-007")
         self.assertEqual(app.selectbox(key="graph_cloud_word").value, "research")
+        self.assertFalse(app.exception)
+
+    def test_each_language_has_consistent_page_copy_and_preference_options(self):
+        for language in ("en", "zh-CN"):
+            app = self.app()
+            app.selectbox(key="showcase_language").set_value(language).run()
+            picker = single_widget(app, "showcase_language")
+            self.assertEqual(picker.options, ["English", "Chinese (Simplified)"] if language == "en"
+                             else ["英语", "简体中文"])
+            self.assertEqual(picker.label, "Language" if language == "en" else "语言")
+            for page in NAV_KEYS:
+                navigate(app, page)
+                self.assertFalse(app.exception)
+                text = rendered_copy(app)
+                if language == "en":
+                    self.assertNotRegex(text, r"[\u3400-\u9fff]", page)
+                else:
+                    self.assertFalse(app.selectbox, page)
+                    self.assertFalse(app.multiselect, page)
+                    self.assertFalse(app.date_input, page)
+                    for original in examples():
+                        for untranslated in (original.title, original.summary, original.company, original.source):
+                            self.assertNotIn(untranslated, text, page)
+                    self.assertNotIn("Language /", text)
+                    self.assertNotIn("Appearance /", text)
+                    self.assertNotIn("Positive sentiment", text)
+                    self.assertNotIn("fictional report(s)", text)
+
+    def test_all_chinese_article_details_and_translated_search_resolve_original_ids(self):
+        from finscope.showcase_preferences import preferences, t
+        app = self.app()
+        app.selectbox(key="showcase_language").set_value("zh-CN").run()
+        navigate(app, "News Explorer")
+        listing = next(table for table in html_tables(app) if table and "发布日期" in table[0])
+        self.assertEqual(len(listing), 24)
+        for row in examples():
+            article_widget(app, "explorer_article").set_value(row.article_id).run()
+            self.assertEqual(article_widget(app, "explorer_article").value, row.article_id)
+            content = rendered_copy(app)
+            with preferences("zh-CN"):
+                for source in (article_label(row), row.title, row.summary):
+                    self.assertIn(t(source), content)
+                    self.assertNotIn(source, content)
+        app.text_input(key="explorer_search").set_value("雪松").run()
+        listing = next(table for table in html_tables(app) if table and "发布日期" in table[0])
+        self.assertEqual(len(listing), 4)
+        self.assertTrue(article_widget(app, "explorer_article").value in {f"SYN-{n:03}" for n in range(5, 9)})
         self.assertFalse(app.exception)
 
     def test_landing_calls_to_action_and_local_installation(self):
@@ -398,6 +512,19 @@ class ShowcaseTests(unittest.TestCase):
 
 
 class FictionalDataTests(unittest.TestCase):
+    def test_chinese_display_catalogue_is_complete_without_merging_word_counts(self):
+        from finscope.showcase_locale_data import LABELS, TITLES, SUMMARIES, TERMS
+        from finscope.showcase_preferences import preferences, t
+        self.assertEqual((len(LABELS), len(TITLES), len(SUMMARIES)), (24, 24, 24))
+        self.assertEqual(len(set(LABELS)), 24)
+        terms = word_cloud_terms(examples(), limit=10000)
+        self.assertEqual(set(TERMS), {item["term"] for item in terms})
+        self.assertEqual(len(set(TERMS.values())), len(TERMS))
+        with preferences("zh-CN"):
+            for row in examples():
+                for value in (article_label(row), row.title, row.summary, row.company, row.source):
+                    self.assertRegex(t(value), r"[\u3400-\u9fff]")
+                    self.assertNotRegex(t(value), r"[A-Za-z]")
     def test_translation_templates_preserve_values_and_preferences_are_isolated(self):
         from concurrent.futures import ThreadPoolExecutor
         from string import Formatter
@@ -443,12 +570,14 @@ class FictionalDataTests(unittest.TestCase):
                 cloud_html = word_cloud_markup(word_cloud_terms(examples()))
                 self.assertIn('fill="' + tokens["raised"] + '"', graph_html)
                 self.assertIn("未验证的候选关联", graph_html)
-                self.assertIn("Research Centre Opens", graph_html)
+                self.assertIn("研究中心启用", graph_html)
+                self.assertNotIn("Research Centre Opens", graph_html)
                 # The translation pass must preserve self-closing SVG elements.
                 from xml.etree import ElementTree
                 svg = ElementTree.fromstring(re.search(r'(<svg .*?</svg>)', graph_html, re.S).group(1))
                 self.assertEqual(len(svg.findall('.//{http://www.w3.org/2000/svg}g')), 7)
-                self.assertIn("research", cloud_html)
+                self.assertIn("研究", cloud_html)
+                self.assertNotIn("research", cloud_html)
                 self.assertIn("background:" + tokens["raised"], cloud_html)
 
     def test_every_original_headline_frequency_and_match_set_is_unchanged(self):

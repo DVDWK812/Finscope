@@ -1,6 +1,19 @@
 """Authored Simplified Chinese UI copy; fictional source text stays original."""
 
 ZH = {
+    "Language": "语言", "English": "英语", "Chinese (Simplified)": "简体中文",
+    "Appearance": "外观", "Dark": "深色", "Light": "浅色", "Product Showcase": "产品展示",
+    "Select a headline": "请选择标题", "Choose an option": "请选择", "No results": "没有匹配项",
+    "# Terminal 1: local worker": "# 终端一：本地后台工作进程", "# Terminal 2: UI": "# 终端二：界面",
+    "3 November 2026": "2026年11月3日", "Windows · PowerShell": "Windows 命令行", "macOS / Linux": "macOS 或 Linux",
+    "Counts and matches use the original authored headlines; translated words are display labels.": "词频与匹配根据人工编写的原标题计算；中文词条仅为显示译文。",
+    "{count} fictional report(s)": "{count} 篇虚构报道",
+    "Fictional industry classification": "虚构行业分类", "Fictional reporting source": "虚构报道来源",
+    "Illustrative industry classification": "示意行业分类", "Fictional source reports on company": "虚构来源对公司的报道",
+    "Illustrative sector assignment": "示意行业归属", "Company appears in fictional article": "虚构文章提及公司",
+    "Unverified candidate membership": "未验证的候选关联成员", "Fictional publication/source": "虚构刊物或来源",
+    "Fictional publication source": "虚构发布来源",
+    "bank introduces": "银行推出", "retail format": "零售业态", "store operations": "门店运营",
     "Home": "首页", "User Guide": "使用指南", "Dashboard Preview": "仪表盘预览",
     "Knowledge Graph": "知识图谱", "News Explorer": "新闻浏览", "Get FinScope": "获取 FinScope",
     "PRODUCT TOUR": "产品导览", "PRODUCT SHOWCASE": "产品展示", "NEWS INTELLIGENCE": "新闻情报",
@@ -111,7 +124,7 @@ ZH = {
     "No headline terms are available for this illustrative selection.": "当前示意选择没有可用的标题词语。",
     "Select a word": "选择词语", "{v0} fictional headline(s) contain “{v1}”. Counts are once per headline.": "{v0} 篇虚构标题包含“{v1}”。每篇标题仅计一次。",
     "Company": "公司", "Fictional source": "虚构来源", "Technical details: word matches": "技术详情：词语匹配",
-    "Article ID": "文章 ID", "Open a matching fictional article": "打开匹配的虚构文章",
+    "Article ID": "文章编号", "Open a matching fictional article": "打开匹配的虚构文章",
     "Select a headline to inspect its evidence.": "请选择标题以查看相关证据。",
     "FICTIONAL": "虚构", "illustrative label": "示意标签", "Complete headline: {headline}": "完整标题：{headline}",
     "{v0} · Company industry: {v1}": "{v0} · 公司行业：{v1}",
@@ -120,7 +133,7 @@ ZH = {
     "Unverified candidate: {v0}. {v1}": "未验证的候选关联：{v0}。{v1}",
     "Fictional sample only. No publisher URL exists; no original-article link is fabricated.": "仅为虚构样本。不存在发布方网址，未编造原文链接。",
     "Topic and model context": "主题与模型背景", "Topic basis: {basis}": "主题依据：{basis}",
-    "authored illustration using the literal phrase “{evidence}”.": "人工编写示意，依据原文短语“{evidence}”。",
+    "authored illustration using the literal phrase “{evidence}”.": "人工编写的主题示意；依据短语的中文译文为“{evidence}”。",
     "no authored text-topic annotation; company metadata is not substituted.": "没有人工编写的文本主题标注；不会用公司元数据替代。",
     "Collection cohort: Not applicable — authored example; no source query was sent.": "收集分组：不适用 — 人工编写示例，未发送来源查询。",
     "Model history: Not applicable — no model runs in this showcase. The local product retains separate classification and sentiment versions, input evidence and source provenance.": "模型历史：不适用 — 此展示不运行模型。本地产品分别保留分类与情感模型版本、输入证据及来源记录。",
@@ -130,7 +143,7 @@ ZH = {
     "{v0} fictional originals · preset labels · no publisher content or URLs": "{v0} 篇虚构原始记录 · 预设标签 · 无发布方内容或网址",
     "Inspect source evidence and authored text-topic context below. The local product also retains model/input history; no inference or model history is produced here.": "下方可查看来源证据和人工编写的文本主题背景。本地产品还保留模型与输入历史；此处不推理，也不生成模型历史。",
     "No fictional examples match. Try a different search or industry.": "没有匹配的虚构示例。请更换搜索词或行业。",
-    "Original reports": "原始报道", "Select a row, or use the headline picker in the detail panel.": "选择一行，或使用详情面板中的标题选项。",
+    "Original reports": "原始报道", "Select a row, or use the headline picker in the detail panel.": "使用详情面板中的标题选项查看文章。",
     "Published": "发布日期", "Tone": "情感", "Inspect a headline": "查看标题",
     "Make FinScope your local workspace": "让 FinScope 成为您的本地工作区",
     "A personal research application on localhost. Your sources and saved results stay in your local workspace.": "在 localhost 运行的个人研究应用。数据来源配置与已保存的结果留在本地工作区。",
@@ -186,3 +199,12 @@ ZH = {
     "Both headlines concern supply contracts or agreements; the examples do not establish that they describe one contract.": "两篇标题均涉及供应合同或协议；示例不能证明它们描述的是同一合同。",
     "{term}: {count} fictional headline(s)": "{term}：{count} 篇虚构标题",
 }
+
+
+# Translate generic technical terms while preserving product and format names.
+import re as _re
+for _key, _value in tuple(ZH.items()):
+    for _term, _translation in (("AI", "人工智能"), ("API", "接口"), ("LLM", "大语言模型"),
+                                ("NLP", "自然语言处理"), ("UTC", "协调世界时")):
+        _value = _re.sub(r"(?<![A-Za-z])" + _term + r"(?![A-Za-z])", _translation, _value)
+    ZH[_key] = _value

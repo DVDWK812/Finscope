@@ -1,6 +1,7 @@
 """Public, synthetic-only product storytelling. Independent of the local runtime."""
 from datetime import timedelta
 from html import escape
+import json
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -12,7 +13,7 @@ from .showcase_visuals import graph_layout, relationship_markup, visible_graph, 
 from .showcase_content import (LOCAL_REVIEW_SHA, LOCAL_REVIEW_DATE, GUIDE_STEPS, SOURCE_CARDS,
                                MODEL_CARDS, CAPABILITIES, ALL_PARENTS, ALL_CHILDREN,
                                topic_context, topic_select, topic_rollup)
-from .showcase_preferences import preferences, t, localize_html, LANGUAGE, display_formatter
+from .showcase_preferences import preferences, t, localize_html, LANGUAGE, display_formatter, display_date
 from .showcase_theme import (theme_tokens, sentiment_colors, NAV_ITEMS, NAV_KEYS, badge, brand,
                              dashboard_preview, eyebrow, theme_css,
                              capabilities_markup, workflow_markup, hierarchy_markup, launcher_architecture)
@@ -34,6 +35,47 @@ def sync_choice(display_key, state_key):
     st.session_state[state_key] = st.session_state[display_key]
 
 
+def localized_selectbox(label, options, **kwargs):
+    """Own the Chinese picker copy, including empty-search/menu utility text.
+
+    Native selectbox utilities are not localizable on every supported Streamlit
+    version. A compact popover with a keyboard-accessible radio list avoids them.
+    """
+    if LANGUAGE.get() == "en":
+        return st.selectbox(label, options, **kwargs)
+    formatter = kwargs.get("format_func", str)
+    current = st.session_state.get(kwargs["key"])
+    index = kwargs.get("index", 0)
+    if current not in options:
+        current = options[index] if options and index is not None else None
+    selected_label = formatter(current) if current is not None else t("Choose an option")
+    disabled = kwargs.get("disabled", False)
+    kwargs.pop("placeholder", None)
+    with st.popover(f"{label} · {selected_label}", disabled=disabled, width="stretch"):
+        with st.container(border=False, **({"height": 240} if len(options) > 6 else {})):
+            return st.radio(label, options, label_visibility="collapsed", **kwargs)
+
+
+def sync_checks(pairs, state_key):
+    st.session_state[state_key] = [option for option, key in pairs if st.session_state[key]]
+
+
+def localized_multiselect(label, options, key, state_key, **kwargs):
+    """Small checkbox lists have no untranslated Select all/search utilities."""
+    formatter = kwargs.get("format_func", str)
+    selected = st.session_state.get(state_key, [])
+    pairs = [(option, f"{key}__{index}") for index, option in enumerate(options)]
+    st.markdown("**" + escape(label) + "**")
+    st.caption(kwargs.get("placeholder", ""))
+    result = []
+    for option, widget_key in pairs:
+        st.session_state[widget_key] = option in selected
+        if st.checkbox(formatter(option), key=widget_key, on_change=sync_checks,
+                       args=(pairs, state_key)):
+            result.append(option)
+    return result
+
+
 def choice(kind, label, options, key, **kwargs):
     """Remount localized choices so the browser refreshes selected display text.
 
@@ -45,8 +87,12 @@ def choice(kind, label, options, key, **kwargs):
     display_key = key + "__display_zh"
     fallback = [] if kind is st.multiselect else options[0]
     st.session_state[display_key] = st.session_state.get(key, fallback)
-    result = kind(label, options, key=display_key, on_change=sync_choice,
-                  args=(display_key, key), **kwargs)
+    if kind is st.multiselect:
+        result = localized_multiselect(label, options, display_key, key, **kwargs)
+    else:
+        renderer = localized_selectbox if kind is st.selectbox else kind
+        result = renderer(label, options, key=display_key, on_change=sync_choice,
+                          args=(display_key, key), **kwargs)
     st.session_state[key] = result
     return result
 
@@ -61,7 +107,11 @@ def heading(title, description):
 def plot(spec, **_options):
     def labels(value):
         if isinstance(value, dict):
-            translated = {key: item if key == "field" else labels(item) for key, item in value.items()}
+            structural = {"field", "type", "format", "labelExpr", "test", "orient", "direction", "symbolType"}
+            translated = {key: item if key in structural else labels(item) for key, item in value.items()}
+            if LANGUAGE.get() == "zh-CN" and "format" in translated:
+                translated["format"] = {"%d %b": "%m月%d日", "%d %b %Y": "%Y年%m月%d日"}.get(
+                    translated["format"], translated["format"])
             if "field" in translated and "title" not in translated:
                 translated["title"] = t(translated["field"])
             return translated
@@ -85,6 +135,11 @@ def data_table(data, **options):
     """Translate presentation values; leave records and selection IDs intact."""
     frame = pd.DataFrame(data).map(lambda value: t(value) if isinstance(value, str) else value)
     frame = frame.rename(columns=t)
+    if LANGUAGE.get() == "zh-CN":
+        frame = frame.map(lambda value: display_date(value) if hasattr(value, "strftime") else value)
+        st.markdown('<div class="fs-local-table" role="region" tabindex="0" aria-label="数据表">'
+                    + frame.to_html(index=False, escape=True, border=0) + '</div>', unsafe_allow_html=True)
+        return None
     tokens = theme_tokens()
     styled = frame.style.set_properties(**{"background-color": tokens["surface"], "color": tokens["text"]})
     if t("Sentiment") in frame:
@@ -95,6 +150,23 @@ def data_table(data, **options):
         options["column_config"] = {t(key): {**value, "label": t(value.get("label") or key)}
                                     for key, value in options["column_config"].items()}
     return st.dataframe(styled, **options)
+
+
+def code_block(command, **options):
+    """Keep executable text exact; replace English-only copy chrome in Chinese."""
+    st.code(command, **options)
+    if LANGUAGE.get() == "zh-CN":
+        tokens = theme_tokens()
+        literal = json.dumps(command, ensure_ascii=True).replace("<", "\\u003c")
+        components.html(f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+        <style>body{{margin:0;background:{tokens['background']};font:13px system-ui;}}
+        button{{color:{tokens['accent']};background:{tokens['accent_surface']};border:1px solid {tokens['border']};
+        border-radius:6px;padding:5px 10px;cursor:pointer;}}button:focus-visible{{outline:2px solid {tokens['accent']};}}</style>
+        <button type="button">复制命令</button><script>
+        document.querySelector('button').addEventListener('click', async (event) => {{
+          try {{await navigator.clipboard.writeText({literal}); event.target.textContent='已复制';}}
+          catch {{event.target.textContent='请选中上方命令后手动复制';}}
+        }});</script></html>''', height=36, scrolling=False)
 
 
 def home():
@@ -156,6 +228,7 @@ def reset_filters():
     st.session_state["preview_sectors"] = []
     st.session_state["preview_sentiments"] = []
     st.session_state["preview_dates"] = (START, END)
+    st.session_state["preview_dates_revision"] = st.session_state.get("preview_dates_revision", 0) + 1
     st.session_state["preview_topic_parent"] = ALL_PARENTS
     for key in list(st.session_state):
         if key.startswith("preview_topic_child__"):
@@ -166,7 +239,16 @@ def preview_filters():
     with st.expander(t("Filter sample"), expanded=False):
         a, b, c = st.columns([1.2, 1, 1])
         with a:
-            dates = st.date_input(t("Example dates"), value=(START, END), min_value=START, max_value=END, format="DD/MM/YYYY", key="preview_dates")
+            if LANGUAGE.get() == "zh-CN":
+                date_key = "preview_dates__display_zh_" + str(st.session_state.get("preview_dates_revision", 0))
+                dates = st.select_slider(t("Example dates"),
+                    options=[START + timedelta(days=n) for n in range((END - START).days + 1)],
+                    value=st.session_state.get("preview_dates", (START, END)),
+                    key=date_key, format_func=lambda day: f"{day:%m月%d日}",
+                    on_change=sync_choice, args=(date_key, "preview_dates"))
+                st.session_state["preview_dates"] = dates
+            else:
+                dates = st.date_input(t("Example dates"), value=(START, END), min_value=START, max_value=END, format="DD/MM/YYYY", key="preview_dates")
         with b:
             sectors = choice(st.multiselect, t("Industry"), SECTORS, key="preview_sectors", placeholder=t("All industries"), format_func=display_formatter())
         with c:
@@ -175,7 +257,7 @@ def preview_filters():
     if len(dates) != 2:
         st.info(t("Choose a start and end date to explore the fictional sample."))
         return [], START, END
-    st.caption(t('{v0} – {v1} · {v2} · {v3}', v0=format(dates[0], '%d %b'), v1=format(dates[1], '%d %b %Y'), v2=", ".join(t(s) for s in sectors) or t("All industries"), v3=", ".join(t(s) for s in sentiments) or t("All sentiments")))
+    st.caption(t('{v0} – {v1} · {v2} · {v3}', v0=display_date(dates[0], False), v1=display_date(dates[1]), v2=", ".join(t(s) for s in sectors) or t("All industries"), v3=", ".join(t(s) for s in sentiments) or t("All sentiments")))
     return select(examples(), dates[0], dates[1], sectors, sentiments), dates[0], dates[1]
 
 
@@ -291,12 +373,12 @@ def story(row, details=False):
     if row is None:
         st.info(t("Select a headline to inspect its evidence."))
         return
-    st.markdown(f'<div class="story"><div class="story-meta">{t("FICTIONAL")} · {row.day:%d %b %Y} · {escape(row.source)}</div>'
-                f'<h3>{escape(article_label(row))}</h3><span class="tone {row.sentiment.lower()}">{t(row.sentiment)} · {t("illustrative label")}</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="story"><div class="story-meta">{t("FICTIONAL")} · {display_date(row.day)} · {escape(t(row.source))}</div>'
+                f'<h3>{escape(t(article_label(row)))}</h3><span class="tone {row.sentiment.lower()}">{t(row.sentiment)} · {t("illustrative label")}</span></div>', unsafe_allow_html=True)
     if details:
-        st.write(t("Complete headline: {headline}", headline=row.title))
-        st.write(row.summary)
-        st.caption(t('{v0} · Company industry: {v1}', v0=row.company, v1=t(row.sector)))
+        st.write(t("Complete headline: {headline}", headline=t(row.title)))
+        st.write(t(row.summary))
+        st.caption(t('{v0} · Company industry: {v1}', v0=t(row.company), v1=t(row.sector)))
         topic = topic_context(row)
         topic_label = (f'{t(topic["parent"])} / {t(topic["child"])} · {t("authored illustration")}'
                        if topic["child"] else t("Unclassified · separate from company metadata"))
@@ -306,13 +388,17 @@ def story(row, details=False):
             st.caption(t('Unverified candidate: {v0}. {v1}', v0=t(group["label"]), v1=t(group["basis"])))
         st.caption(t("Fictional sample only. No publisher URL exists; no original-article link is fabricated."))
         with st.expander(t("Topic and model context"), expanded=False):
-            basis = (t('authored illustration using the literal phrase “{evidence}”.', evidence=topic["evidence"])
+            basis = (t('authored illustration using the literal phrase “{evidence}”.', evidence=t(topic["evidence"]))
                      if topic["evidence"] else t("no authored text-topic annotation; company metadata is not substituted."))
             st.write(t("Topic basis: {basis}", basis=basis))
             st.write(t("Collection cohort: Not applicable — authored example; no source query was sent."))
             st.write(t("Model history: Not applicable — no model runs in this showcase. The local product retains separate classification and sentiment versions, input evidence and source provenance."))
         with st.expander(t("Technical details"), expanded=False):
-            st.write({t("Article ID"): row.article_id, t("Candidate reference"): row.candidate or t("None")})
+            references = {t("Article ID"): row.article_id, t("Candidate reference"): row.candidate or t("None")}
+            if LANGUAGE.get() == "zh-CN":
+                data_table([references], hide_index=True, width="stretch")
+            else:
+                st.write(references)
 
 
 def explorer_picker_changed(widget_key):
@@ -327,14 +413,16 @@ def article_selector(label, rows, key):
     if st.session_state.get(key) not in by_id:
         st.session_state.pop(key, None)
     ids = list(by_id)
-    widget_key = key + "__" + "_".join(ids)
+    widget_key = key + "__" + "_".join(ids) + ("__zh" if LANGUAGE.get() == "zh-CN" else "")
     selected = st.session_state.get(key)
     if widget_key not in st.session_state:
         st.session_state[widget_key] = selected if selected in ids else ids[0]
-    chosen = st.selectbox(t(label), ids, key=widget_key, index=None,
-                          format_func=lambda ident: article_label(by_id[ident]),
+    formatter = display_formatter()
+    chosen = localized_selectbox(t(label), ids, key=widget_key, index=None,
+                          format_func=lambda ident: formatter(article_label(by_id[ident])),
                           on_change=explorer_picker_changed if key == "explorer_article" else None,
-                          args=(widget_key,) if key == "explorer_article" else None)
+                          args=(widget_key,) if key == "explorer_article" else None,
+                          placeholder=t("Select a headline"))
     st.session_state[key] = chosen
     return by_id.get(chosen)
 
@@ -357,10 +445,10 @@ def headline_cloud(records):
     options = [item["term"] for item in terms]
     if st.session_state.get("graph_cloud_word") not in options:
         st.session_state.pop("graph_cloud_word", None)
-    term = st.selectbox(t("Select a word"), options, key="graph_cloud_word", format_func=display_formatter())
+    term = choice(st.selectbox, t("Select a word"), options, key="graph_cloud_word", format_func=display_formatter())
     selected = next(item for item in terms if item["term"] == term)
     matches = [row for row in records if row.article_id in selected["article_ids"]]
-    st.caption(t('{v0} fictional headline(s) contain “{v1}”. Counts are once per headline.', v0=len(matches), v1=term))
+    st.caption(t('{v0} fictional headline(s) contain “{v1}”. Counts are once per headline.', v0=len(matches), v1=t(term)))
     data_table([{"Headline": article_label(r), "Complete headline": r.title, "Company": r.company,
                    "Industry": r.sector, "Sentiment": r.sentiment, "Fictional source": r.source}
                   for r in matches], hide_index=True, width="stretch")
@@ -378,7 +466,7 @@ def knowledge_graph():
         with a:
             perspective = st.radio(t("Graph perspective"), ("Company focus", "Industry network"), horizontal=True, key="graph_perspective", format_func=display_formatter())
         with b:
-            company = st.selectbox(t("Fictional company"), sorted({r.company for r in all_rows}), key="graph_company", format_func=display_formatter())
+            company = choice(st.selectbox, t("Fictional company"), sorted({r.company for r in all_rows}), key="graph_company", format_func=display_formatter())
     rows = [r for r in all_rows if r.company == company]
     groups = candidate_groups(rows)
     with st.container(key="fs_kpis"):
@@ -410,13 +498,13 @@ def knowledge_graph():
             picker, detail = st.columns([1, 2])
             with picker:
                 chosen = article_selector("Inspect an illustrative article", rows, "graph_article")
-                st.caption(t('{v0} original fictional reports · {v1}', v0=len(rows), v1=company))
+                st.caption(t('{v0} original fictional reports · {v1}', v0=len(rows), v1=t(company)))
             with detail:
                 story(chosen, details=True)
         with st.expander(t("Potentially related reports"), expanded=False):
             if groups:
                 data_table([{"Topic": g["label"], "Reports": len(g["article_ids"]),
-                               "Headlines": " / ".join(g["headlines"]), "Status": "Unverified candidate",
+                               "Headlines": " / ".join(t(label) for label in g["headlines"]), "Status": "Unverified candidate",
                                "Relationship basis": g["basis"]} for g in groups], hide_index=True, width="stretch")
             else:
                 st.info(t("These fictional reports remain separate. No multi-report candidate topic is shown."))
@@ -427,6 +515,7 @@ def knowledge_graph():
                           for name in sorted({r.company for r in all_rows})], hide_index=True, width="stretch")
     with st.container(key="fs_cloud"):
         st.subheader(t("Headline word cloud"))
+        st.caption(t("Counts and matches use the original authored headlines; translated words are display labels."))
         scope = st.radio(t("Text scope"), ("All fictional headlines", "Selected company"), horizontal=True, key="graph_cloud_scope", format_func=display_formatter())
         cloud_rows = all_rows if scope == "All fictional headlines" else rows
         st.caption(t('{v0} authored fictional headlines · Each word counts once per headline. Generic words and company names excluded.', v0=len(cloud_rows)))
@@ -440,7 +529,9 @@ def explorer():
         query = st.text_input(t("Search fictional examples"), placeholder=t("Industry, company or headline"), max_chars=120, key="explorer_search")
     with b:
         industry = choice(st.selectbox, t("Example industry"), ("All industries", *SECTORS), key="explorer_industry", format_func=display_formatter())
-    rows = sorted(select(examples(), sectors=() if industry == "All industries" else (industry,), search=query),
+    rows = sorted([r for r in select(examples(), sectors=() if industry == "All industries" else (industry,))
+                   if query.strip().casefold() in " ".join(t(value) for value in
+                      (article_label(r), r.title, r.summary, r.company, r.source, r.sector)).casefold()],
                   key=lambda r: (r.day, r.article_id), reverse=True)
     st.caption(t('{v0} fictional originals · preset labels · no publisher content or URLs', v0=len(rows)))
     st.caption(t("Inspect source evidence and authored text-topic context below. The local product also retains model/input history; no inference or model history is produced here."))
@@ -462,7 +553,7 @@ def explorer():
                                  column_config={"Headline": st.column_config.TextColumn(width="medium"),
                                                 "Sentiment": st.column_config.TextColumn("Tone", width="small"),
                                                 "Published": st.column_config.DateColumn(format="DD MMM", width="small")})
-            indices = tuple(i for i in event.selection.rows if isinstance(i, int) and 0 <= i < len(rows))
+            indices = tuple(i for i in event.selection.rows if isinstance(i, int) and 0 <= i < len(rows)) if event else ()
             token = (ids, revision, indices)
             if token != st.session_state.get("explorer_list_token"):
                 st.session_state["explorer_list_token"] = token
@@ -486,28 +577,28 @@ def get_finscope():
         with launcher:
             st.markdown(localize_html(eyebrow("WINDOWS · AFTER SETUP")), unsafe_allow_html=True)
             st.subheader(t("Start the complete local product"))
-            st.code("./launch_local.ps1 -Port 8501", language="powershell", wrap_lines=True)
+            code_block("./launch_local.ps1 -Port 8501", language="powershell", wrap_lines=True)
             st.caption(t("One launcher starts the UI and its worker. Direct Streamlit startup serves only the UI."))
         with architecture:
             st.markdown(localize_html(launcher_architecture()), unsafe_allow_html=True)
     st.subheader(t("Install and start"))
     st.caption(t("Python 3.11+ · Run these commands on your own computer · Explicit model preparation"))
-    windows, unix = st.tabs(["Windows · PowerShell", "macOS / Linux"])
+    windows, unix = st.tabs([t("Windows · PowerShell"), t("macOS / Linux")])
     for tab, python, executable in ((windows, "python", ".venv-ai/Scripts/python.exe"),
                                    (unix, "python3", ".venv-ai/bin/python")):
         with tab:
             st.markdown(localize_html(eyebrow("01 / GET THE LOCAL PRODUCT")), unsafe_allow_html=True)
-            st.code("git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git\ncd Finscope", language="bash", wrap_lines=True)
+            code_block("git clone --branch local --single-branch https://github.com/DVDWK812/Finscope.git\ncd Finscope", language="bash", wrap_lines=True)
             st.markdown(localize_html(eyebrow("02 / CREATE THE ENVIRONMENT")), unsafe_allow_html=True)
-            st.code(f"{python} -m venv .venv-ai\n{executable} -m pip install -r requirements-local.txt", language="bash", wrap_lines=True)
+            code_block(f"{python} -m venv .venv-ai\n{executable} -m pip install -r requirements-local.txt", language="bash", wrap_lines=True)
             st.markdown(localize_html(eyebrow("03 / PREPARE MODELS AND START")), unsafe_allow_html=True)
-            st.code(f"{executable} -m finscope.model_assets --prepare --acknowledge-model-licenses", language="bash", wrap_lines=True)
+            code_block(f"{executable} -m finscope.model_assets --prepare --acknowledge-model-licenses", language="bash", wrap_lines=True)
             if python == "python":
                 st.caption(t("After setup, use the full Windows launcher shown above for daily work."))
             else:
                 st.caption(t("Source-derived manual route; macOS/Linux runtime acceptance is pending. Run the worker and UI in two project-folder terminals. This is not the verified Windows launcher."))
-                st.code(f"# Terminal 1: local worker\n{executable} -m finscope.local_worker", language="bash", wrap_lines=True)
-                st.code(f"# Terminal 2: UI\n{executable} -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash", wrap_lines=True)
+                code_block(t("# Terminal 1: local worker") + f"\n{executable} -m finscope.local_worker", language="bash", wrap_lines=True)
+                code_block(t("# Terminal 2: UI") + f"\n{executable} -m streamlit run streamlit_app.py --server.address localhost --server.port 8501", language="bash", wrap_lines=True)
     st.caption(t("Open http://localhost:8501 after launch. Model licences and publisher-content permissions are separate."))
     available, optional = st.columns(2)
     with available:
@@ -548,24 +639,23 @@ def render():
     with st.expander(t("About FinScope")):
         st.write(t("A noncommercial financial-text research product. This showcase uses authored fictional data and preset labels; it performs no news collection or AI inference. Local sentiment is text tone, not a price forecast. Similarity suggests candidates, not verified event deduplication or contradiction detection."))
         st.caption(t("Local model weights: ProsusAI FinBERT, CC BY-NC-SA 4.0; sentence-transformers MiniLM, Apache-2.0. Publisher-content permissions are separate. Software and detailed evidence are available in the repository."))
-        st.caption(t('Local product information reviewed: {v0} / {v1}', v0=LOCAL_REVIEW_DATE, v1=LOCAL_REVIEW_SHA[:7]))
+        st.caption(t('Local product information reviewed: {v0} / {v1}', v0=t(LOCAL_REVIEW_DATE), v1=LOCAL_REVIEW_SHA[:7]))
 
 
 def main():
-    st.set_page_config(page_title="FinScope | Product Showcase", page_icon="◈", layout="wide")
-    with st.sidebar:
-        brand_slot = st.empty()
-        with st.container(key="fs_preferences"):
-            language = st.selectbox("Language / 语言", ("en", "zh-CN"),
-                                    format_func=lambda value: {"en": "English", "zh-CN": "简体中文"}[value],
-                                    key="showcase_language")
-            appearance = st.radio("Appearance / 外观", ("dark", "light"), horizontal=True,
-                                  format_func=lambda value: {"dark": "Dark / 深色", "light": "Light / 浅色"}[value],
-                                  key="showcase_appearance")
+    language = st.session_state.get("showcase_language", "en")
+    appearance = st.session_state.get("showcase_appearance", "dark")
     with preferences(language, appearance):
-        brand_slot.markdown(brand(), unsafe_allow_html=True)
-        if LANGUAGE.get() == "zh-CN":
-            st.caption(t("English fictional headlines and summaries are preserved. The word cloud counts the original English headlines."))
+        st.set_page_config(page_title="FinScope | " + t("Product Showcase"), page_icon="◈", layout="wide",
+                           menu_items={"Get Help": None, "Report a bug": None, "About": None})
+        with st.sidebar:
+            st.markdown(brand(), unsafe_allow_html=True)
+            with st.container(key="fs_preferences"):
+                formatter = display_formatter()
+                choice(st.selectbox, t("Language"), ("en", "zh-CN"), key="showcase_language",
+                       format_func=lambda value: formatter({"en": "English", "zh-CN": "Chinese (Simplified)"}[value]))
+                choice(st.radio, t("Appearance"), ("dark", "light"), horizontal=True,
+                       format_func=lambda value: formatter({"dark": "Dark", "light": "Light"}[value]), key="showcase_appearance")
         render()
 
 

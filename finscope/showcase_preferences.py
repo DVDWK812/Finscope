@@ -3,8 +3,12 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from html import escape
 from html.parser import HTMLParser
+import re
 
 from .showcase_zh import ZH
+from .showcase_locale_data import translations
+
+ZH = {**ZH, **translations()}
 
 LANGUAGE = ContextVar("showcase_language", default="en")
 APPEARANCE = ContextVar("showcase_appearance", default="dark")
@@ -24,6 +28,10 @@ def preferences(language="en", appearance="dark"):
 
 def t(message, **values):
     translated = ZH.get(message, message) if LANGUAGE.get() == "zh-CN" else message
+    if LANGUAGE.get() == "zh-CN" and translated == message:
+        count = re.fullmatch(r"(\d+) (?:authored fictional reports|fictional source reports)", message)
+        if count:
+            translated = count[1] + " 篇虚构原始报道"
     return translated.format(**values) if values else translated
 
 
@@ -31,6 +39,12 @@ def display_formatter():
     """Bind the locale for callbacks serialized after this render finishes."""
     chinese = LANGUAGE.get() == "zh-CN"
     return lambda message: ZH.get(message, message) if chinese else message
+
+
+def display_date(day, full=True):
+    if LANGUAGE.get() == "zh-CN":
+        return day.strftime("%Y年%m月%d日" if full else "%m月%d日")
+    return day.strftime("%d %b %Y" if full else "%d %b")
 
 
 class _MarkupTranslator(HTMLParser):

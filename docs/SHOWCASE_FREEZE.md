@@ -1,5 +1,27 @@
 # Public showcase freeze — 31 October 2026 Sydney
 
+## Single-language correction release checkpoint — 5 November 2026 Sydney
+
+The user manually accepted preview `locale-0c85fef203` and authorized its main-only
+commit/push. English and Chinese modes now localize all authored display text,
+including the 24 fictional records, graph metadata and term labels. Product/model
+names, technical identifiers and commands retain their spelling. Original fixtures,
+IDs, word-frequency calculations/matches and frozen evidence are unchanged.
+
+250 offline tests, 37 showcase checks, 51 syntax checks and seven dry runs pass;
+the 37 showcase checks also pass on Streamlit 1.50.0. Approved source hashes are
+retained in ignored release receipts. The exact release SHA and exact-push CI
+results are recorded in the delivery message and receipts after push.
+
+Hosted acceptance is separate and pending: Browser Use rejected an internal
+data-URL error page reporting ERR_TOO_MANY_REDIRECTS. Browser input stopped; this
+is neither a site-access denial nor a verified login diagnosis. The public URL,
+main/deploy entrypoint, app coordinates and branch names are unchanged. No local
+branch operation, provider request, inference, public database access or evidence
+publication is added. Unrelated edits and protected-file hashes are preserved.
+After this correction, maintenance-only scope applies; pending hosted acceptance
+does not authorize further feature development.
+
 ## Display exception closed — 4 November 2026 Sydney
 
 **MAINTENANCE ONLY.** The explicitly requested English/简体中文 and dark/light
