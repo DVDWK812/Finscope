@@ -105,6 +105,7 @@ def task_progress(store,show_diagnostics=True):
                 st.session_state['_results_changed']=False;st.rerun()
         return
     st.subheader(t('Task status: {status}',status=tr(label)))
+    if task['status'] not in ACTIVE:st.caption('This is the last task’s historical outcome. Current classification failures are listed under Analyze existing records.')
     st.write(next_step)
     if task['status'] in ACTIVE:st.caption(t('Current stage: {stage}',stage=task_stage(task['stage'])))
     receipts=q.outcomes(task['id'])
@@ -274,6 +275,7 @@ def analysis_entry(store,q):
                 except ValueError:st.caption('Text hidden: display or retention permission is not current.')
                 st.caption(reason)
     if len(ids)>300:st.warning('A task can contain at most 300 records. Reduce the selection or process separate batches.')
+    classification_failures(store,q,active)
     if not allowed:st.info('No permitted saved records are available. Ask the facilitator to prepare samples, or use Settings to add permitted records.')
     review=json.dumps([c,[(identity,allowed[identity].content_version,allowed[identity].rights.reference) for identity in ids]],sort_keys=True)
     if st.session_state.get('_offline_review')!=review:
@@ -297,6 +299,34 @@ def analysis_entry(store,q):
             st.session_state['_offline_review']=None
             st.rerun()
         except ValueError as error:st.error(str(error))
+
+
+def classification_failures(store,q,active):
+    from .media_quality import failed_diagnostics,FAILURE_REASONS
+    failures=failed_diagnostics(store)
+    if not failures:return
+    with st.expander(t('Current classification failures: {count}',count=len(failures)),expanded=False):
+        st.caption('These are current industry-classification failures, separate from sentiment results and historical task counts.')
+        from .classification_scheme import selected
+        options=selected(store)
+        if options:st.caption(Verbatim(options['model_id']+' · '+options['version']+' · '+options['model_revision']))
+        current={n.article_id:n for n in ProductStorage(store).news()}
+        for row in failures:
+            item=current.get(row['article_id'])
+            if item is None:continue
+            st.text(Verbatim(item.title+' ['+item.article_id[:8]+']'))
+            st.caption(FAILURE_REASONS.get(row['reason'],FAILURE_REASONS['classifier_error']))
+            if row['retried']:st.caption('One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.')
+        eligible=[r['article_id'] for r in failures if r['can_repair']]
+        st.caption('Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.')
+        signature=json.dumps([(r['article_id'],r.get('content_version'),r.get('cache_key'),r['can_repair']) for r in failures])
+        if st.session_state.get('_classifier_repair_scope')!=signature:
+            st.session_state['_classifier_repair_scope']=signature;st.session_state['classifier_repair_confirm']=False
+            st.session_state.get('_ui_mirrors',{}).pop('classifier_repair_confirm',None)
+        ready=st.checkbox('I confirm one local output repair for these failed classifications',key='classifier_repair_confirm',disabled=active or not eligible)
+        if st.button('Repair failed classifications only',key='classifier_repair_submit',disabled=active or not ready or not eligible):
+            try:q.submit_reclassify(article_ids=eligible,confirmed=True,repair_failed=True);st.rerun()
+            except ValueError as error:st.error(str(error))
 
 
 def task_results(store,q):

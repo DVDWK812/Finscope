@@ -1165,5 +1165,20 @@
   "Record {id} · provider {provider}": "Record {id} · provider {provider}",
   "Text hidden: display or retention permission is not current.": "Text hidden: display or retention permission is not current.",
   "No reviewed automatic-use policy for this source": "No reviewed automatic-use policy for this source",
-  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "A task can contain at most 300 records. Reduce the selection or process separate batches."
+  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "A task can contain at most 300 records. Reduce the selection or process separate batches.",
+  "This is the last task’s historical outcome. Current classification failures are listed under Analyze existing records.": "This is the last task’s historical outcome. Current classification failures are listed under Analyze existing records.",
+  "Topic classifier failed; sentiment uses its independent text/model cache": "Topic classifier failed; sentiment uses its independent text/model cache",
+  "Current classification failures: {count}": "Current classification failures: {count}",
+  "These are current industry-classification failures, separate from sentiment results and historical task counts.": "These are current industry-classification failures, separate from sentiment results and historical task counts.",
+  "The classifier returned no labels and omitted the required Unclassified reason.": "The classifier returned no labels and omitted the required Unclassified reason.",
+  "The classifier quote is not an exact passage in the saved text; the label was rejected.": "The classifier quote is not an exact passage in the saved text; the label was rejected.",
+  "The classifier returned an invalid ID, duplicate label or invalid justification.": "The classifier returned an invalid ID, duplicate label or invalid justification.",
+  "The completed classifier response failed the JSON or response contract.": "The completed classifier response failed the JSON or response contract.",
+  "An earlier classifier request failed or has an unknown outcome. It will not be retried.": "An earlier classifier request failed or has an unknown outcome. It will not be retried.",
+  "No matching completed response is available for this text and model version.": "No matching completed response is available for this text and model version.",
+  "Classification failed before a valid result was saved.": "Classification failed before a valid result was saved.",
+  "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.": "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.",
+  "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.": "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.",
+  "I confirm one local output repair for these failed classifications": "I confirm one local output repair for these failed classifications",
+  "Repair failed classifications only": "Repair failed classifications only"
 }

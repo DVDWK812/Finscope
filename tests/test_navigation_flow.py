@@ -106,6 +106,15 @@ class NavigationFlowTests(unittest.TestCase):
         self.assertFalse(any('have expired' in v.value for v in app.info))
         self.assertNotIn(authored.article_id,app.multiselect(key='offline_articles').options)
         self.assertIsNone(self.q.get())
+    def test_classification_repair_needs_confirmation_and_only_submits_failed_ids(self):
+        item=self.items[0]
+        failures=[dict(article_id=item.article_id,reason='evidence_mismatch',can_repair=True,retried=False)]
+        with patch('finscope.media_quality.failed_diagnostics',return_value=failures),patch.object(TaskQueue,'submit_reclassify',return_value=('fixture',True)) as submit:
+            app=self.app('News Update')
+            self.assertTrue(app.button(key='classifier_repair_submit').disabled);submit.assert_not_called()
+            app.checkbox(key='classifier_repair_confirm').check().run()
+            app.button(key='classifier_repair_submit').click().run();self.assertFalse(app.exception)
+            submit.assert_called_once_with(article_ids=[item.article_id],confirmed=True,repair_failed=True)
     def test_home_is_initial_and_always_accessible_with_integrated_guide(self):
         app=self.app();self.assertEqual(app.title[0].value,'Home')
         self.assertTrue(any(h.value=='How FinScope works' for h in app.subheader))

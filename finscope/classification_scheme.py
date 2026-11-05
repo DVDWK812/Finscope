@@ -85,15 +85,19 @@ def run_reclassification(worker,task):
     classifier=None
     try:
         classifier=SemanticIndustryClassifier(worker.store,c['classifier_options'],check=check)
+        classifier.repair_validation=bool(c.get('repair_classification'))
+        counts['total']=len(c['article_ids'])
         for n in data.news():
             if n.article_id not in c['article_ids']:continue
             check();authorize(n,('retain','local_display','local_classification'))
             old=data.classification(n,classifier.cache_key)
-            if old:
+            repair=bool(classifier.repair_validation and old and old.get('status')=='failed')
+            if old and (not repair or old.get('output_repair',{}).get('task_id')==identity):
                 counts['skipped']+=1;failures+=old.get('status')=='failed'
                 processed(n,'classification_reused');continue
             result=classifier.classify(n)
-            data.save_classification(n,classifier.cache_key,result)
+            if repair:data.repair_classification(n,classifier.cache_key,result,identity)
+            else:data.save_classification(n,classifier.cache_key,result)
             counts['classified']+=1
             if result['status']=='failed':counts['failed']+=1;failures+=1
             counts['classifier_calls']=initial_calls+classifier.calls

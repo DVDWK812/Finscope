@@ -94,6 +94,60 @@ class SemanticTests(unittest.TestCase):
         r=self.classifier(out).classify(n);self.assertEqual(r['status'],'failed');self.assertFalse(r['labels'])
         with closing(self.store.connect()) as db:self.assertNotIn('INVENTED QUOTE','\n'.join(db.iterdump()))
         with closing(partition(self.store).connect()) as db:self.assertIn('INVENTED QUOTE','\n'.join(db.iterdump()))
+    def save_scheme(self):
+        with closing(self.store.connect()) as db:
+            db.execute('INSERT OR REPLACE INTO product_settings VALUES (?,?)',('media_classification_scheme',json.dumps(OPTIONS)));db.commit()
+    def test_explicit_output_repair_preserves_failure_history_and_sentiment(self):
+        from finscope.media_quality import failed_diagnostics
+        self.save_scheme();n=self.item();c=self.classifier(dict(labels=[],unclassified_reason=''))
+        failed=c.classify(n);self.assertEqual(failed['failure_code'],'missing_unclassified_reason')
+        self.data.save_classification(n,c.cache_key,failed)
+        diagnostic=failed_diagnostics(self.store)[0]
+        self.assertEqual(diagnostic['reason'],'missing_unclassified_reason');self.assertTrue(diagnostic['can_repair'])
+        self.assertEqual(len(self.posts),1)
+        with self.assertRaises(ValueError):self.q.submit_reclassify(repair_failed=True)
+        identity,_=self.q.submit_reclassify(confirmed=True,repair_failed=True)
+        repaired=self.classifier(dict(labels=[],unclassified_reason='no_sector_evidence'))
+        worker=Worker(self.store,fetch=lambda *a:self.fail('No news'),infer=lambda *a:self.fail('No sentiment'))
+        with patch('finscope.semantic_classifier.SemanticIndustryClassifier',return_value=repaired):worker.run_one()
+        task=self.q.get(identity);self.assertEqual(task['status'],'completed');self.assertEqual(task['counts']['classifier_calls'],1)
+        result=self.data.classification(n,c.cache_key)
+        self.assertEqual(result['status'],'unclassified');self.assertEqual(result['unclassified_reason'],'no_sector_evidence')
+        self.assertEqual(len(self.posts),2);self.assertFalse(self.data.analyses());self.assertFalse(failed_diagnostics(self.store))
+        history=self.data.classification_history(n.article_id,'US-BUSINESS-1')
+        self.assertEqual([h['classification']['status'] for h in history],['failed','unclassified'])
+        self.assertTrue(history[0]['superseded'])
+        with closing(self.store.connect()) as db:self.assertNotIn(n.summary,'\n'.join(db.iterdump()))
+    def test_invalid_repair_is_bounded_and_unknown_dispatch_is_not_retried(self):
+        from finscope.media_quality import failed_diagnostics
+        self.save_scheme();n=self.item();out=dict(labels=[dict(id='technology',quote='Invented phrase',reason='An invented fixture with unsupported evidence.')],unclassified_reason='')
+        c=self.classifier(out);self.data.save_classification(n,c.cache_key,c.classify(n))
+        identity,_=self.q.submit_reclassify(confirmed=True,repair_failed=True)
+        with patch('finscope.semantic_classifier.SemanticIndustryClassifier',side_effect=lambda *a,**k:self.classifier(out)):
+            Worker(self.store).run_one()
+        self.assertEqual(self.q.get(identity)['status'],'partial_failed')
+        self.assertEqual(len(self.posts),2)
+        diag=failed_diagnostics(self.store)[0];self.assertEqual(diag['reason'],'evidence_mismatch');self.assertFalse(diag['can_repair'])
+        with self.assertRaises(ValueError):self.q.submit_reclassify(confirmed=True,repair_failed=True)
+        self.q.resume(identity)
+        with patch('finscope.semantic_classifier.SemanticIndustryClassifier',side_effect=lambda *a,**k:self.classifier(out)):Worker(self.store).run_one()
+        self.assertEqual(len(self.posts),2)
+        with closing(partition(self.store).connect()) as db:
+            db.execute("UPDATE product_classifier_calls SET status='pending' WHERE stage LIKE '%output-repair-1'");db.commit()
+        c=self.classifier(out);c.repair_validation=True
+        self.assertEqual(c.classify(n)['failure_code'],'unknown_outcome');self.assertEqual(len(self.posts),2)
+    def test_diagnostics_never_borrow_changed_text_or_model_and_honor_permissions(self):
+        from finscope.media_quality import failed_diagnostics
+        self.save_scheme();n=self.item();c=self.classifier(dict(labels=[],unclassified_reason=''))
+        self.data.save_classification(n,c.cache_key,c.classify(n))
+        with closing(partition(self.store).connect()) as db:
+            db.execute("UPDATE product_classifier_calls SET revision='different model'");db.commit()
+        diag=failed_diagnostics(self.store)[0];self.assertFalse(diag['can_repair']);self.assertEqual(diag['reason'],'dispatch_or_output_unavailable')
+        self.now+=timedelta(days=8);self.assertFalse(failed_diagnostics(self.store))
+    def test_output_repair_cannot_be_mixed_with_collection(self):
+        from finscope.task_queue import validate_config
+        base=dict(sources=[],article_ids=['0'*32],operation='analyze',model='Local FinBERT',model_id='',taxonomy='US-BUSINESS-1',classifier_options=OPTIONS,repair_classification=True)
+        with self.assertRaises(ValueError):validate_config(base)
     def test_invalid_taxonomy_id_cannot_be_saved_as_label(self):
         r=self.classifier(dict(labels=[dict(id='invented',quote='defend corporate networks',reason='Authored rejected category')],unclassified_reason='')).classify(self.item())
         self.assertEqual(r['unclassified_reason'],'classifier_failed')

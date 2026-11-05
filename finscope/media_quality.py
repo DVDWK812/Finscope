@@ -5,6 +5,15 @@ import json
 from .media_use import scope_of
 from .publisher_attribution import attribution
 
+FAILURE_REASONS={
+    'missing_unclassified_reason':'The classifier returned no labels and omitted the required Unclassified reason.',
+    'evidence_mismatch':'The classifier quote is not an exact passage in the saved text; the label was rejected.',
+    'invalid_label':'The classifier returned an invalid ID, duplicate label or invalid justification.',
+    'invalid_response':'The completed classifier response failed the JSON or response contract.',
+    'unknown_outcome':'An earlier classifier request failed or has an unknown outcome. It will not be retried.',
+    'dispatch_or_output_unavailable':'No matching completed response is available for this text and model version.',
+    'classifier_error':'Classification failed before a valid result was saved.'}
+
 
 def validation_type(response,text):
     try:
@@ -26,17 +35,40 @@ def validation_type(response,text):
 def failed_diagnostics(store):
     from .product_storage import ProductStorage
     from .expiring_media import partition
-    from .semantic_classifier import text_of
+    from .semantic_classifier import text_of,SemanticIndustryClassifier
+    from .classification_scheme import selected,cache_key
+    from .model_providers import ModelError
+    from .source_policies import authorize
+    import hashlib
     data=ProductStorage(store);classes=data.classifications('US-BUSINESS-1');part=partition(store);result=[]
-    if not part:return result
+    options=selected(store)
+    if not part or not options:return result
+    classifier=SemanticIndustryClassifier(store,options)
+    keys={cache_key(options),cache_key(options,previous_version='semantic-topics-3'),cache_key(options,previous_version='semantic-topics-2')}
     with closing(part.connect()) as db:
         for n in data.news():
             c=classes.get(n.article_id,{})
             if not scope_of(n) or c.get('status')!='failed':continue
-            row=db.execute("SELECT payload FROM product_classifier_calls WHERE article_id=? AND stage LIKE 'semantic_review:%' AND status='ok' ORDER BY rowid DESC LIMIT 1",(n.article_id,)).fetchone()
-            if not row:row=db.execute("SELECT payload FROM product_classifier_calls WHERE article_id=? AND stage='semantic_decision' AND status='ok' ORDER BY rowid DESC LIMIT 1",(n.article_id,)).fetchone()
-            kind=validation_type(json.loads(row[0]).get('output'),text_of(n)) if row else 'dispatch_or_output_unavailable'
-            result.append(dict(article_id=n.article_id,type=kind,read_only=True,retried=False))
+            try:authorize(n,('retain','local_display','local_classification'))
+            except ValueError:continue
+            text=text_of(n);fingerprint=hashlib.sha256(text.encode()).hexdigest()
+            rows=db.execute("SELECT cache_key,stage,status,payload FROM product_classifier_calls WHERE article_id=? AND content_version=? AND model_id=? AND revision=? AND stage LIKE 'semantic_%' ORDER BY rowid DESC",
+                            (n.article_id,n.content_version,options['model_id'],options['model_revision'])).fetchall()
+            rows=[(stage,status,json.loads(p)) for key,stage,status,p in rows if key in keys and json.loads(p).get('input_sha256')==fingerprint]
+            # A newer review/repair is authoritative; never borrow another text,
+            # model, taxonomy generation, or an older successful attempt.
+            row=next((r for r in rows if r[0].startswith('semantic_review:')),rows[0] if rows else None)
+            code='dispatch_or_output_unavailable';kind=code;stage='';repairable=False
+            if row:
+                stage,status,p=row
+                if status=='ok':
+                    kind=validation_type(p.get('output'),text)
+                    try:classifier.parse_decision(p.get('output'),text,list(classifier.nodes),options['model_id'])
+                    except ModelError as error:code=error.kind;repairable=True
+                else:code='unknown_outcome'
+            attempted=any(':output-repair-1' in r[0] for r in rows)
+            result.append(dict(article_id=n.article_id,content_version=n.content_version,cache_key=classifier.cache_key,type=kind,reason=code,stage=stage,
+                               can_repair=repairable and not attempted,read_only=True,retried=attempted))
     return result
 
 

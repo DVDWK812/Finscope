@@ -1165,5 +1165,20 @@
   "Record {id} · provider {provider}": "记录 {id} · 来源类型 {provider}",
   "Text hidden: display or retention permission is not current.": "文本已隐藏：当前展示权限或保留期限无效。",
   "No reviewed automatic-use policy for this source": "此来源尚无经审核的自动处理策略；已有记录级授权不足以启用此批量入口。",
-  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "单次任务最多处理 300 条记录，请减少选择或分批处理。"
+  "A task can contain at most 300 records. Reduce the selection or process separate batches.": "单次任务最多处理 300 条记录，请减少选择或分批处理。",
+  "This is the last task’s historical outcome. Current classification failures are listed under Analyze existing records.": "这里显示的是上次任务的历史结果。当前仍失败的分类可在“分析已有记录”中逐条查看。",
+  "Topic classifier failed; sentiment uses its independent text/model cache": "此任务中部分行业分类失败；情绪分析使用独立的文本／模型缓存。请查看下方当前分类失败原因。",
+  "Current classification failures: {count}": "当前行业分类失败：{count} 条",
+  "These are current industry-classification failures, separate from sentiment results and historical task counts.": "以下是当前仍失败的行业分类，与情绪分析结果和历史任务失败计数分别记录。",
+  "The classifier returned no labels and omitted the required Unclassified reason.": "分类器返回了空标签，但没有填写必需的“未分类”原因。",
+  "The classifier quote is not an exact passage in the saved text; the label was rejected.": "分类器引用的文字不是已保存原文中的连续原句，因此标签被拒绝。",
+  "The classifier returned an invalid ID, duplicate label or invalid justification.": "分类器返回了非法行业编号、重复标签或不合格的理由。",
+  "The completed classifier response failed the JSON or response contract.": "分类器已返回响应，但 JSON 格式或响应结构不符合要求。",
+  "An earlier classifier request failed or has an unknown outcome. It will not be retried.": "此前分类请求失败或结果未知，系统不会重试该请求。",
+  "No matching completed response is available for this text and model version.": "没有与当前文本及模型版本匹配的完整响应可供修复。",
+  "Classification failed before a valid result was saved.": "分类过程失败，未保存有效结果。",
+  "One output repair has already been attempted. Review the saved failure; no further automatic request is allowed.": "已经尝试过一次输出修复。请检查保留的失败详情，不再自动发送请求。",
+  "Repair makes at most one additional local call per invalid completed stage, with the same text and model. Valid stages and sentiment results are reused; old failures are retained. No news is collected.": "仅针对已返回但校验失败的阶段，使用相同文本和模型最多追加一次本地调用。复用有效阶段及情绪结果，保留旧失败记录，不采集新闻。",
+  "I confirm one local output repair for these failed classifications": "我确认对这些分类失败记录进行一次本地输出修复",
+  "Repair failed classifications only": "仅修复失败的行业分类"
 }

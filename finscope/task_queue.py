@@ -91,10 +91,12 @@ def migrate(store):
 def validate_config(config):
     """Explicit schema ensures neither credentials nor arbitrary endpoints enter jobs."""
     from .local_collectors import SOURCES
-    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch','classifier_options'}
+    allowed={'sources','model','model_id','taxonomy','classifier_llm','limit','source_permissions','budgets','article_ids','force_reanalysis','result_model_key','news_key_slots','operation','sec_options','media_batch','classifier_options','repair_classification'}
     if not isinstance(config,dict) or set(config)-allowed:
         raise ValueError('Unsupported task configuration; credentials are separate')
     c=dict(config)
+    if 'repair_classification' in c and (c['repair_classification'] is not True or c.get('operation')!='reclassify'):
+        raise ValueError('Output repair is restricted to explicitly confirmed classification-only tasks')
     if 'classifier_options' in c:
         from .classification_scheme import validate
         c['classifier_options']=validate(c['classifier_options'])
@@ -236,7 +238,7 @@ class TaskQueue:
                     if options:c['classifier_options']=options
             c.update(sources=[],article_ids=list(dict.fromkeys(ids))[:300],budgets={},source_permissions={})
         return self._enqueue(validate_config(c))
-    def submit_reclassify(self,*,article_ids=None,options=None,confirmed=False):
+    def submit_reclassify(self,*,article_ids=None,options=None,confirmed=False,repair_failed=False):
         if confirmed is not True:raise ValueError('Confirm classification-only use of retained media')
         from .classification_scheme import selected
         from .product_storage import ProductStorage
@@ -244,10 +246,17 @@ class TaskQueue:
         opts=options or selected(self.store)
         if not opts:raise ValueError('Select the independent local classifier scheme first')
         items=[n for n in ProductStorage(self.store).news() if scope_of(n) and (article_ids is None or n.article_id in article_ids)]
+        if repair_failed:
+            if opts!=selected(self.store):raise ValueError('Repair must use the current unchanged classifier scheme')
+            from .media_quality import failed_diagnostics
+            eligible={r['article_id'] for r in failed_diagnostics(self.store) if r['can_repair']}
+            items=[n for n in items if n.article_id in eligible]
+            if not items:raise ValueError('No completed invalid classifier outputs are eligible for a first repair')
         if not items:raise ValueError('No current finite media selected')
         for n in items:authorize(n,('retain','local_display','local_classification'))
         c=dict(sources=[],article_ids=[n.article_id for n in items][:300],operation='reclassify',model='Local FinBERT',model_id='',
             taxonomy='US-BUSINESS-1',limit=300,classifier_llm=False,classifier_options=opts,budgets={},source_permissions={})
+        if repair_failed:c['repair_classification']=True
         return self._enqueue(validate_config(c))
     def submit_import(self,items,*,confirmed=False,taxonomy='US-BUSINESS-1'):
         if confirmed is not True:raise ValueError('Confirm the import licence scope')

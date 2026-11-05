@@ -1,5 +1,17 @@
 # Development log
 
+## Local classification failure repair — 5 November 2026
+
+- Distinguished the last task's historical error from current per-record failures.
+  Diagnosis binds retained response evidence to the current text, scheme and model;
+  it reports missing Unclassified reasons and rejected quotes without relaxing checks.
+- Added explicitly confirmed, classification-only output repair: one extra local call
+  per completed invalid stage, no transport/unknown retry, collection or sentiment
+  inference. Prior failures and responses remain in the finite partition; rights,
+  expiry, resource and exact model-variant gates still apply. No new model or schema.
+- Isolated authored regression: 754 tests, one platform skip. Benchmark not run.
+  Actual record repair remains separate from this engineering test evidence.
+
 ## Local language isolation — 5 November 2026
 
 - Added paired English/Simplified Chinese presentation messages for acquisition

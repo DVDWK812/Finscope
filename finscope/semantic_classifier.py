@@ -44,6 +44,7 @@ class SemanticIndustryClassifier:
         self.rules=IndustryClassifier();self.nodes=self.rules.nodes;self.catalog=self.rules.catalog
         self.embedder=embedder;self.transport=transport;self.model=model;self.resources=resources
         self.profiles=None;self.calls=0
+        self.repair_validation=False;self.failure_stage='';self.validation_notes=[];self.decision_note=''
     def guard(self,item):
         from .media_use import authorize,enforce_decision,scope_of
         from .expiring_media import partition
@@ -83,7 +84,11 @@ class SemanticIndustryClassifier:
             old=db.execute('SELECT status,payload FROM product_classifier_calls WHERE article_id=? AND content_version=? AND cache_key=? AND stage=?',
                 (item.article_id,item.content_version,self.cache_key,stage)).fetchone()
             if old:
-                if old[0]=='ok':return json.loads(old[1])['output']
+                if old[0]=='ok':
+                    cached=json.loads(old[1])
+                    if cached.get('input_sha256')!=hashlib.sha256(input_text.encode()).hexdigest():
+                        raise ModelError('Cached classifier input does not match current text',kind='input_mismatch')
+                    return cached['output']
                 raise ModelError('Earlier local classification dispatch is failed/unknown; no automatic retry',kind='unknown_outcome')
         resources=self.resource_check('LM Studio' if stage.startswith('semantic_') else 'MiniLM')
         identity=uuid4().hex;payload=dict(input_text=input_text,input_characters=len(input_text),input_sha256=hashlib.sha256(input_text.encode()).hexdigest())
@@ -151,7 +156,7 @@ class SemanticIndustryClassifier:
                     or m['context_length']<self.options['context_length']):
                 self.model=None;raise ClassifierPrerequisite('Selected local classifier instance/variant/context changed; no fallback')
         return self.model
-    def decision(self,item,ids,*,review=False):
+    def decision(self,item,ids,*,review=False,repair=False):
         from .model_providers import LMSTUDIO_ORIGIN,model_request
         if self.transport is None:
             from .classification_scheme import require_private_logging
@@ -165,16 +170,31 @@ class SemanticIndustryClassifier:
                 'quote':{'type':'string'},'reason':{'type':'string'}},'required':['id','quote','reason'],'additionalProperties':False}},
             'unclassified_reason':{'type':'string','enum':['',*REASONS]}},'required':['labels','unclassified_reason'],'additionalProperties':False}
         prompt=REVIEW_INSTRUCTIONS if review else INSTRUCTIONS
+        if repair:
+            if not self.repair_validation:raise ValueError('Output repair requires explicit confirmation')
+            prompt+=' The previous completed response failed the output contract. Copy quotes exactly from the supplied text, never from taxonomy definitions. If no label is supported, return empty labels and one of the allowed nonempty reason codes. Do not invent evidence to fill the schema.'
         payload=dict(model=m['model_id'],messages=[dict(role='system',content=prompt+'\n'+json.dumps(descriptions)),dict(role='user',content=text)],
             response_format={'type':'json_schema','json_schema':{'name':'news_topic_activity_v1','strict':True,'schema':schema}},temperature=0,max_tokens=1700 if review else 850,stream=False)
         if not review and 'off' in m.get('reasoning',{}).get('allowed_options',[]):payload['reasoning_effort']='none'
         stage='semantic_review:'+hashlib.sha256(json.dumps(ids).encode()).hexdigest()[:12] if review else 'semantic_decision'
+        if repair:stage+=':output-repair-1'
+        self.failure_stage=stage
         response=self.call(item,stage,m['model_id'],self.options['model_revision'],text,
             lambda:(self.transport or model_request)('POST',LMSTUDIO_ORIGIN+'/v1/chat/completions',payload,None,180))
+        try:return self.parse_decision(response,text,ids,m['model_id'])
+        except ModelError:
+            # Only a completed response rejected by validation gets one explicitly
+            # requested repair. Failed/unknown dispatches never reach this branch.
+            if self.repair_validation and not repair:return self.decision(item,ids,review=review,repair=True)
+            raise
+    def parse_decision(self,response,text,ids,model_id):
+        failure='invalid_response'
         try:
             choice=response['choices'][0];message=choice['message'];out=json.loads(message['content'])
-            if len(response['choices'])!=1 or response['model']!=m['model_id'] or choice['finish_reason']!='stop' or message.get('tool_calls') or message.get('refusal'):raise ValueError()
+            if len(response['choices'])!=1 or response['model']!=model_id or choice['finish_reason']!='stop' or message.get('tool_calls') or message.get('refusal'):raise ValueError()
             if set(out)!={'labels','unclassified_reason'} or not isinstance(out['labels'],list) or len(out['labels'])>4:raise ValueError()
+            if not out['labels'] and out['unclassified_reason']=='':
+                failure='missing_unclassified_reason';raise ValueError()
             if out['unclassified_reason'] in REASONS:
                 if out['labels']:self.decision_note='Contradictory proposed labels rejected: the semantic response reports insufficient support'
                 return [],out['unclassified_reason']
@@ -184,16 +204,17 @@ class SemanticIndustryClassifier:
                         or not isinstance(v['quote'],str) or not 1<=len(v['quote'])<=600 or v['quote'] not in text
                         or not isinstance(v['reason'],str) or not 12<=len(v['reason'])<=400 or v['reason']==v['quote']):
                     self.validation_notes.append('Rejected one proposed label: invalid ID, duplicate, quote or justification')
+                    failure=('evidence_mismatch' if isinstance(v,dict) and isinstance(v.get('quote'),str) and v['quote'] not in text else 'invalid_label')
                     continue
                 start=text.index(v['quote']);end=start+len(v['quote']);seen.add(v['id']);original=v['quote']
                 if len(original)<8:
                     start=max(text.rfind('\n',0,start)+1,start-35);newline=text.find('\n',end)
                     end=min(len(text) if newline<0 else newline,end+45)
                 labels.append(dict(id=v['id'],parent_id=self.nodes[v['id']]['parent_id'],evidence=[dict(quote=text[start:end],model_quote=original,start=start,end=end)],
-                    reason=v['reason'],method='local_semantic_activity_judgment',llm_model=m['model_id']))
+                    reason=v['reason'],method='local_semantic_activity_judgment',llm_model=model_id))
             if labels and out['unclassified_reason'] or not labels and out['unclassified_reason'] not in REASONS:raise ValueError()
             return labels,out['unclassified_reason']
-        except (KeyError,IndexError,ValueError,TypeError):raise ModelError('Local semantic response failed schema/ID/quote validation') from None
+        except (KeyError,IndexError,ValueError,TypeError):raise ModelError('Local semantic response failed schema/ID/quote validation',kind=failure) from None
     def classify(self,item):
         self.guard(item);self.decision_note='';self.validation_notes=[];self.reused_generation=False;text=text_of(item);base=self.rules.classify(item)
         base.update(classifier_version=VERSION,cache_key=self.cache_key,input_sha256=hashlib.sha256(text.encode()).hexdigest(),input_characters=len(text),
@@ -232,6 +253,7 @@ class SemanticIndustryClassifier:
                 dictionary_candidates=self.rules.classify(item)['labels'],
                 candidates=[dict(id=k,cosine_similarity=scores[k]) for k in ids],candidate_score_note='Uncalibrated retrieval ranking only; never probability')
         except (Cancelled,ClassifierPrerequisite):raise
-        except Exception:
-            base.update(labels=[],status='failed',unclassified_reason='classifier_failed',method='no_label_on_failure',output_validation_notes=self.validation_notes)
+        except Exception as error:
+            base.update(labels=[],status='failed',unclassified_reason='classifier_failed',method='no_label_on_failure',output_validation_notes=self.validation_notes,
+                        failure_code=error.kind if isinstance(error,ModelError) else 'classifier_error',failure_stage=self.failure_stage)
         return base

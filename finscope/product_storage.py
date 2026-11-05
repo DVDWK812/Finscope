@@ -301,10 +301,37 @@ class ProductStorage:
                 if scheme:key=scheme_key(scheme)
             result.update({k:v for k,v in other.classifications(taxonomy,key).items() if k in current})
         return result
+    def repair_classification(self,item,key,result,task_id):
+        """Replace only a failed result; retain its complete finite history."""
+        from .source_policies import authorize
+        from uuid import uuid4
+        authorize(item,('retain','local_display','local_classification'))
+        other=self._route(item,('local_classification',))
+        if other:return other.repair_classification(item,key,result,task_id)
+        if not getattr(self.store,'is_expiring_media',False):raise ValueError('Classifier repairs require finite storage')
+        if result.get('cache_key')!=key or result.get('content_version')!=item.content_version:
+            raise ValueError('Classifier repair version mismatch')
+        with closing(self.store.connect()) as db:
+            db.execute('BEGIN IMMEDIATE');self.store.check(item,db)
+            row=db.execute('SELECT payload,created FROM product_classifications WHERE article_id=? AND content_version=? AND cache_key=?',
+                           (item.article_id,item.content_version,key)).fetchone()
+            if not row or json.loads(row[0]).get('status')!='failed':raise ValueError('Only a current failed classification can be repaired')
+            previous=json.loads(row[0]);stamp=now()
+            history=dict(content_version=item.content_version,classification=previous,created_utc=row[1],task_id=task_id,superseded=True)
+            db.execute('INSERT INTO product_classification_reviews VALUES (?,?,?,?,?)',(uuid4().hex,item.article_id,key,stamp,json.dumps(history)))
+            repaired={**result,'output_repair':dict(task_id=task_id,protocol='output-contract-1',previous_status='failed')}
+            db.execute('UPDATE product_classifications SET payload=?,created=? WHERE article_id=? AND content_version=? AND cache_key=?',
+                       (json.dumps(repaired),stamp,item.article_id,item.content_version,key));db.commit()
     def classification_history(self,article_id,taxonomy):
         with closing(self.store.connect()) as db:
             rows=db.execute('SELECT content_version,cache_key,created,payload FROM product_classifications WHERE article_id=? ORDER BY created,rowid',(article_id,)).fetchall()
         result=[{'content_version':v,'classifier_cache_key':k,'created_utc':t,'classification':json.loads(p)} for v,k,t,p in rows if json.loads(p)['taxonomy']==taxonomy]
+        if getattr(self.store,'is_expiring_media',False):
+            with closing(self.store.connect()) as db:
+                for key,payload in db.execute('SELECT cache_key,payload FROM product_classification_reviews WHERE article_id=? ORDER BY created',(article_id,)):
+                    review=json.loads(payload)
+                    if review.get('classification',{}).get('taxonomy')==taxonomy:result.append({**review,'classifier_cache_key':key})
+            result.sort(key=lambda r:r['created_utc'])
         other=self._partition()
         if other and article_id in {n.article_id for n in self.news()}:result+=other.classification_history(article_id,taxonomy)
         return result
