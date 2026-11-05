@@ -235,7 +235,7 @@ def related_articles(news, results, store, *, context,background=False):
     article_details(by_id[key],results.get(key),store,context=context,background=background)
 
 
-def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None,allow_reanalysis=True):
+def article_details(item, result, store, *, context="explorer",background=False,content_renderer=None,allow_reanalysis=True,show_legacy_sectors=True):
     from .media_use import scope_of,authorize as media_authorize
     finite=scope_of(item)
     if finite:
@@ -245,7 +245,8 @@ def article_details(item, result, store, *, context="explorer",background=False,
     st.caption(Verbatim(f"{item.source} · {publication_label(item)}"))
     if item.provider=='authored_synthetic':
         st.caption('Synthetic development text')
-    st.write(Verbatim(f"**{display(result.label if result else 'Not analyzed')}** · {', '.join(str(display(v)) for v in item.sectors)}"+
+    st.write(Verbatim(f"**{display(result.label if result else 'Not analyzed')}**"+
+             (" · "+', '.join(str(display(v)) for v in item.sectors) if show_legacy_sectors else '')+
              (f" · {display(result.family)}" if result else '')))
     if item.provider in {"rba_rss","rba_html","abs_html","accc_rss","nist_rss"}:
         try:

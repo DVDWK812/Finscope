@@ -86,6 +86,22 @@ class LocalPresentationUITests(unittest.TestCase):
             app.selectbox(key='explorer_article').set_value(first).run()
             self.assertEqual(seen['explorer_rows'],first)
             self.assertFalse(app.exception);self.http.assert_not_called()
+    def test_current_topic_details_do_not_show_legacy_sector_or_hide_failure(self):
+        data=ProductStorage(self.store)
+        original=replace(self.items[0],sectors=('Unclassified',))
+        data.save(original)
+        app=self.app();app.radio(key='product_page').set_value('News Explorer').run()
+        app.selectbox(key='explorer_article').set_value(original.article_id).run()
+        self.assertFalse(app.exception)
+        summary=[m.value for m in app.markdown if '**Not analyzed**' in m.value]
+        self.assertTrue(summary);self.assertTrue(all('Unclassified' not in v for v in summary))
+        self.assertTrue(any('Chip design' in c.value for c in app.caption))
+        failed={**IndustryClassifier().classify(original),'labels':[],'status':'failed'}
+        data.save_classification(original,'failed-current-test',failed)
+        app.run();self.assertFalse(app.exception)
+        self.assertTrue(any('Classification failed before a valid result was saved.'==c.value for c in app.caption))
+        self.assertFalse(any(c.value=='Unclassified' for c in app.caption))
+        self.http.assert_not_called()
     def test_missing_catalog_results_are_not_absence_of_relevant_news(self):
         app=self.app();app.selectbox(key='product_taxonomy').set_value('CSRC-JRT0020-2024').run()
         self.assertEqual(app.metric[0].value,'2');self.assertEqual(app.metric[2].value,'0')

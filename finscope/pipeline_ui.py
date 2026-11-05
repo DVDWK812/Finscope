@@ -485,7 +485,8 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
                   'issuer_reported_industry':item.issuer_industry})
         st.caption('Issuer SIC describes the issuer, not the industries discussed in this disclosure. Topic labels below require literal text evidence.')
     lookup={n['id']:n for n in catalog['nodes']}
-    st.caption(Verbatim(' · '.join(node_name(lookup[v['id']]) for v in c.get('labels',[]))) or t('Unclassified'))
+    st.caption(t('Classification failed before a valid result was saved.') if c.get('status')=='failed' else
+               Verbatim(' · '.join(node_name(lookup[v['id']]) for v in c.get('labels',[]))) or t('Unclassified'))
     def text(n):
         if not n.rights.preview:st.warning('Local preview permission is unavailable.');return
         if keyword:
@@ -496,7 +497,7 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
         if content:
             st.caption('Permitted article body' if n.body else 'Supplied summary')
             st.markdown('<div class="fs-news-copy">'+escape(content)+'</div>',unsafe_allow_html=True)
-    article_details(item,result,store,context=context,background=True,content_renderer=text)
+    article_details(item,result,store,context=context,background=True,content_renderer=text,show_legacy_sectors=False)
     with st.expander('Classification evidence'):
         st.json({'current':c,'history':ProductStorage(store).classification_history(item.article_id,catalog['id'])})
         if scope:
