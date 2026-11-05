@@ -1394,3 +1394,7 @@ without restoring stale values or invoking dependent callbacks. Live empty/False
 values still synchronize, callback arguments remain intact, and caller errors
 remain visible. Regression coverage uses isolated authored fixtures and mocks;
 no collection, model, database schema or task execution changes.
+Browser verification also found retained search text after Reset despite cleared
+server filters. Reset now explicitly supplies empty search and the configured
+taxonomy, keeping displayed controls aligned with their active values in both
+languages. The fixture regression checks both configured taxonomy defaults.

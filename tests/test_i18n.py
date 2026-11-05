@@ -109,21 +109,27 @@ class I18nTests(unittest.TestCase):
         with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}), \
              patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')) as http, \
              patch('finscope.finbert_backend.LocalFinBERTBackend.from_snapshot',side_effect=AssertionError('No model load')) as model:
-            for locale in ('zh-CN','en'):
-                with self.subTest(locale=locale):
+            for locale,default_mode in (('zh-CN','US-BUSINESS-1'),('en','US-BUSINESS-1'),
+                                        ('zh-CN','CSRC-JRT0020-2024'),('en','CSRC-JRT0020-2024')):
+                with self.subTest(locale=locale,default_mode=default_mode):
+                    TaskQueue(self.store).configure({**C,'taxonomy':default_mode})
                     save(self.store,'ui_language',locale)
                     suffix='' if locale=='en' else '__'+locale
                     app=AppTest.from_file(str(APP),default_timeout=20)
                     app.session_state['product_page']='Dashboard';app.run()
                     # The browser can batch a pending filter edit with Reset.
                     # Reset runs first and removes the translated widget keys.
-                    app.selectbox(key='product_taxonomy'+suffix).set_value('CSRC-JRT0020-2024')
+                    pending_mode='CSRC-JRT0020-2024' if default_mode=='US-BUSINESS-1' else 'US-BUSINESS-1'
+                    app.selectbox(key='product_taxonomy'+suffix).set_value(pending_mode)
                     app.text_input(key='local_search'+suffix).set_value('Discarded pending search')
                     app.button(key='reset_page_filters').click().run()
                     self.assertFalse(app.exception)
-                    self.assertEqual(app.selectbox(key='product_taxonomy'+suffix).value,'US-BUSINESS-1')
+                    self.assertEqual(app.selectbox(key='product_taxonomy'+suffix).value,default_mode)
                     self.assertEqual(app.text_input(key='local_search'+suffix).value,'')
                     self.assertEqual(app.session_state['filter_preferences']['local_search'],'')
+                    app.run()
+                    self.assertEqual(app.selectbox(key='product_taxonomy'+suffix).value,default_mode)
+                    self.assertEqual(app.text_input(key='local_search'+suffix).value,'')
                     # Fresh events must still synchronize and run their callback.
                     app.selectbox(key='product_taxonomy'+suffix).set_value('CSRC-JRT0020-2024').run()
                     app.text_input(key='local_search'+suffix).set_value('Current search').run()

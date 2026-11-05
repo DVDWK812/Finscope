@@ -525,6 +525,9 @@ def main():
             if view_key(key.split('__')[0]):st.session_state.pop(key,None)
         for key in list(st.session_state.get('_ui_mirrors',{})):
             if view_key(key):st.session_state['_ui_mirrors'].pop(key,None)
+        # Explicit values also clear React's retained widget display after Reset.
+        # Deleting a key alone can leave the old text/selection on screen.
+        st.session_state.update(local_search='',product_taxonomy=(q.config() or {}).get('taxonomy','US-BUSINESS-1'))
         st.session_state.setdefault('page_views',{})[page]={}
     kpis=st.container(key='product_kpis') if page=='Dashboard' else None
     with st.container(key='analysis_toolbar'):
