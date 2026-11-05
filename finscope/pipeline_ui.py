@@ -461,7 +461,7 @@ def details(item,result,store,classifications,catalog,context='product',keyword=
     from html import escape
     c=classifications.get(item.article_id,{})
     automated=ProductStorage(store).classifications(catalog['id']).get(item.article_id,{}) if c.get('human_review_id') else c
-    if c.get('human_review_id'):st.caption('Displayed industry source: Local user review')
+    if c.get('human_review_id'):st.caption('Displayed industry source: Local user review / Manual selection')
     if automated.get('classifier_version','').startswith('semantic-'):
         st.caption('Topic classifier: '+automated['classifier_version']+' · '+automated.get('status','')+(' · '+automated['unclassified_reason'] if automated.get('unclassified_reason') else ''))
     from .media_use import scope_of,authorize as media_authorize
@@ -584,7 +584,7 @@ def network(news,results,store,classes,catalog):
             members=graph_members(full,selection);node=next(n for n in data['nodes'] if n['id']==selection)
             st.subheader(display(node['label']) if node['kind'] in {'Sector','Subindustry','Keyword theme'} else Verbatim(node['label']))
             article_list([n for n in news if n.article_id in members],results,store,classes,catalog,'graph_related')
-            with st.expander('Selected relationship evidence'):st.json([e for e in full['edges'] if e['from']==selection or e['to']==selection])
+            with st.expander('Selected relationship details'):st.json([e for e in full['edges'] if e['from']==selection or e['to']==selection])
     with st.expander('Accessible graph node selector'):
         accessible=st.selectbox('Graph node',data['nodes'],index=None,format_func=lambda n:Verbatim(str(tr(n['kind']))+' · '+str(display(n['label']) if n['kind'] in {'Sector','Subindustry','Keyword theme'} else n['label'])))
         if accessible:

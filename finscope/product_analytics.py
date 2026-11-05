@@ -23,8 +23,8 @@ def taxonomy_graph(news,results,classifications,catalog,*,article_limit=8,node_l
     lookup={n['id']:n for n in catalog['nodes']};nodes={};edges=[];shown=[]
     def add_node(key,kind,label,article_id=''):
         nodes.setdefault(key,dict(id=key,kind=kind,label=label,display_label=label[:25]+'…' if len(label)>26 else label,article_id=article_id))
-    def edge(a,b,relation,evidence,article):
-        edges.append(dict(**{'from':a,'to':b},relationship=relation,evidence=evidence,article_id=article))
+    def edge(a,b,relation,evidence,article,**provenance):
+        edges.append(dict(**{'from':a,'to':b},relationship=relation,evidence=evidence,article_id=article,**provenance))
     for item in sorted(news,key=lambda n:(n.published_day,n.article_id),reverse=True):
         c=classifications.get(item.article_id,{})
         if company and not any(e['name']==company for e in c.get('entities',[])):continue
@@ -33,8 +33,12 @@ def taxonomy_graph(news,results,classifications,catalog,*,article_limit=8,node_l
         shown.append(item);a='article:'+item.article_id;add_node(a,'Article',item.title,item.article_id)
         for label in c.get('labels',[]):
             n=lookup[label['id']];key='industry:'+n['id'];kind='Sector' if n['parent_id'] is None else 'Subindustry'
-            add_node(key,kind,node_label(n));quote='; '.join(e['quote'] for e in label['evidence'])
-            edge(a,key,'news_business_topic',quote+' · '+c['taxonomy']+' / '+label['method'],item.article_id)
+            add_node(key,kind,node_label(n))
+            if c.get('human_review_id'):
+                edge(a,key,'manual_industry_selection','',item.article_id,source=c['classification_source'])
+            else:
+                quote='; '.join(e['quote'] for e in label['evidence'])
+                edge(a,key,'news_business_topic',quote+' · '+c['taxonomy']+' / '+label['method'],item.article_id)
             if n['parent_id']:
                 parent='industry:'+n['parent_id'];add_node(parent,'Sector',node_label(lookup[n['parent_id']]))
                 edge(key,parent,'taxonomy_parent',c['taxonomy']+' catalog parent; not an issuer-business assertion',item.article_id)

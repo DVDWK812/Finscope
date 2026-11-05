@@ -10,13 +10,12 @@ reuse checks current text, permissions, expiry and model versions before display
 See [USER_TEST.md](USER_TEST.md) for facilitator preparation and four participant
 tasks; engineering checks do not replace human retesting.
 
-News Explorer offers a folded **Review Industry Classification** editor. Explicitly
-confirmed local-user labels (or Unclassified) retain exact original excerpts,
-reasons and UTC history separately from automatic results. Effective reviews apply
-consistently to all four analysis views and can be revoked. Text-version changes,
-permissions, expiry and taxonomy validation gate reuse; reviews are not independent
-annotations, ground truth or model-evaluation successes. Finite quotes expire with
-their source text. No review action collects news or runs a model.
+News Explorer offers a folded **Review Industry Classification** editor. Select
+industries or Unclassified, add an optional note, and save. Effective local user
+selections apply across the four analysis views; **Restore automated classification**
+returns to the saved automatic result. Review history retains older excerpts and
+reasons. Text version, permission, expiry and taxonomy checks still apply. Manual
+selections do not count towards model evaluation or trigger collection or inference.
 
 ### Local model lifecycle
 

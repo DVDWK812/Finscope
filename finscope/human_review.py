@@ -16,6 +16,9 @@ from .taxonomy import load_taxonomy
 
 TABLE = 'product_human_reviews'
 IDENTITY = 'Local user review'
+METHOD = 'Manual selection'
+SOURCE = IDENTITY + ' / ' + METHOD
+FORMAT_VERSION = 2
 
 
 def taxonomy_digest(catalog):
@@ -52,42 +55,50 @@ def current(store, db, expected):
     return item
 
 
-def validate(item, taxonomy, entries, unclassified, reason):
-    catalog = load_taxonomy(taxonomy)
+def selection_labels(catalog, ids, status):
     nodes = {n['id']: n for n in catalog['nodes']}
-    if not isinstance(reason, str) or not reason.strip() or len(reason) > 500:
-        raise ValueError('Enter a short review reason (1–500 characters).')
-    if type(unclassified) is not bool or not isinstance(entries, list):
-        raise ValueError('Invalid review selection.')
-    if (unclassified and entries) or (not unclassified and not entries):
-        raise ValueError('Choose supported industries or explicitly keep Unclassified.')
-    text = '\n'.join((item.title, item.summary, item.body))
-    labels = []
-    for entry in entries:
-        if (not isinstance(entry, dict) or not isinstance(entry.get('id'), str) or
-                entry['id'] not in nodes or any(l['id'] == entry['id'] for l in labels)):
-            raise ValueError('Select unique legal nodes from the current taxonomy.')
-        quote = entry.get('quote', '')
-        rationale = entry.get('reason', '')
-        if not isinstance(quote, str) or not isinstance(rationale, str):
-            raise ValueError('Invalid review selection.')
-        quote, rationale = quote.strip(), rationale.strip()
-        if (not quote or len(quote) > 2000 or quote not in text or len(quote) < 24 or
-                quote.casefold() in {item.company.casefold(), item.ticker.casefold()}):
-            raise ValueError('Each industry needs an exact original excerpt (24–2000 characters), not just a company name or ticker.')
-        if not rationale or len(rationale) > 500:
-            raise ValueError('Explain how each excerpt supports its selected industry (1–500 characters).')
-        start = text.index(quote)
-        labels.append(dict(id=entry['id'], parent_id=nodes[entry['id']]['parent_id'],
-                           evidence=[dict(quote=quote, start=start, end=start+len(quote))],
-                           reason=rationale, method=IDENTITY))
-    for label in list(labels):
-        parent = label['parent_id']
-        if parent and not any(l['id'] == parent for l in labels):
-            labels.append(dict(id=parent, parent_id=None, evidence=label['evidence'],
-                               reason=label['reason'], method=IDENTITY, derived_from=label['id']))
-    return dict(taxonomy=taxonomy, taxonomy_version=catalog['version'], taxonomy_digest=taxonomy_digest(catalog),
-                labels=labels, status='unclassified' if unclassified else 'classified', reason=reason.strip())
+    if not isinstance(ids, list) or any(not isinstance(k, str) or k not in nodes for k in ids):
+        raise ValueError('Select unique legal nodes from the current taxonomy.')
+    if len(ids) != len(set(ids)):
+        raise ValueError('Select unique legal nodes from the current taxonomy.')
+    if status not in ('classified', 'unclassified') or bool(ids) != (status == 'classified'):
+        raise ValueError('Choose industries or Unclassified.')
+    labels = {k: dict(id=k, parent_id=nodes[k]['parent_id'], method=SOURCE) for k in ids}
+    for k in ids:
+        parent = nodes[k]['parent_id']
+        if parent and parent not in labels:
+            labels[parent] = dict(id=parent, parent_id=None, method=SOURCE, derived_from=k)
+    return list(labels.values())
+
+
+def validate_note(note):
+    if not isinstance(note, str) or len(note) > 500:
+        raise ValueError('Note must be at most 500 characters.')
+    return note.strip()
+
+
+def selection_view(value, catalog):
+    """Resolve old evidence-bearing events and new manual choices without rewriting history."""
+    if value.get('reviewer') != IDENTITY or value.get('taxonomy') != catalog['id']:
+        return None
+    status = value['status']
+    if value.get('format_version') == FORMAT_VERSION:
+        if value.get('method') != METHOD:
+            return None
+        ids = value['industry_ids']
+        return {**value, 'labels': selection_labels(catalog, ids, status), 'note': validate_note(value.get('note', ''))}
+    if 'format_version' in value:
+        return None
+    legacy = value['labels']
+    if not isinstance(legacy, list) or any(not isinstance(label, dict) for label in legacy):
+        return None
+    ids = [label['id'] for label in legacy if not label.get('derived_from')]
+    expected = selection_labels(catalog, ids, status)
+    # Legacy excerpts and reasons are archival data, not an eligibility condition.
+    if [(l['id'], l['parent_id'], l.get('derived_from')) for l in legacy] != [
+            (l['id'], l['parent_id'], l.get('derived_from')) for l in expected]:
+        return None
+    return {**value, 'industry_ids': ids}
 
 
 class HumanReviews:
@@ -99,22 +110,25 @@ class HumanReviews:
         other = ProductStorage(self.store)._route(item, ('retain', 'local_display', 'local_classification'))
         return other.store if other else self.store
 
-    def save(self, item, taxonomy, entries, *, unclassified=False, reason='', confirmed=False, revoke=False):
-        if confirmed is not True:
-            raise ValueError('Explicit confirmation is required to save or revoke a review.')
+    def save(self, item, taxonomy, industry_ids, *, unclassified=False, note='', revoke=False):
+        catalog = load_taxonomy(taxonomy)
+        if type(unclassified) is not bool or type(revoke) is not bool:
+            raise ValueError('Invalid review selection.')
+        status = 'revoked' if revoke else 'unclassified' if unclassified else 'classified'
+        if revoke:
+            if industry_ids != [] or unclassified or note:
+                raise ValueError('Invalid review selection.')
+        else:
+            selection_labels(catalog, industry_ids, status)
+        note = validate_note(note)
         store = self._target(item)
         with closing(store.connect()) as db:
             db.execute('BEGIN IMMEDIATE')
             item = current(store, db, item)
-            if revoke:
-                catalog = load_taxonomy(taxonomy)
-                payload = dict(taxonomy=taxonomy, taxonomy_digest=taxonomy_digest(catalog), labels=[], status='revoked')
-            else:
-                payload = validate(item, taxonomy, entries, unclassified, reason)
-            payload.update(id=uuid4().hex, article_id=item.article_id, content_version=item.content_version,
-                           reviewer=IDENTITY, created_utc=now(),
-                           evidence_basis='title + newline + summary + newline + body; character offsets',
-                           evidence_attestation='User confirmed business-topic evidence, not company name or stock-price inference')
+            payload = dict(id=uuid4().hex, article_id=item.article_id, content_version=item.content_version,
+                           taxonomy=taxonomy, taxonomy_version=catalog['version'], taxonomy_digest=taxonomy_digest(catalog),
+                           format_version=FORMAT_VERSION, industry_ids=list(industry_ids), note=note,
+                           reviewer=IDENTITY, method=METHOD, status=status, created_utc=now())
             # Lazily created only by an explicit save; browsing does not migrate a library.
             db.execute('CREATE TABLE IF NOT EXISTS '+TABLE+' (id TEXT PRIMARY KEY, article_id TEXT NOT NULL, '
                        'content_version TEXT NOT NULL, taxonomy TEXT NOT NULL, created TEXT NOT NULL, payload TEXT NOT NULL)')
@@ -136,7 +150,7 @@ class HumanReviews:
         for row in rows:
             value = json.loads(row[0])
             if value['content_version'] != item.content_version:
-                # Retain history without redisplaying quotes from a superseded text.
+                # Retain history without redisplaying text from a superseded version.
                 value = {k: value[k] for k in ('id', 'article_id', 'content_version', 'taxonomy', 'reviewer', 'created_utc', 'status')}
                 value['inactive_reason'] = 'Text version changed; old evidence is hidden'
             result.append(value)
@@ -148,16 +162,11 @@ class HumanReviews:
             if not rows:
                 return None
             value = rows[-1]
+            catalog = load_taxonomy(taxonomy)
             if (value['content_version'] != item.content_version or value['status'] == 'revoked' or
-                    value.get('taxonomy_digest') != taxonomy_digest(load_taxonomy(taxonomy))):
+                    value.get('taxonomy_digest') != taxonomy_digest(catalog)):
                 return None
-            # Revalidate stored IDs, parents and exact evidence as well as permissions.
-            entries = [dict(id=l['id'], quote=l['evidence'][0]['quote'], reason=l['reason'])
-                       for l in value['labels'] if not l.get('derived_from')]
-            checked = validate(item, taxonomy, entries, value['status'] == 'unclassified', value['reason'])
-            if checked['labels'] != value['labels']:
-                return None
-            return value
+            return selection_view(value, catalog)
         except (ValueError, KeyError, TypeError, IndexError):
             return None
 
@@ -177,5 +186,5 @@ class HumanReviews:
             value = self.active(item, taxonomy)
             if value:
                 display[item.article_id] = {**automated.get(item.article_id, {}), **value,
-                                            'classification_source': IDENTITY, 'human_review_id': value['id']}
+                                            'classification_source': SOURCE, 'human_review_id': value['id']}
         return display
