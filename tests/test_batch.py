@@ -383,7 +383,7 @@ class BatchUITests(unittest.TestCase):
         n=prepare(parse_submissions(submissions(1),'0000789019',DEFAULT_OPTIONS)[0])[0]
         ProductStorage(store).save(n)
         with patch('requests.sessions.Session.request',side_effect=AssertionError('Viewing a disclosure cannot fetch news or a model')) as http:
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20);app.session_state['product_page']='Dashboard';app.run()
         self.assertFalse(app.exception);self.assertEqual(app.metric[0].label,'Original records')
         self.assertEqual(app.metric[0].value,'1');self.assertEqual(app.metric[1].value,'0')
         self.assertIsNone(q.get());http.assert_not_called()
@@ -400,7 +400,7 @@ class BatchUITests(unittest.TestCase):
         for n in (prepare(fixture())[0],filing):
             data.save(n);data.save_classification(n,classifier.cache_key,classifier.classify(n))
         with patch('requests.sessions.Session.request',side_effect=AssertionError('View only')):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=20);app.session_state['product_page']='Dashboard';app.run()
         self.assertFalse(app.exception);self.assertEqual(app.metric[0].value,'2')
         self.assertEqual(app.metric[2].value,'2');self.assertIsNone(q.get())
 

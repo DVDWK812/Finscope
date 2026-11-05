@@ -97,13 +97,18 @@ def diagnostics(store,q,section):
         st.link_button('Project help','https://github.com/DVDWK812/Finscope#readme')
 
 
-def render(store,q):
+def render(store,q,*,section_override=None):
     from .ui_preferences import language_settings
     c=st.session_state.setdefault('_settings_edit',editable(q))
     labels={'general':'General','sources':'News sources','models':'Analysis models'}
-    section=st.radio('Settings section',list(labels),format_func=lambda key:labels[key],key='settings_section',horizontal=True,label_visibility='collapsed')
+    section=section_override or st.radio('Settings section',list(labels),format_func=lambda key:labels[key],key='settings_section',horizontal=True,label_visibility='collapsed')
     if section=='general':
         language_settings(store);diagnostics(store,q,section);return
+    if section=='sources' and section_override is None:
+        st.info('News collection configuration and batch actions are now in News Update.')
+        from .pipeline_ui import go
+        st.button('Open News Update',key='settings_news_update',on_click=go,args=('News Update',))
+        diagnostics(store,q,section);return
     if section=='sources':source_editor(store,c)
     else:model_editor(store,c)
     c['source_permissions']={k:v for k,v in c['source_permissions'].items() if k in c['sources'] or k in ('marketaux','newsdata','finnhub')}

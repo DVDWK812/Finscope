@@ -26,6 +26,7 @@ jobs:
       - name: Unit tests (no API keys or live external calls)
         run: python -m unittest discover -s tests -v
       - name: Benchmark dry run (no provider requests)
+        if: github.ref != 'refs/heads/local' && github.base_ref != 'local'
         env:
           FINSCOPE_TESTING: '1'
         run: python -m finscope.benchmark --dry-run
@@ -58,6 +59,7 @@ jobs:
       - name: Unit tests (isolated credentials, data and mocked Windows calls)
         run: python -m unittest discover -v
       - name: Isolated benchmark dry run
+        if: github.ref != 'refs/heads/local' && github.base_ref != 'local'
         env:
           FINSCOPE_TESTING: '1'
         run: python -m finscope.benchmark --dry-run

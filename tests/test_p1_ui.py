@@ -70,7 +70,9 @@ class LocalPresentationUITests(unittest.TestCase):
             item=prepare(replace(fixture(text,number),provider='licensed_test_fixture',title='Authored title '+number))[0]
             data.save(item);data.save_classification(item,'offline-test',IndustryClassifier().classify(item));self.items.append(item)
     def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=15).run();self.assertFalse(app.exception);return app
+        app=AppTest.from_file(str(APP),default_timeout=15)
+        if not load(self.store).get('product_page'):app.session_state['product_page']='Dashboard'
+        app.run();self.assertFalse(app.exception);return app
     def test_table_click_and_accessible_picker_sync_both_directions(self):
         clicks={};seen={}
         def chart(kind,data,*,key,selected=None):seen[key]=selected;return clicks.pop(key,None)
@@ -89,6 +91,7 @@ class LocalPresentationUITests(unittest.TestCase):
         self.assertEqual(app.metric[0].value,'2');self.assertEqual(app.metric[2].value,'0')
         self.assertTrue(any('2/2 originals have no saved classification' in x.value for x in app.info))
         app.radio(key='product_page').set_value('Industries').run()
+        app.selectbox(key='product_taxonomy').set_value('CSRC-JRT0020-2024').run()
         self.assertEqual(len(app.selectbox(key='industries_article').options),2)
         self.assertTrue(any('awaiting classification' in x.value for x in app.info))
         app.selectbox(key='product_taxonomy').set_value('US-BUSINESS-1').run()
@@ -114,6 +117,7 @@ class LocalPresentationUITests(unittest.TestCase):
         app=self.app();dates=(date(2026,10,29),date(2026,10,30))
         app.date_input(key='local_dates').set_value(dates).run()
         app.radio(key='product_page').set_value('News Explorer').run()
+        app.date_input(key='local_dates').set_value(dates).run()
         app.selectbox(key='explorer_article').set_value(self.items[1].article_id).run()
         again=self.app()
         self.assertEqual(again.radio(key='product_page').value,'News Explorer')
@@ -147,8 +151,8 @@ class LocalPresentationUITests(unittest.TestCase):
         self.q.update(identity,status='running',stage='analyze: authored fixture',
                       counts={'new':2,'duplicates':0,'classified':2,'analyzed':1,'failed':0,'skipped':0})
         with patch('finscope.finbert_backend.LocalFinBERTBackend.from_snapshot',side_effect=AssertionError('UI loaded model')) as model:
-            app=self.app();self.assertTrue(app.button(key='product_update').disabled)
-            self.assertTrue(any('In progress' in m.value for m in app.markdown))
+            app=self.app();self.assertFalse(any(b.key=='product_update' for b in app.button))
+            self.assertTrue(any('Background task:' in m.value for m in app.caption))
             app.radio(key='product_page').set_value('News Explorer').run()
             self.assertFalse(app.exception);self.assertEqual(len(app.selectbox(key='explorer_article').options),2)
             app.radio(key='product_page').set_value('Dashboard').run()

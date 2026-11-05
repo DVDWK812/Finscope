@@ -26,7 +26,13 @@ class BatchRunner:
         def once(key,counter):
             if not self.queue.step(identity,key):
                 counts[counter]+=1;self.queue.save_step(identity,key,'ok',{})
-        self.queue.update(identity,status='running',stage='collection preflight')
+        def outcome(item,state,*,cache_key='',analysis_id=''):
+            self.queue.record_outcome(identity,item,state,cache_key=cache_key,analysis_id=analysis_id)
+            receipts=self.queue.outcomes(identity)
+            counts['processed']=len(receipts)
+            counts['reused']=sum(r['state']=='reused' for r in receipts.values())
+            self.queue.update(identity,counts=counts)
+        self.queue.update(identity,status='running',stage='checking saved records' if c['operation']=='analyze' else 'collection preflight')
         try:
             selected=[]
             def persist(raw):
@@ -98,6 +104,8 @@ class BatchRunner:
                 self.queue.save_step(identity,'phase:collection','ok',dict(article_ids=selected,errors=errors))
             if c['operation']=='collect':
                 self.queue.update(identity,status='partial_failed' if errors else 'completed',stage='collection saved; no model loaded',counts=counts,error='; '.join(dict.fromkeys(errors))[:1500]);return True
+            counts['total']=len(selected)
+            self.queue.update(identity,counts=counts)
             from .industry_classifier import IndustryClassifier
             classifier=IndustryClassifier(c['taxonomy'],llm_model=c.get('model_id') if c.get('classifier_llm') else None)
             legacy_classifier=classifier
@@ -118,11 +126,18 @@ class BatchRunner:
                 try:policy=authorize(raw,('retain','local_classification','local_sentiment','local_display'))
                 except ValueError:
                     self.data.state(raw,'permission_required','No applicable local NLP policy or record permission')
-                    once('batch_rights:'+raw.article_id+':'+raw.content_version,'skipped');continue
+                    once('batch_rights:'+raw.article_id+':'+raw.content_version,'skipped')
+                    outcome(raw,'permission_required');continue
                 item,coverage=prepare(raw)
                 # Legacy originals may not yet have a normalized content revision.
                 item,_,_=self.data.save(item)
                 prepared.append((item,coverage,policy,classifier))
+            available={item.article_id for item in self.data.news()}
+            for missing in set(selected)-available:
+                self.queue.save_step(identity,'ui_record:'+missing,'ok',dict(state='unavailable',content_version='',cache_key='',analysis_id=''))
+                once('batch_unavailable:'+missing,'skipped')
+            counts['processed']=len(self.queue.outcomes(identity))
+            self.queue.update(identity,counts=counts)
             resources.end()
             # Candidate vectors/results already have finite, input-fingerprinted
             # checkpoints. No private text is copied to permanent stage markers.
@@ -173,13 +188,15 @@ class BatchRunner:
                 authorize(item,('retain','local_classification','local_sentiment','local_display'))
                 eligible,reason=eligibility(item)
                 if not eligible:
-                    self.data.state(item,'not_applicable',reason);once('batch_na:'+item.article_id+':'+item.content_version,'skipped');continue
+                    self.data.state(item,'not_applicable',reason);once('batch_na:'+item.article_id+':'+item.content_version,'skipped');outcome(item,'not_applicable');continue
                 if item.language!='en':
-                    self.data.state(item,'not_applicable','No verified language-adapted model for this text');once('batch_language:'+item.article_id+':'+item.content_version,'skipped');continue
+                    self.data.state(item,'not_applicable','No verified language-adapted model for this text');once('batch_language:'+item.article_id+':'+item.content_version,'skipped');outcome(item,'not_applicable');continue
                 if model_key is None:
                     model_key=(timing.call('model_state',self.worker.model_key,c) if not self.worker.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+__import__('finscope.text_processing',fromlist=['VERSION']).VERSION)
-                if self.data.cached(item,model_key):
-                    self.data.state(item,'completed','Cached current text/model result');continue
+                cached=self.data.cached(item,model_key)
+                if cached:
+                    self.data.state(item,'completed','Cached current text/model result')
+                    outcome(item,'reused',cache_key=model_key,analysis_id=cached);continue
                 stage('sentiment: saved originals')
                 infer_key='batch_infer:'+item.article_id+':'+item.content_version+':'+hashlib.sha256(model_key.encode()).hexdigest()
                 from .media_use import scope_of
@@ -190,7 +207,7 @@ class BatchRunner:
                     previous=db.execute('SELECT status FROM product_steps WHERE step=? ORDER BY rowid DESC LIMIT 1',(infer_key,)).fetchone()
                 if previous:
                     self.data.state(item,'blocked','Previous model dispatch failed/unknown; explicitly review individual reanalysis')
-                    errors.append('Previous model dispatch needs review; not repeated');continue
+                    errors.append('Previous model dispatch needs review; not repeated');outcome(item,'blocked');continue
                 try:resources.check_resources(c['model'],loading=c['model']=='Local FinBERT' and self.worker.backend is None)
                 except (ResourceBlocked,ModelError):
                     self.data.state(item,'blocked','Model resources unavailable; downloaded text retained for later offline analysis');raise
@@ -204,15 +221,18 @@ class BatchRunner:
                         'input_fields':['title','body'] if item.body else ['title','summary'] if item.summary else ['title'],
                         'input_characters':len(item.analysis_text),'input_sha256':hashlib.sha256(item.analysis_text.encode()).hexdigest(),
                         'source_type':item.source_type,'document_type':item.document_type})
+                    self.queue.update(identity,stage='saving: analysis result',counts=counts)
                     self.data.analysis(item,model_key,result)
                     self.queue.save_step(identity,infer_key,'ok',dict(analysis_id=result.analysis_id))
                     self.data.state(item,'completed');counts['analyzed']+=1
+                    outcome(item,'new',cache_key=model_key,analysis_id=result.analysis_id)
                 except Cancelled:
                     self.queue.save_step(identity,infer_key,'failed',{'reason':'Cancelled dispatch; outcome not replayed'})
                     raise
                 except Exception:
                     self.queue.save_step(identity,infer_key,'failed',{'reason':'Model output failed validation/transport/token bounds'})
                     self.data.state(item,'failed','Model output failed; no sentiment label saved');errors.append('One model output failed; no automatic retry');counts['failed']+=1
+                    outcome(item,'failed')
                 self.queue.update(identity,counts=counts)
             resources.end()
             self.queue.save_step(identity,'phase:analysis','ok',dict(article_ids=selected))

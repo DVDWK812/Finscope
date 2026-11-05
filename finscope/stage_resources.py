@@ -34,6 +34,8 @@ class StageResources:
         return result
 
     def observe(self,edge):
+        if edge in ('before_load','resident'):
+            self.worker.queue.update(self.identity,stage=('loading: ' if edge=='before_load' else 'processing: ')+self.active.split(':')[0])
         self.observations+=1
         self.worker.queue.save_step(self.identity,'stage_resources:'+self.active+':'+str(self.observations)+':'+edge,'ok',self.snapshot())
 

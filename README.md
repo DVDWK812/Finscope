@@ -1,5 +1,15 @@
 # FinScope
 
+Home combines the local product introduction and guide. **News Update** owns
+collection configuration, explicit analysis confirmation, batches and task controls.
+Dashboard, Industries, Knowledge Graph and News Explorer retain their information
+and share the same filtering implementation with separate, remembered page state.
+Settings retains model management, language and diagnostics. Active task progress
+polls in a fragment; a terminal transition refreshes the form once. Saved-result
+reuse checks current text, permissions, expiry and model versions before display.
+See [USER_TEST.md](USER_TEST.md) for facilitator preparation and four participant
+tasks; engineering checks do not replace human retesting.
+
 ### Local model lifecycle
 
 Batch analysis completes missing candidate embeddings, then missing topic decisions,

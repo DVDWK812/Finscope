@@ -13,7 +13,8 @@ APP = Path(__file__).resolve().parents[1]/"streamlit_app.py"
 
 def edit_api_key(app,provider):
     if any(b.key=='manual_source_settings' for b in app.button):app.button(key='manual_source_settings').click().run()
-    app.radio(key='settings_section').set_value('sources').run()
+    if not any(b.key=='settings_edit_'+provider for b in app.button):
+        app.radio(key='product_page').set_value('News Update').run()
     app.button(key='settings_edit_'+provider).click().run()
     app.button(key='settings_secret_'+provider+'_edit').click().run()
     return app

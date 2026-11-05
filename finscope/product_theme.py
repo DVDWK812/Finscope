@@ -85,6 +85,47 @@ def status_markup(status,stage,counts):
     return f'<div class="fs-task"><span style="color:{color}">{escape(tr(labels.get(status,status)))}</span><span>{escape(stage)}</span><div>{stats}</div></div>'
 
 
+def home_icon(name):
+    # Authored Home/Guide design reused from main/showcase_theme; no fixture imports.
+    paths={'sources':'<path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/>',
+           'model':'<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
+           'analyze':'<path d="M4 18V6m0 12h16M8 14l4-5 4 3 4-6"/>',
+           'inspect':'<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/>'}
+    return '<span class="fs-line-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+paths[name]+'</svg></span>'
+
+
+def home_workflow(steps,compact=False):
+    from .i18n import tr
+    mode='fs-workflow-compact' if compact else 'fs-workflow'
+    items=''.join('<li><span class="fs-flow-number">'+f'{i:02}'+'</span><div>'+home_icon(icon)+'<h3>'+escape(tr(title))+'</h3><p>'+escape(tr(text))+'</p></div></li>' for i,(icon,title,text) in enumerate(steps,1))
+    flow='<ol class="'+mode+'">'+items+'</ol>'
+    return '<section class="fs-demo-window"><div class="fs-demo-toolbar">'+escape(tr('LOCAL PRODUCT WORKFLOW'))+'</div>'+flow+'<div class="fs-demo-foot">'+escape(tr('Runs on your computer · Persistent SQLite and background worker'))+'</div></section>' if compact else flow
+
+
+def home_capabilities(cards):
+    from .i18n import tr
+    return '<section class="fs-product-capabilities">'+''.join('<article class="fs-product-capability">'+home_icon(icon)+'<small>'+escape(tr(status))+'</small><h3>'+escape(tr(title))+'</h3><p class="fs-capability-lead">'+escape(tr(lead))+'</p><p>'+escape(tr(note))+'</p></article>' for icon,title,status,lead,note in cards)+'</section>'
+
+
+def home_styles():
+    return '''<style>
+    .fs-hero h1{font-size:clamp(2.6rem,4.1vw,4rem)!important;line-height:1.06!important;letter-spacing:-.055em;margin:.65rem 0 1.3rem}
+    .fs-hero-accent{color:var(--fs-accent)}.fs-hero p{font-size:1.05rem;line-height:1.65;max-width:440px}
+    .fs-demo-window{border:1px solid var(--fs-border);border-radius:16px;background:var(--fs-surface);padding:1.25rem}
+    .fs-demo-toolbar,.fs-demo-foot{font-size:.68rem;letter-spacing:.06em;color:var(--fs-muted);padding:1rem 0;border-bottom:1px solid var(--fs-border)}
+    .fs-product-capabilities,.fs-workflow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:1rem 0 1.5rem}
+    .fs-product-capability,.fs-feature,.fs-workflow li{border:1px solid var(--fs-border);border-radius:var(--fs-radius);background:var(--fs-surface);padding:1.15rem;min-width:0}
+    .fs-product-capability small{display:block;margin:.8rem 0;color:var(--fs-accent)}.fs-product-capability p,.fs-feature p{font-size:.84rem;line-height:1.6;color:var(--fs-muted)}
+    .fs-product-capability .fs-capability-lead{color:var(--fs-text);font-weight:500}.fs-feature{margin-bottom:1rem}
+    .fs-line-icon{display:inline-flex;width:26px;height:26px;color:var(--fs-accent)}
+    .fs-workflow,.fs-workflow-compact{list-style:none;padding:0}.fs-workflow-compact li{display:grid;grid-template-columns:27px minmax(0,1fr);gap:12px;padding:.8rem 0}
+    .fs-workflow-compact .fs-line-icon{display:none}.fs-flow-number{color:var(--fs-accent);font-size:.8rem}.fs-workflow-compact .fs-flow-number{display:grid;place-items:center;width:25px;height:25px;border:1px solid var(--fs-border);border-radius:50%;background:var(--fs-accent-surface)}
+    .fs-workflow p,.fs-workflow-compact p{color:var(--fs-muted);font-size:.8rem;line-height:1.5;margin:0}.fs-workflow-compact h3{margin:0 0 .3rem}
+    @media(max-width:1000px){.fs-product-capabilities,.fs-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:700px){.fs-product-capabilities,.fs-workflow{grid-template-columns:1fr}}
+    </style>'''
+
+
 def css():
     from .ui_preferences import theme
     variables=';'.join('--fs-'+k.replace('_','-')+':'+v for k,v in palette().items())
@@ -109,7 +150,7 @@ def css():
     [class*="st-key-product_page"] label:hover{background:var(--fs-raised)}[class*="st-key-product_page"] label:has(input:checked){background:var(--fs-accent-surface);border-color:var(--fs-button)}
     [class*="st-key-product_page"] label:has(input:checked) p{color:var(--fs-accent)!important;font-weight:600}
     [class*="st-key-product_page"] label>div:first-child:not(:has([data-testid="stMarkdownContainer"])),[class*="st-key-product_page"] label>div>div:not([data-testid="stMarkdownContainer"]){display:none}[class*="st-key-product_page"] label:before{display:block;min-width:20px;color:var(--fs-accent);font-size:20px;line-height:1}
-    [class*="st-key-product_page"] label:has(input[value="0"]):before{content:'▦'}[class*="st-key-product_page"] label:has(input[value="1"]):before{content:'▥'}[class*="st-key-product_page"] label:has(input[value="2"]):before{content:'◎'}[class*="st-key-product_page"] label:has(input[value="3"]):before{content:'▤'}[class*="st-key-product_page"] label:has(input[value="4"]):before{content:'⚙'}
+    [class*="st-key-product_page"] label:has(input[value="0"]):before{content:'↻'}[class*="st-key-product_page"] label:has(input[value="1"]):before{content:'▦'}[class*="st-key-product_page"] label:has(input[value="2"]):before{content:'▥'}[class*="st-key-product_page"] label:has(input[value="3"]):before{content:'◎'}[class*="st-key-product_page"] label:has(input[value="4"]):before{content:'▤'}[class*="st-key-product_page"] label:has(input[value="5"]):before{content:'⚙'}
     .stButton button[kind="primary"]{background:var(--fs-button-bg)!important;border-color:var(--fs-button-bg)!important}.stButton button[kind="primary"] p{color:var(--fs-button-text)!important;font-weight:650}
     [data-testid="stMetric"]{border:1px solid var(--fs-border);border-radius:var(--fs-radius);padding:1rem 1.15rem;min-height:108px;background:var(--fs-surface)}
     [data-testid="stMetricLabel"] p{color:var(--fs-muted);font-size:.76rem}[data-testid="stMetricValue"]{color:var(--fs-text);font-size:1.8rem}

@@ -76,6 +76,10 @@ def run_reclassification(worker,task):
     worker.release_sentiment_backend()
     q=worker.queue;identity=task['id'];c=task['snapshot'];counts=task['counts'];data=worker.data
     def check():q.check_cancel(identity)
+    def processed(item,state):
+        q.record_outcome(identity,item,state)
+        counts['processed']=len(q.outcomes(identity))
+        q.update(identity,counts=counts)
     q.update(identity,status='running',stage='reclassification: local saved text')
     failures=0;initial_calls=counts.get('classifier_calls',0)
     classifier=None
@@ -86,13 +90,15 @@ def run_reclassification(worker,task):
             check();authorize(n,('retain','local_display','local_classification'))
             old=data.classification(n,classifier.cache_key)
             if old:
-                counts['skipped']+=1;failures+=old.get('status')=='failed';continue
+                counts['skipped']+=1;failures+=old.get('status')=='failed'
+                processed(n,'classification_reused');continue
             result=classifier.classify(n)
             data.save_classification(n,classifier.cache_key,result)
             counts['classified']+=1
             if result['status']=='failed':counts['failed']+=1;failures+=1
             counts['classifier_calls']=initial_calls+classifier.calls
             q.update(identity,counts=counts)
+            processed(n,'classification_failed' if result['status']=='failed' else 'classification_new')
         q.save_step(identity,'phase:classification','ok',dict(article_ids=c['article_ids'],cache_key=classifier.cache_key))
         q.update(identity,status='partial_failed' if failures else 'completed',stage='classification finished; sentiment unchanged',counts=counts,
                  error='Some classifier results need review; no automatic retry' if failures else '')

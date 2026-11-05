@@ -28,7 +28,7 @@ class ModeUITests(unittest.TestCase):
     def test_radio_modes_only_show_supported_controls_without_key_reads_or_http(self):
         self.store.set_setting('guide_completed',True)
         with patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')),patch('finscope.news_keys.NewsKeyRegistry.legacy_key',side_effect=AssertionError('No credential reads')):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30);app.session_state['product_page']='News Update';app.run()
             self.assertFalse(app.exception)
             radio=app.radio(key='media_acquisition_mode');self.assertEqual(radio.options,[resources('en')[v] for v in MODES]);self.assertEqual(radio.value,MODES[0])
             self.assertFalse(any(w.label in MEDIA_DOMAINS for w in app.checkbox))
@@ -44,7 +44,7 @@ class ModeUITests(unittest.TestCase):
     def test_language_switch_preserves_mode_and_translates_scope_without_actions(self):
         self.store.set_setting('guide_completed',True)
         with patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')),patch('finscope.news_keys.NewsKeyRegistry.legacy_key',side_effect=AssertionError('No credential reads')):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'streamlit_app.py'),default_timeout=30);app.session_state['product_page']='News Update';app.run()
             app.radio(key='media_acquisition_mode').set_value(MODES[1]).run()
             for locale in ('zh-CN','en','zh-CN','en'):
                 save(self.store,'ui_language',locale);app.run()

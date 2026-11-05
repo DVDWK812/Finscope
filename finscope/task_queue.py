@@ -326,8 +326,10 @@ class TaskQueue:
                 preflight(self.store,c['media_batch'],ignore_spacing=True)
             if registry:c['news_key_slots']=registry.pin(c['sources'],db)
             identity=uuid4().hex;stamp=now()
+            counts=dict(new=0,duplicates=0,classified=0,analyzed=0,failed=0,skipped=0)
+            if c.get('operation') in ('analyze','reclassify'):counts.update(total=len(c['article_ids']),processed=0,reused=0)
             db.execute('INSERT INTO product_tasks(id,status,snapshot,stage,counts,created,updated) VALUES (?,?,?,?,?,?,?)',
-                       (identity,'queued',json.dumps(c),'queued',json.dumps(dict(new=0,duplicates=0,classified=0,analyzed=0,failed=0,skipped=0)),stamp,stamp))
+                       (identity,'queued',json.dumps(c),'queued',json.dumps(counts),stamp,stamp))
             if preview_payload is not None:
                 # Atomic handoff into the worker's existing saved-originals
                 # checkpoint: a crash cannot leave a job that fetches again.
@@ -360,6 +362,22 @@ class TaskQueue:
         with closing(self.store.connect()) as db:
             row=db.execute('SELECT status,payload FROM product_steps WHERE task_id=? AND step=?',(identity,key)).fetchone()
         return (row[0],json.loads(row[1])) if row else None
+    def outcomes(self,identity):
+        """Task-local receipts contain IDs/versions only, never retained text."""
+        with closing(self.store.connect()) as db:
+            return {key.removeprefix('ui_record:'):json.loads(payload) for key,payload in
+                    db.execute("SELECT step,payload FROM product_steps WHERE task_id=? AND step LIKE 'ui_record:%'",(identity,))}
+    def record_outcome(self,identity,item,state,*,cache_key='',analysis_id=''):
+        previous=self.step(identity,'ui_record:'+item.article_id)
+        if state=='reused' and previous and previous[1].get('state')=='new' and all(
+                previous[1].get(k)==v for k,v in {'content_version':item.content_version,'cache_key':cache_key,'analysis_id':analysis_id}.items()):
+            state='new'  # Resume does not relabel this task's own saved inference.
+        self.save_step(identity,'ui_record:'+item.article_id,'ok',dict(
+            state=state,content_version=item.content_version,cache_key=cache_key,analysis_id=analysis_id))
+    def result_scope(self,task):
+        saved=self.step(task['id'],'phase:collection')
+        return list(dict.fromkeys(saved[1].get('article_ids',[]) if saved else
+                    [*task['snapshot'].get('article_ids',[]),*self.outcomes(task['id'])]))
     def save_step(self,identity,key,status,payload):
         with closing(self.store.connect()) as db:
             db.execute('INSERT OR REPLACE INTO product_steps VALUES (?,?,?,?)',(identity,key,status,json.dumps(payload)));db.commit()

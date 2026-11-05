@@ -351,8 +351,9 @@ def main() -> None:
     else:
         from finscope.pipeline_ui import main as local_main
     local_main()
-    from finscope.model_discovery import startup_ui
-    startup_ui()
+    if st.session_state.get('product_page')=='Settings' and st.session_state.get('settings_section')=='models':
+        from finscope.model_discovery import startup_ui
+        startup_ui()
 
 
 if __name__ == "__main__":

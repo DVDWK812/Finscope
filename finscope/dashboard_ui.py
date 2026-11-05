@@ -185,9 +185,11 @@ def timeline_chart(news, results, start, end):
 
 def heatmap(news, results, start, end, store, *, sectors_override=None,background=False):
     st.subheader("Date × sector")
-    metric = st.radio("Heatmap measure", ["Article volume", "Sentiment balance"], horizontal=True)
+    metric = st.radio("Heatmap measure", ["Article volume", "Sentiment balance"], horizontal=True,key='heatmap_measure')
     try:
-        cells = heatmap_cells(news, results, start, end, sectors=st.session_state.get('local_sectors') or sectors_override or SECTORS, date_basis="published")
+        from .pipeline_ui import view_compute
+        sectors=st.session_state.get('local_sectors') or sectors_override or SECTORS
+        cells = view_compute('heatmap',news,results,(start,end,sectors),lambda:heatmap_cells(news,results,start,end,sectors=sectors,date_basis='published')) if background else heatmap_cells(news,results,start,end,sectors=sectors,date_basis='published')
     except ValueError as error:
         st.info(str(error)); return
     from .chart_interactions import interactive_chart, chart_scope

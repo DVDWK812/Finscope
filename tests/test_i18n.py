@@ -68,9 +68,11 @@ class I18nTests(unittest.TestCase):
         item=prepare(fixture())[0];data=ProductStorage(self.store);data.save(item)
         data.save_classification(item,'authored-development-test',IndustryClassifier().classify(item))
         with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}),patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP during UI preference changes')) as http:
-            app=AppTest.from_file(str(APP),default_timeout=20).run();self.assertFalse(app.exception)
+            app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Dashboard';app.run();self.assertFalse(app.exception)
             dates=app.date_input(key='local_dates').value
+            app.radio(key='product_page').set_value('News Explorer').run()
             app.session_state['explorer_article']=item.article_id
+            app.run()
             config=TaskQueue(self.store).config()
             for theme in ('dark','light'):
                 for language in ('en','zh-CN'):
@@ -83,8 +85,8 @@ class I18nTests(unittest.TestCase):
                             self.assertFalse(app.exception)
                             self.assertEqual(app.session_state['product_page'],page)
                             self.assertEqual(next(r for r in app.radio if r.key.startswith('product_page')).value,page)
-                            self.assertEqual(app.session_state['explorer_article'],item.article_id)
-                            self.assertEqual(app.session_state['filter_preferences']['local_dates'],dates)
+                            if page=='News Explorer':self.assertEqual(app.session_state['explorer_article'],item.article_id)
+                            if page!='Settings':self.assertEqual(app.session_state['filter_preferences']['local_dates'],dates)
                             self.assertTrue(any(b.label==('☀' if theme=='dark' else '☾') for b in app.button))
                             self.assertTrue(any(h.value==resources(language)[page] for h in app.title))
             self.assertEqual(TaskQueue(self.store).config(),config)
@@ -140,7 +142,7 @@ class I18nTests(unittest.TestCase):
             for _ in range(4):app.button(key='ui_theme_toggle').click().run()
             save(self.store,'ui_language','zh-CN');app.run()
             self.assertFalse(app.exception);self.assertEqual(q.get(),before)
-            self.assertTrue(app.button(key='product_update').disabled)
+            self.assertFalse(any(b.key=='product_update' for b in app.button))
 
     def test_chart_tooltips_translate_display_fields_without_mutating_inputs(self):
         from copy import deepcopy
@@ -158,7 +160,7 @@ class I18nTests(unittest.TestCase):
 
     def test_cleared_filter_does_not_return_from_previous_language_widget(self):
         with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}),patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')):
-            app=AppTest.from_file(str(APP),default_timeout=20).run()
+            app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Dashboard';app.run()
             app.text_input(key='local_search').set_value('Energy').run()
             for index,locale in enumerate(('zh-CN','en','zh-CN')):
                 page=next(r for r in app.radio if r.key.startswith('product_page'))

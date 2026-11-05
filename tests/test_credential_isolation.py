@@ -214,7 +214,7 @@ class CredentialUIIsolationTests(unittest.TestCase):
         store = LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']); store.set_setting('guide_completed', True)
         with patch('finscope.windows_credentials.c.WinDLL', create=True) as native:
             app = AppTest.from_file(str(safety.PROJECT / 'streamlit_app.py'), default_timeout=20)
-            app.session_state['product_page'] = 'Settings';app.session_state['settings_section']='sources'; app.run()
+            app.session_state['product_page'] = 'News Update'; app.run()
             app.button(key='settings_edit_marketaux').click().run()
             from finscope.news_keys import NewsKeyRegistry
             for index,value in enumerate(('AUTHORED-UI-FIRST', 'AUTHORED-UI-REPLACEMENT')):
@@ -241,7 +241,7 @@ class CredentialUIIsolationTests(unittest.TestCase):
         store = LocalNewsStore(os.environ['FINSCOPE_LOCAL_DB']); store.set_setting('guide_completed', True)
         save_credential('marketaux', 'AUTHORED-PRIOR-KEY')
         app = AppTest.from_file(str(safety.PROJECT / 'streamlit_app.py'), default_timeout=20)
-        app.session_state['product_page']='Settings';app.session_state['settings_section']='sources'; app.run()
+        app.session_state['product_page']='News Update'; app.run()
         app.button(key='settings_edit_marketaux').click().run()
         app.button(key='settings_secret_marketaux_edit').click().run()
         app.text_input(key='news_keys_marketaux_new_name').set_value('Authored replacement').run()

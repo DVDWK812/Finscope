@@ -34,7 +34,7 @@ class NewsKeyUITests(unittest.TestCase):
                   patch('finscope.windows_credentials.c.WinDLL',create=True,side_effect=AssertionError('No native credentials'))):
             p.start();self.addCleanup(p.stop)
     def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.session_state['settings_section']='sources';app.run()
+        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='News Update';app.run()
         self.assertFalse(app.exception);return app
     def source(self,app,p):widget(app,'button','settings_edit_'+p).click().run()
     def action(self,app,p,slot,choice):
@@ -59,7 +59,7 @@ class NewsKeyUITests(unittest.TestCase):
                 widget(app,'button','news_keys_'+p+'_primary_'+second).click().run()
                 self.assertEqual(self.registry.selection(p)['slot_id'],second)
                 self.action(app,p,second,'Replace key');widget(app,'button','news_keys_'+p+'_replace_'+second).click().run()
-                self.assertEqual(sum(t.proto.type==1 for t in app.text_input),1)
+                self.assertEqual(sum(t.proto.type==1 for t in app.text_input if t.key.startswith('settings_secret_')),1)
                 widget(app,'text_input','settings_secret_'+p).set_value('AUTHORED-'+p+'-NEW').run()
                 widget(app,'button','settings_secret_'+p+'_save').click().run()
                 self.assertEqual(self.registry.resolve(p),'AUTHORED-'+p+'-NEW')
@@ -98,7 +98,7 @@ class NewsKeyUITests(unittest.TestCase):
                     self.assertEqual(self.registry.resolve('marketaux'),'AUTHORED-PRIMARY')
                     labels=[b.label for b in app.button]
                     self.assertIn('Add news key' if language=='en' else '添加新闻密钥',labels)
-                    self.assertFalse(any(t.proto.type==1 for t in app.text_input))
+                    self.assertFalse(any(t.proto.type==1 for t in app.text_input if t.key.startswith('settings_secret_')))
         self.assertIsNone(self.q.get())
 
     def test_configure_write_failure_cannot_replace_primary_or_expose_secret(self):
@@ -165,7 +165,7 @@ class NewsKeyUITests(unittest.TestCase):
     def test_unsaved_settings_prevent_silent_old_config_submission(self):
         self.q.configure(C)
         app=self.app();widget(app,'number_input','settings_limit').set_value(9).run()
-        widget(app,'radio','product_page').set_value('Dashboard').run()
+        app.run()
         self.assertTrue(widget(app,'button','product_update').disabled)
         self.assertEqual(self.q.config()['limit'],C['limit']);self.assertIsNone(self.q.get())
 

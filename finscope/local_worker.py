@@ -137,6 +137,9 @@ class Worker:
         self.queue.update(identity,status='running',stage='preflight')
         def check():self.queue.check_cancel(identity)
         def stage(name):check();self.queue.update(identity,stage=name,counts=counts)
+        def model_observe(edge):
+            if edge in ('before_load','resident'):stage('loading: sentiment' if edge=='before_load' else 'sentiment: saved originals')
+        self.model_observe=model_observe
         try:
             check();self.resources(c['model'],loading=self.backend is None)
             model_key=self.model_key(c) if not self.infer_override else c['model']+'|'+c.get('model_id','')+'|mock-test|'+VERSION
@@ -203,22 +206,31 @@ class Worker:
                         except Exception:
                             counts['failed']+=1;errors.append('One classification failed ID/evidence validation; unknown retained')
                     stage('sentiment: '+source)
-                    if self.data.cached(item,model_key) and not c.get('force_reanalysis'):continue
+                    cached=self.data.cached(item,model_key)
+                    if cached and not c.get('force_reanalysis'):
+                        self.queue.record_outcome(identity,item,'reused',cache_key=model_key,analysis_id=cached);continue
                     if item.language!='en':
-                        errors.append('Non-English/unknown text has no verified language-adapted model in this configuration');counts['skipped']+=1;continue
+                        errors.append('Non-English/unknown text has no verified language-adapted model in this configuration');counts['skipped']+=1
+                        self.queue.record_outcome(identity,item,'not_applicable');continue
                     infer_step='infer:'+item.article_id+':'+item.content_version+':'+hashlib.sha256(model_key.encode()).hexdigest()
                     if self.queue.step(identity,infer_step):
-                        errors.append('Earlier inference outcome unknown/failed; explicit article reanalysis required');continue
+                        errors.append('Earlier inference outcome unknown/failed; explicit article reanalysis required')
+                        self.queue.record_outcome(identity,item,'blocked');continue
                     self.resources(c['model'],loading=c['model']=='Local FinBERT' and self.backend is None);check()
                     self.queue.save_step(identity,infer_step,'pending',{})
                     try:
                         result=self.infer(item,c)
                         result=replace(result,provenance={**result.provenance,**coverage,'text_basis':'selected_'+item.text_basis+'_excerpt','task_id':identity,'language':item.language})
+                        # Finish saving an already returned result before honoring
+                        # pause at the next safe checkpoint.
+                        self.queue.update(identity,stage='saving: analysis result',counts=counts)
                         self.data.analysis(item,model_key,result)
                         self.queue.save_step(identity,infer_step,'ok',{'analysis_id':result.analysis_id});counts['analyzed']+=1
+                        self.queue.record_outcome(identity,item,'new',cache_key=model_key,analysis_id=result.analysis_id)
                     except Exception:
                         self.queue.save_step(identity,infer_step,'failed',{'reason':'Model output/transport/token limit failed; no label saved, no automatic retry'})
                         counts['failed']+=1;errors.append('One model result failed validation/transport/token bounds')
+                        self.queue.record_outcome(identity,item,'failed')
                     self.queue.update(identity,counts=counts)
             self.queue.update(identity,status='partial_failed' if errors and any_source else 'blocked' if errors else 'completed',stage='finished',counts=counts,error='; '.join(dict.fromkeys(errors))[:1500])
         except Cancelled:
@@ -229,7 +241,8 @@ class Worker:
             self.queue.update(identity,status='blocked',stage='local model preflight',counts=counts,error=str(error))
         except Exception:
             self.queue.update(identity,status='partial_failed',stage='failed',counts=counts,error='Local processing failed; originals/history retained; inspect configuration, then explicit resume')
-        finally:self.release_sentiment_backend()
+        finally:
+            self.release_sentiment_backend();self.model_observe=lambda edge:None
         return True
 
 

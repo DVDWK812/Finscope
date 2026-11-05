@@ -1320,3 +1320,44 @@ engineering delivery with clean Windows end-to-end still unverified. Different
 Validation: full offline regression ran726 tests, one skip, zero failures; dry run
 passed. Both aggregate figures rendered and inspected. No new inference was used
 for validation. Final exact local SHA and three CI jobs are checked after push.
+
+### 5 November 2026 — local navigation and task feedback
+
+The filled USER_TEST.xlsx informed this change; its three original responses,
+scores and uncertainty were not edited or published. Browser reproduction at
+local 24648b9 showed Dashboard search leaking into News Explorer and Company
+graph perspective reverting after navigation. The same 120 authored records
+were used for before/after AppTest navigation profiling (one warmup, three measured
+cycles; no provider calls, real model loads or benchmark execution).
+
+Home reuses authored Home/Guide copy and presentation from read-only main
+f23a2cc06aa3e14d139de25aefb6ac41c2fec817, adapting local routes without importing
+showcase fixtures. News Update now contains confirmation, collection settings,
+batches and task controls. The four analysis pages retain existing information
+and filter implementation with separate remembered state. Settings retains model
+management and diagnostics. ID-only task receipts distinguish new inference from
+valid reuse; progress polls in a fragment, with one form refresh on termination.
+No model/classification rules or collector dispatch logic were changed.
+
+Warm navigation medians (milliseconds), before → after: Dashboard 320.73 → 80.34;
+Industries 328.00 → 78.48; Knowledge Graph 313.59 → 79.08; News Explorer 298.82 →
+74.69. SQL SELECT counts per navigation fell from 128/134/128/134 to 23/25/23/25.
+Warm views no longer rerun project_news, industry_rows or evidence_graph. Exact
+row/version fingerprints and live authorization/expiry checks invalidate snapshots;
+historical model results remain explicitly selectable. These are AppTest render
+timings, not browser end-to-end latency or production-scale estimates.
+
+Actual desktop browser checks covered all seven pages, English/Chinese Home and
+News Update, explicit confirmation, ongoing progress, completed task-result
+navigation, independent search and remembered graph perspective. Screenshots and
+profiling receipts remain in ignored .test-results/ux-* using authored fixtures
+and mock inference only. Full isolated regression: 741 tests, one skip; additional
+flow coverage includes pause/save/resume, failed-dispatch holds, data/permission/
+model changes and expiry without a write. Local CI skips benchmark dry-runs for
+this scope while retaining all regression/isolation jobs. Frozen 171-file hashes
+and nine protected production-table digests match their existing baselines.
+
+USER_TEST.md now assigns isolation/ports to the facilitator and gives participants
+four browser-only tasks. This Codex-assisted engineering check does not replace
+human retesting. Stop after the local release; information reduction awaits user
+acceptance of this structure. Main and unrelated edits remain untouched.

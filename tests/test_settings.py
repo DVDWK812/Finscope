@@ -25,7 +25,7 @@ class SettingsTests(unittest.TestCase):
         vault=patch('finscope.local_credentials.vault_key',return_value='')
         self.vault=vault.start();self.addCleanup(vault.stop)
     def app(self,section='general'):
-        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='Settings';app.session_state['settings_section']=section;app.run()
+        app=AppTest.from_file(str(APP),default_timeout=20);app.session_state['product_page']='News Update' if section=='sources' else 'Settings';app.session_state['settings_section']=section;app.run()
         self.assertFalse(app.exception);return app
     def test_three_tabs_single_language_editor_and_no_nested_help_page(self):
         app=self.app()
@@ -70,6 +70,7 @@ class SettingsTests(unittest.TestCase):
     def test_language_change_and_failed_refresh_keep_unsaved_values_and_model_id(self):
         self.q.configure({**C,'model':'Local LM Studio','model_id':'installed/actual-id'})
         app=self.app('sources');app.number_input(key='settings_limit').set_value(9).run()
+        app.radio(key='product_page').set_value('Settings').run()
         app.radio(key='settings_section').set_value('general').run()
         app.selectbox(key='ui_language_choice').set_value('zh-CN').run();app.button(key='ui_language_save').click().run()
         app.radio(key='settings_section__zh-CN').set_value('models').run()
@@ -80,7 +81,7 @@ class SettingsTests(unittest.TestCase):
                 app.button(key='pipeline_lmstudio_refresh').click().run()
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key='pipeline_lmstudio_model__zh-CN').value,'installed/actual-id')
-        app.radio(key='settings_section__zh-CN').set_value('sources').run()
+        app.radio(key='product_page__zh-CN').set_value('News Update').run()
         self.assertEqual(app.number_input(key='settings_limit__zh-CN').value,9)
         self.assertEqual(self.q.config()['limit'],3);self.assertIsNone(self.q.get())
     def test_key_save_clears_password_and_has_no_sql_or_request_side_effect(self):
@@ -106,8 +107,9 @@ class SettingsTests(unittest.TestCase):
             app.radio(key='settings_section').set_value('models').run()
             source.assert_not_called();self.assertTrue(model.called)
             self.assertFalse(any('manual pause' in str(e.value).lower() for e in app.warning))
-            app.radio(key='settings_section').set_value('sources').run();self.assertTrue(source.called)
+            app.radio(key='product_page').set_value('News Update').run();self.assertTrue(source.called)
             before=model.call_count
+            app.radio(key='product_page').set_value('Settings').run()
             app.radio(key='settings_section').set_value('general').run()
             self.assertEqual(model.call_count,before);self.assertFalse(app.warning)
         self.http.assert_not_called();self.assertIsNone(self.q.get())
@@ -119,6 +121,7 @@ class SettingsTests(unittest.TestCase):
         app.button(key='settings_edit_newsdata').click().run()
         self.assertEqual(sum(str(x.value).startswith('Missing:') for x in app.markdown),1)
         self.assertFalse(app.warning)
+        app.radio(key='product_page').set_value('Settings').run()
         app.radio(key='settings_section').set_value('models').run()
         self.assertFalse(any('manual pause' in str(x.value).lower() or 'Missing:' in str(x.value) for x in app.markdown))
         self.http.assert_not_called()

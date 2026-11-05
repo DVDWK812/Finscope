@@ -27,15 +27,16 @@ class AutomaticUITests(unittest.TestCase):
         self.guard=patch('requests.sessions.Session.request',side_effect=AssertionError('Refresh/filter must not perform any HTTP'))
         self.http=self.guard.start();self.addCleanup(self.guard.stop)
         env=patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)});env.start();self.addCleanup(env.stop)
-    def app(self):
-        app=AppTest.from_file(str(APP),default_timeout=15).run();self.assertFalse(app.exception);return app
+    def app(self,page='Dashboard'):
+        app=AppTest.from_file(str(APP),default_timeout=15);app.session_state['product_page']=page
+        app.run();self.assertFalse(app.exception);return app
     def test_first_run_guide_leads_to_settings_without_requests(self):
         self.store.set_setting('guide_completed',False)
-        app=self.app();self.assertEqual(len(app.subheader),4)
-        next(b for b in app.button if b.label=='Get Started').click().run()
-        self.assertFalse(app.exception);self.assertEqual(app.radio(key='product_page').value,'Settings');self.http.assert_not_called()
+        app=self.app(None);self.assertEqual(app.title[0].value,'Home')
+        app.button(key='home_analyze').click().run()
+        self.assertFalse(app.exception);self.assertEqual(app.radio(key='product_page').value,'News Update');self.http.assert_not_called()
     def test_primary_navigation_and_single_queued_task_across_rerenders(self):
-        app=self.app();self.assertEqual(app.radio(key='product_page').options,['Dashboard','Industries','Knowledge Graph','News Explorer','Settings'])
+        app=self.app('News Update');self.assertEqual(app.radio(key='product_page').options,['News Update','Dashboard','Industries','Knowledge Graph','News Explorer','Settings'])
         app.button(key='product_update').click().run();self.assertIsNone(self.q.get())
         app.button(key='product_confirm_update').click().run();key=self.q.get()['id']
         app.run();self.assertTrue(app.button(key='product_update').disabled)
@@ -51,10 +52,11 @@ class AutomaticUITests(unittest.TestCase):
     def test_worker_results_appear_without_user_save_or_run(self):
         from datetime import date
         app=self.app();app.date_input(key='local_dates').set_value((date(2026,10,30),)*2).run()
+        app.radio(key='product_page').set_value('News Update').run()
         app.button(key='product_update').click().run()
         self.assertIsNone(self.q.get());app.button(key='product_confirm_update').click().run()
         w=Worker(self.store,fetch=lambda *a:[replace(fixture(),provider='licensed_test_fixture')],infer=prediction,resources=lambda *a,**k:None)
-        w.run_one();app.run();self.assertFalse(app.exception)
+        w.run_one();app.radio(key='product_page').set_value('Dashboard').run();self.assertFalse(app.exception)
         self.assertEqual(app.metric[0].value,'1');self.assertEqual(self.q.get()['status'],'completed')
         self.http.assert_not_called()
 
@@ -62,8 +64,8 @@ class AutomaticUITests(unittest.TestCase):
         from finscope.settings_state import save
         c={**C,'sources':['abs_html','newsdata'],'taxonomy':'CSRC-JRT0020-2024'}
         self.assertTrue(save(self.q,c))
-        app=self.app();self.assertIsNone(self.q.get())
-        self.assertFalse(any('manual pause' in str(x.value).lower() for x in app.markdown))
+        app=self.app('News Update');self.assertIsNone(self.q.get())
+        self.assertTrue(any('Manual pause' in str(x.value) for x in app.markdown))
         app.button(key='product_update').click().run()
         self.assertIsNone(self.q.get())
         self.assertTrue(any('NewsData.io skipped' in str(x.value) for x in app.caption))

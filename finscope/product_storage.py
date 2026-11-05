@@ -31,6 +31,91 @@ class ProductStorage:
             ids={n.article_id for n in self.news()}
             rows += [a for a in other.analyses() if a.article_id in ids]
         return sorted(rows,key=lambda a:(a.analyzed_at,a.analysis_id))
+    def visible_analyses(self,news=None,analyses=None):
+        """Revalidate on every view; never cache permission/expiry decisions."""
+        from .source_policies import authorize
+        current={}
+        for item in self.news() if news is None else news:
+            try:
+                for right in ('preview','retain','analyze'):item.rights.require(right)
+                try:origin=json.loads(item.provenance)
+                except (ValueError,TypeError):origin={}
+                if isinstance(origin,dict) and any(k in origin for k in ('media_use','import_policy','media_policy','automatic_use_policy')):
+                    authorize(item,('retain','local_display','local_sentiment'))
+            except ValueError:continue
+            current[item.article_id]=item
+        return [a for a in (self.analyses() if analyses is None else analyses) if a.article_id in current and
+                (not current[a.article_id].content_version or a.provenance.get('content_sha256')==current[a.article_id].content_version)]
+    def view_revision(self):
+        """Exact relevant-row fingerprint, excluding heartbeats and UI preferences.
+
+        No cached SQL connection, mtime assumption or max-timestamp heuristic:
+        in-place permission/content edits and deletions invalidate the snapshot too.
+        Only a digest escapes this method, never a persistent copy of article text.
+        """
+        import hashlib,sqlite3
+        from pathlib import Path
+        tables=('local_news','local_analyses','local_permission_history','product_content',
+                'product_current_content','product_classifications','product_analysis_cache',
+                'product_record_state','media_lifetimes','media_captures','product_settings')
+        digest=hashlib.sha256()
+        for path in (self.store.path,Path(str(self.store.path)+'.expiring')/'live.sqlite3'):
+            if not Path(path).exists():continue
+            with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True,timeout=5)) as db:
+                db.execute('BEGIN')
+                existing={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                for table in tables:
+                    if table not in existing:continue
+                    where=" WHERE name NOT IN ('view_preferences','ui_theme','ui_language')" if table=='product_settings' else ''
+                    digest.update(table.encode())
+                    for row in db.execute('SELECT * FROM '+table+where+' ORDER BY rowid'):
+                        digest.update(repr(row).encode());digest.update(b'\n')
+        from .batch_config import finbert_cache_key
+        digest.update(finbert_cache_key().encode())
+        return digest.hexdigest()
+    def view_snapshot(self,state,taxonomy):
+        """Session-only reuse with a live revision and time/permission gate per read."""
+        from .source_policies import authorize
+        revision=self.view_revision();saved=state.get('_library_snapshot')
+        if not saved or saved['revision']!=revision:
+            saved={'revision':revision,'news':self.news(),'analyses':self.analyses(),
+                   'states':self.states(),'classes':{},'computed':{}}
+            state['_library_snapshot']=saved
+        permitted=[]
+        for item in saved['news']:
+            try:
+                item.rights.require('preview');item.rights.require('retain')
+                # Legacy manual records have no source-policy wrapper; their own
+                # explicit article permission remains authoritative.
+                try:origin=json.loads(item.provenance) if item.provenance else {}
+                except (ValueError,TypeError):origin={}
+                if isinstance(origin,dict) and any(k in origin for k in ('media_use','import_policy','media_policy','automatic_use_policy')):
+                    authorize(item,('retain','local_display'))
+            except (ValueError,TypeError):continue
+            permitted.append(item)
+        if len(permitted)!=len(saved['news']):
+            # Expiry can change with no database write. Drop all derived content.
+            saved['news']=permitted;saved['computed'].clear();saved['classes'].clear()
+            ids={n.article_id for n in permitted}
+            saved['analyses']=[a for a in saved['analyses'] if a.article_id in ids]
+        if taxonomy not in saved['classes']:saved['classes'][taxonomy]=self.classifications(taxonomy)
+        return saved
+    def task_results(self,queue,task):
+        """Only exact still-valid result receipts from this task, including reuse."""
+        news={n.article_id:n for n in self.news()}
+        analyses={a.analysis_id:a for a in self.visible_analyses(list(news.values()))}
+        results={}
+        for identity,receipt in queue.outcomes(task['id']).items():
+            item=news.get(identity);result=analyses.get(receipt.get('analysis_id'))
+            key=receipt.get('cache_key','')
+            if not item or not result or item.content_version!=receipt.get('content_version'):continue
+            if key.startswith('Local FinBERT|') and '|mock-test|' not in key:
+                from .batch_config import finbert_cache_key
+                if key!=finbert_cache_key():continue
+            try:
+                if self.cached(item,key)==result.analysis_id:results[identity]=result
+            except ValueError:continue
+        return results
     def apply_permissions(self,item):
         """Explicit article-level edits outrank subsequent source-level grants."""
         from dataclasses import replace
