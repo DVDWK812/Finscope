@@ -2,7 +2,6 @@
 """Authored Marketaux response fixtures; no transport, models, or saved news."""
 import json
 import unittest
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from finscope.api_sources import normalize
@@ -16,7 +15,7 @@ class MarketauxLanguageTests(unittest.TestCase):
     def item(self, title, *, declared=None, summary='', fields=('title',)):
         now = datetime.now(timezone.utc)
         row = {'title': title, 'description': summary, 'url': 'https://example.org/authored-test',
-               'source': 'Authored fixture', 'published_at': now.isoformat()}
+               'source': 'Authored fixture', 'published_at': '2026-11-05T12:00:00+00:00'}
         if declared is not None:
             row['language'] = declared
         (article,), _ = normalize('marketaux', {'data': [row]})
