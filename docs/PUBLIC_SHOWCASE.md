@@ -1,6 +1,6 @@
 # Local product and public showcase — 29 October 2026 Sydney
 
-**5 November single-language correction — preview accepted for release:** English mode
+**5 November single-language correction — released:** English mode
 uses Language / Appearance / English / Chinese (Simplified) / Dark / Light;
 Chinese mode uses 语言 / 外观 / 英语 / 简体中文 / 深色 / 浅色. All 24 fictional
 headlines, summaries, display names, sources and graph text have authored Chinese
@@ -19,11 +19,22 @@ toolbar utilities are hidden without hiding the sidebar opener. This is a narrow
 localization correction, with no new provider/runtime/dependency or data change.
 250 offline tests (37 showcase checks), 51 syntax checks and seven dry runs pass.
 The 37 showcase checks also pass separately on Streamlit 1.50.0.
-Hosted browser inspection was rejected at an internal error-page URL reporting
-too many redirects; browser input stopped. The user manually accepted preview
-`locale-0c85fef203` and explicitly authorized main commit/push. Exact-push CI and
-separate hosted verification remain pending at this release checkpoint. Streamlit's
-external authentication/administration pages are controlled by that service.
+The user accepted preview `locale-0c85fef203`. Initial hosted browser inspection
+stopped at a policy-rejected internal redirect-error page. The same supported
+connection later recovered with a valid public URL, without permission changes
+or a bypass. Actual hosted checks found an English dirty-input hint; the follow-up
+localizes search instructions and the keyboard skip link, and suppresses English
+heading-link utilities in Chinese mode. Application `68c19a59452281095575d841a13650bb96f38a7d`
+passes [regression](https://github.com/DVDWK812/Finscope/actions/runs/41952200153)
+and [showcase isolation](https://github.com/DVDWK812/Finscope/actions/runs/41952200137).
+All six pages passed all four display combinations on desktop and 390px browser
+viewports. Dashboard 24→4→2→24 filtering/Reset, illustrative 7/17/24 counts, both
+graph perspectives, correct Chinese article inspection, research matches three
+overall/two for Cedar, Chinese command copy and keyboard skip were checked.
+Rebooting the existing app in place loaded the updated modules, preserving its
+URL and coordinates. Known minor issue: Chinese→English can reset the theme to
+Dark; explicitly selecting Light works. Streamlit's external authentication and
+administration are service-controlled. [Maintenance record](SHOWCASE_FREEZE.md).
 
 **Historical 4 November release:** the behavior below describes the released
 version before the stricter language requirement.

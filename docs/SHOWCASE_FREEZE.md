@@ -1,26 +1,40 @@
 # Public showcase freeze — 31 October 2026 Sydney
 
-## Single-language correction release checkpoint — 5 November 2026 Sydney
+## Single-language correction closed — 5 November 2026 Sydney
 
-The user manually accepted preview `locale-0c85fef203` and authorized its main-only
-commit/push. English and Chinese modes now localize all authored display text,
-including the 24 fictional records, graph metadata and term labels. Product/model
-names, technical identifiers and commands retain their spelling. Original fixtures,
-IDs, word-frequency calculations/matches and frozen evidence are unchanged.
+**MAINTENANCE ONLY.** User accepted preview `locale-0c85fef203` and authorized
+main release. English/Chinese authored display text includes all 24 fictional
+articles, names, sources, graph metadata and term labels. Original fixtures, IDs,
+word-frequency calculations/matches and frozen evidence remain unchanged.
 
-250 offline tests, 37 showcase checks, 51 syntax checks and seven dry runs pass;
-the 37 showcase checks also pass on Streamlit 1.50.0. Approved source hashes are
-retained in ignored release receipts. The exact release SHA and exact-push CI
-results are recorded in the delivery message and receipts after push.
+| Release evidence | Verified result |
+|---|---|
+| Final application commit | `68c19a59452281095575d841a13650bb96f38a7d` |
+| Public URL | [Existing showcase](https://finscope-dvdwk812.streamlit.app/) retained; main / deploy/streamlit_app.py; administration retained |
+| Exact regression | [41952200153](https://github.com/DVDWK812/Finscope/actions/runs/41952200153): success, both Streamlit configurations |
+| Exact isolation | [41952200137](https://github.com/DVDWK812/Finscope/actions/runs/41952200137): success, public-only dependencies/runtime guards |
+| Offline checks | 250 tests, 37 showcase checks also on Streamlit 1.50.0, 51 syntax checks, seven offline dry runs |
+| Hosted acceptance | All six pages in all four language/palette combinations on desktop and 390px browser viewports; 48 page checks, no page-wide overflow; tablet guide checked at 768px |
+| Interactions | Dashboard 24→4→2→24 filtering/Reset; explicitly illustrative 7/17/24 taxonomy; both graph perspectives; correct Chinese article details; research matches three overall/two Cedar; Chinese copy success and keyboard skip focus |
+| Preservation | No local branch operation; 23 protected-file and five unrelated-edit hashes match the initial receipt; no private records published |
 
-Hosted acceptance is separate and pending: Browser Use rejected an internal
-data-URL error page reporting ERR_TOO_MANY_REDIRECTS. Browser input stopped; this
-is neither a site-access denial nor a verified login diagnosis. The public URL,
-main/deploy entrypoint, app coordinates and branch names are unchanged. No local
-branch operation, provider request, inference, public database access or evidence
-publication is added. Unrelated edits and protected-file hashes are preserved.
-After this correction, maintenance-only scope applies; pending hosted acceptance
-does not authorize further feature development.
+Browser input stopped at the earlier internal data-URL policy rejection reporting
+ERR_TOO_MANY_REDIRECTS. The same supported connection later recovered with a valid
+public URL, without permission changes or a bypass. Hosted checks discovered and
+fixed an English dirty-input helper; the corrective commit above also retains a
+Chinese keyboard skip link. The existing app was rebooted in place for each
+application change when reload retained older modules. No deletion, recreation,
+branch rename or URL/coordinate change occurred.
+
+Known limitations: product/model/format names, technical identifiers and commands
+retain their spelling; Streamlit authentication/administration is service-controlled.
+Returning from Chinese to English can reset appearance to Dark; explicit Light
+selection works. This is engineering acceptance, not model, reviewer-independence
+or three-human usability evidence. No provider request, inference, model download,
+credential request or public database operation was added.
+
+The closeout changes documentation only. Its final main SHA and own exact-push
+CI are recorded in ignored receipts and the delivery message.
 
 ## Display exception closed — 4 November 2026 Sydney
 

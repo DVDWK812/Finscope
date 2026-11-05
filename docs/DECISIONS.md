@@ -15,6 +15,11 @@ translation service/dependency/runtime. A browser-policy rejection at the hosted
 internal error page stops browser input. The user subsequently accepted preview
 `locale-0c85fef203` and authorized main commit/push. Exact-push CI and separate
 hosted acceptance are required; the preview approval does not establish deployment.
+The connection subsequently recovered without a permission/policy change. Hosted
+acceptance found the native English dirty-input hint; a small tested maintenance
+correction adds Chinese instructions and a Chinese keyboard skip link. Application
+`68c19a5` passes both exact workflows and the separate hosted display matrix; see
+[the freeze record](SHOWCASE_FREEZE.md). Maintenance-only scope resumes.
 
 **4 November — explicitly requested display preferences:** add English/简体中文
 and dark/light choices to the existing showcase sidebar, with session-scoped

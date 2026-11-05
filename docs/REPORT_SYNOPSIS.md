@@ -2,13 +2,16 @@
 
 Evidence current: **5 November 2026 Sydney**. The three team members will write the academic report independently. This concise reference supplies facts and expansion cues; it is not a submission manuscript or PDF.
 
-**Accepted presentation correction:** the single-language revision adds
+**Released presentation correction:** the single-language revision adds
 Chinese display translations for the 24 fictional articles/names/terms and removes
 mixed-language controls. Raw fixtures, counts and frozen results are unchanged.
-250 offline tests pass. The user manually accepted the preview for main release;
-exact-push CI and hosted evidence remain pending after a browser-policy rejection
-of a redirect error page. This
-adds no model, reviewer or human-usability evidence ([status](PUBLIC_SHOWCASE.md)).
+250 offline tests pass. After manual preview approval, application `68c19a5`
+passes exact regression/isolation CI and hosted checks of all six pages in all four
+display combinations on desktop/mobile browser viewports. A recovered supported
+browser connection enabled the hosted checks after the earlier redirect-error
+block; no permission bypass occurred. A minor theme-reset limitation on returning
+to English is documented. This adds no model, reviewer or three-human usability
+evidence ([status](PUBLIC_SHOWCASE.md)).
 
 **Display-only update:** the showcase now offers English/简体中文 and dark/light
 presentation choices with English/dark defaults. Authored UI translations and

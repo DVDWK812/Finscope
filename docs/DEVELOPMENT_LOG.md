@@ -1,6 +1,33 @@
 # Development log
 
-## Single-language correction — 5 November 2026 Sydney
+## Single-language release closed — 5 November 2026 Sydney
+
+User accepted preview `locale-0c85fef203`. Initial application `969d908` passed
+both exact workflows. The same supported hosted browser connection recovered
+with a valid public URL, without permission changes or policy bypasses. Hosted
+inspection then found the native English dirty-input hint in Chinese search.
+Corrective application `68c19a59452281095575d841a13650bb96f38a7d` supplies Chinese
+search guidance, retains a Chinese keyboard skip link and hides English heading
+utilities in Chinese. It passes 250 regression tests, 37 minimum-version showcase
+checks, 51 syntax checks, seven offline dry runs and both exact-push workflows:
+[regression](https://github.com/DVDWK812/Finscope/actions/runs/41952200153),
+[isolation](https://github.com/DVDWK812/Finscope/actions/runs/41952200137).
+
+Actual hosted acceptance covers six pages × four display combinations × desktop
+and 390px browser viewports (48 page checks), without page-wide overflow. Tests
+confirmed Dashboard 24→4→2→24 filtering/Reset and illustrative 7/17/24 taxonomy,
+both graph perspectives, Chinese Cedar article inspection, research counts/matches
+three overall/two Cedar, Chinese command-copy success and skip-to-main focus.
+The tablet guide was also checked at 768px. Screenshot and DOM receipts remain
+ignored. The original app was rebooted in place for each application change after
+reload retained older modules; URL, main/deploy coordinates and admin access remain.
+Known minor issue: returning to English can reset appearance to Dark; selecting
+Light explicitly works. This is engineering acceptance, not model evaluation or
+three-human usability. No local-branch operation, provider/model/database runtime,
+private-record publication or frozen-evidence change was introduced. Maintenance
+only resumes. The closeout commit changes documentation only.
+
+## Preparation checkpoint — 5 November 2026 Sydney (historical)
 
 Prepared the explicitly requested locale-consistency correction on main. English
 settings contain no Chinese text, including the language-choice menu. Chinese
