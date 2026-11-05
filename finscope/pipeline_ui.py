@@ -452,9 +452,9 @@ def network(news,results,store,classes,catalog):
         with st.container(key='product_cloud'):cloud(news,results,store,classes,catalog)
 
 
-def sector_plot(rows):
+def sector_plot(rows,empty_message='No classified business topics in this selection; unclassified articles remain in the library.'):
     if not rows:
-        st.info('No classified business topics in this selection; unclassified articles remain in the library.')
+        st.info(empty_message)
         return
     values=[{'Industry':r['Industry'],'Sentiment':s,'Articles':r[s]} for r in rows for s in ('Positive','Neutral','Negative','Not analyzed')]
     upper=max(1,max(sum(r[s] for s in ('Positive','Neutral','Negative','Not analyzed')) for r in rows))
@@ -647,7 +647,8 @@ def main():
     elif page=='Industries':
         with st.container(key='product_chart_sector'):
             st.subheader('Industry sentiment')
-            sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)])
+            sector_plot([r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)],
+                        empty_message='No saved industry assignments in this selection; originals awaiting classification remain below.')
         visible=[r for r in rows if r['Articles'] and (r['ID'] in child_ids if child_ids else True)]
         if visible:
             with st.expander('Industry counts and definitions',expanded=False):

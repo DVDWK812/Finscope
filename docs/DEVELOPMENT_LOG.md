@@ -1370,6 +1370,8 @@ Dashboard metrics, visible search with expandable filters/counts, clearer origin
 and detail sections, folded graph options/keywords, and one Home workflow instead
 of two. Permissions, errors, source evidence, model revisions, Unclassified and
 Not applicable remain accessible; task execution and snapshot invalidation are unchanged.
+The single industry empty-state notice still explicitly identifies originals
+awaiting classification; it does not imply an absence of relevant news.
 
 Isolated regression: 743 tests, one existing skip. Actual desktop/narrow browser
 checks covered all seven pages, English/Chinese new copy, expanded controls,
