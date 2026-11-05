@@ -5,7 +5,7 @@ from string import Formatter
 import json
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock,patch
 
 from streamlit.testing.v1 import AppTest
 from finscope.i18n import resources,t,tr,display,Verbatim,component_labels,node_name
@@ -103,6 +103,59 @@ class I18nTests(unittest.TestCase):
             self.assertFalse(app.exception);self.assertEqual(load(self.store)['ui_language'],'zh-CN')
             self.assertEqual(app.session_state['product_page'],'Settings')
             self.assertEqual(TaskQueue(self.store).config(),before)
+
+    def test_reset_retires_pending_filter_callbacks_without_restoring_old_values(self):
+        ProductStorage(self.store).save(prepare(fixture())[0])
+        with patch.dict('os.environ',{'FINSCOPE_LOCAL_DB':str(self.store.path)}), \
+             patch('requests.sessions.Session.request',side_effect=AssertionError('No HTTP')) as http, \
+             patch('finscope.finbert_backend.LocalFinBERTBackend.from_snapshot',side_effect=AssertionError('No model load')) as model:
+            for locale in ('zh-CN','en'):
+                with self.subTest(locale=locale):
+                    save(self.store,'ui_language',locale)
+                    suffix='' if locale=='en' else '__'+locale
+                    app=AppTest.from_file(str(APP),default_timeout=20)
+                    app.session_state['product_page']='Dashboard';app.run()
+                    # The browser can batch a pending filter edit with Reset.
+                    # Reset runs first and removes the translated widget keys.
+                    app.selectbox(key='product_taxonomy'+suffix).set_value('CSRC-JRT0020-2024')
+                    app.text_input(key='local_search'+suffix).set_value('Discarded pending search')
+                    app.button(key='reset_page_filters').click().run()
+                    self.assertFalse(app.exception)
+                    self.assertEqual(app.selectbox(key='product_taxonomy'+suffix).value,'US-BUSINESS-1')
+                    self.assertEqual(app.text_input(key='local_search'+suffix).value,'')
+                    self.assertEqual(app.session_state['filter_preferences']['local_search'],'')
+                    # Fresh events must still synchronize and run their callback.
+                    app.selectbox(key='product_taxonomy'+suffix).set_value('CSRC-JRT0020-2024').run()
+                    app.text_input(key='local_search'+suffix).set_value('Current search').run()
+                    self.assertFalse(app.exception)
+                    self.assertEqual(app.session_state['product_taxonomy'],'CSRC-JRT0020-2024')
+                    self.assertEqual(app.session_state['filter_preferences']['local_search'],'Current search')
+            self.assertIsNone(TaskQueue(self.store).get());http.assert_not_called();model.assert_not_called()
+
+    def test_localized_callback_preserves_empty_values_and_only_ignores_retired_widgets(self):
+        from finscope.localized_ui import st
+        activate({'ui_language':'zh-CN'})
+        state={};callback=Mock()
+        with patch('finscope.localized_ui.native.session_state',state), \
+             patch('finscope.localized_ui.native.selectbox',return_value=None) as render:
+            st.selectbox('Authored callback fixture',[None,False,''],key='callback_fixture',
+                         on_change=callback,args=('scope',),kwargs={'confirmed':False})
+            changed=render.call_args.kwargs['on_change']
+            for value in (None,False,''):
+                state['callback_fixture__zh-CN']=value;changed()
+                self.assertEqual(state['callback_fixture'],value)
+                self.assertEqual(state['_ui_mirrors']['callback_fixture'],('zh-CN',value))
+                callback.assert_called_with('scope',confirmed=False)
+            callback.reset_mock()
+            del state['callback_fixture__zh-CN']
+            state['callback_fixture']='Current page value';state['_ui_mirrors']={}
+            changed()
+            self.assertEqual(state['callback_fixture'],'Current page value')
+            self.assertEqual(state['_ui_mirrors'],{});callback.assert_not_called()
+            state['callback_fixture__zh-CN']=False
+            callback.side_effect=KeyError('Caller error must remain visible')
+            with self.assertRaisesRegex(KeyError,'Caller error must remain visible'):changed()
+            self.assertEqual(state['_ui_mirrors']['callback_fixture'],('zh-CN',False))
 
     def test_iframe_labels_change_but_scope_and_event_ids_do_not(self):
         from finscope.chart_interactions import interactive_chart

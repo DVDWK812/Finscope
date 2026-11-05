@@ -67,8 +67,13 @@ class LocalizedUI:
                 kwargs['key']=presentation
                 callback=kwargs.get('on_change');callback_args=kwargs.pop('args',());callback_kwargs=kwargs.pop('kwargs',{})
                 def changed():
-                    if presentation!=canonical:native.session_state[canonical]=native.session_state[presentation]
-                    mirrors[canonical]=(locale,deepcopy(native.session_state[presentation]))
+                    # Reset/navigation can retire a widget before its queued
+                    # callback runs. Do not revive its old value or dispatch a
+                    # dependent callback against the freshly reset page.
+                    try:value=native.session_state[presentation]
+                    except KeyError:return
+                    if presentation!=canonical:native.session_state[canonical]=value
+                    native.session_state.setdefault('_ui_mirrors',{})[canonical]=(locale,deepcopy(value))
                     if callback:callback(*callback_args,**callback_kwargs)
                 if callback or not _in_form.get():kwargs['on_change']=changed
             if name in INPUTS and kwargs.get('key') in native.session_state:

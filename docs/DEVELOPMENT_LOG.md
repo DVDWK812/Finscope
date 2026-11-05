@@ -1384,3 +1384,13 @@ remain zero. Receipts and before/after screenshots stay in ignored .test-results
 All 171 frozen file hashes, nine protected table digests and USER_TEST.xlsx match
 their prior values. No benchmark, live news request or real model inference ran.
 This is engineering verification, not human retesting; stop for user acceptance.
+
+## 5 November 2026 — retired localized widget callbacks
+
+Reproduced the reported product_taxonomy__zh-CN KeyError when a pending filter
+change and Reset arrive in one callback batch; the English key also failed.
+The presentation adapter now ignores only events whose widget key was retired,
+without restoring stale values or invoking dependent callbacks. Live empty/False
+values still synchronize, callback arguments remain intact, and caller errors
+remain visible. Regression coverage uses isolated authored fixtures and mocks;
+no collection, model, database schema or task execution changes.
