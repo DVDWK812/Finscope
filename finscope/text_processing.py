@@ -32,6 +32,16 @@ def detect_language(text):
     return 'en' if len(set(words)&clues)>=2 and sum(c.isascii() for c in text)/max(1,len(text))>.85 else 'unknown'
 
 
+def _marketaux_language(item):
+    if item.provider != 'marketaux':
+        return None
+    try:
+        declared = json.loads(item.provenance).get('api_record', {}).get('language')
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return declared if isinstance(declared, str) and re.fullmatch(r'[a-z]{2}', declared) else None
+
+
 def prepare(item):
     title,summary,body=map(clean,(item.title,item.summary,item.body))
     basis='body' if body else 'summary' if summary else 'title'
@@ -42,7 +52,22 @@ def prepare(item):
     span_end=min(len(full),max(1,1400-len(prefix)))
     excerpt=prefix+full[:span_end]
     language=detect_language(excerpt);language_method='text vocabulary and script check'
-    if language=='unknown' and item.language=='en' and len(full)<300 and all(ord(c)<128 or c in '–—’“”' for c in full):
+    declared = _marketaux_language(item)
+    if declared and declared != 'en' and language != 'zh':
+        language = declared
+        language_method = 'Marketaux response declares a non-English language'
+    elif declared == 'en' and basis == 'title' and language != 'zh':
+        latin = all(not c.isalpha() or unicodedata.name(c, '').startswith('LATIN ') for c in title)
+        words = re.findall(r'[^\W\d_]+', title)
+        if not latin:
+            language = 'unknown'
+            language_method = 'title script contradicts the Marketaux English declaration'
+        elif language == 'unknown' and len(title) < 300 and len(words) >= 2 and any(
+            len(word) >= 3 and not word.isupper() for word in words
+        ):
+            language = 'en'
+            language_method = 'Marketaux response declares en; short Latin headline check'
+    elif language=='unknown' and item.language=='en' and len(full)<300 and all(ord(c)<128 or c in '–—’“”' for c in full):
         language='en';language_method='source document/feed explicitly declares en; short Latin text script check'
     revision=[title,summary,body,language]
     if item.record_id:
@@ -52,6 +77,8 @@ def prepare(item):
     evidence={'preprocessing_version':VERSION,'analysis_basis':basis,'selection':'leading character span; one original, one label',
               'span_start':0,'span_end':span_end,'source_characters':len(full),'coverage':span_end/max(1,len(full)),
               'aggregation':'none; selected excerpt sentiment only','content_sha256':fingerprint,'language_method':language_method}
+    if declared:
+        evidence['declared_language'] = declared
     url=canonical_url(item.url)
     # Provider identity prevents accidental merging across independent publishers.
     identity=hashlib.sha256((item.source+'|'+url).encode()).hexdigest()[:32] if url else item.article_id

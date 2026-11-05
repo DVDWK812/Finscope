@@ -301,6 +301,10 @@ def normalize(provider: str, payload: Any, *, newsdata_text_access=None) -> tupl
             if body:
                 body_reference='Paid plan: '+access.plan_reference+'; content use: '+access.body_permission_reference
         metadata={}
+        if provider == 'marketaux':
+            language = row.get('language')
+            if isinstance(language, str) and re.fullmatch(r'[a-z]{2}', language.strip().lower()):
+                metadata['language'] = language.strip().lower()
         if provider in {'marketaux','finnhub'}:
             identity=row.get('uuid' if provider=='marketaux' else 'id')
             if isinstance(identity,(str,int)) and not isinstance(identity,bool) and len(str(identity))<=160:metadata['record_id']=str(identity)
