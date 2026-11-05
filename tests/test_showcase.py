@@ -225,6 +225,9 @@ class ShowcaseTests(unittest.TestCase):
                     self.assertFalse(app.selectbox, page)
                     self.assertFalse(app.multiselect, page)
                     self.assertFalse(app.date_input, page)
+                    self.assertIn("跳到正文", text)
+                    if page == "News Explorer":
+                        self.assertIn("按回车键应用搜索；最多输入 120 个字符。", text)
                     for original in examples():
                         for untranslated in (original.title, original.summary, original.company, original.source):
                             self.assertNotIn(untranslated, text, page)

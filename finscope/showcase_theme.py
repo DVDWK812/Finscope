@@ -146,9 +146,14 @@ def launcher_architecture():
 def theme_css():
     variables = ";".join(f"--fs-{name.replace('_', '-')}: {value}" for name, value in theme_tokens().items())
     scheme = APPEARANCE.get()
-    native = '[data-testid="stCode"] [data-testid="stElementToolbarButton"]{display:none!important;}' if LANGUAGE.get() == 'zh-CN' else ''
+    native = '''[data-testid="stCode"] [data-testid="stElementToolbarButton"],
+    [data-testid="stSkipToContent"],[data-testid="stHeaderActionElements"],
+    [data-testid="InputInstructions"] > span:first-child{display:none!important;}''' if LANGUAGE.get() == 'zh-CN' else ''
     return '<style>' + native + ':root{color-scheme:' + scheme + ';' + variables + r''' }
     #MainMenu,[data-testid="stAppDeployButton"],[data-testid="stToolbarActions"],[data-testid="stElementToolbar"]{display:none!important;}
+    .fs-skip-link{position:fixed;top:-100px;left:16px;z-index:999999;padding:10px 16px;
+      color:var(--fs-text);background:var(--fs-surface);border:2px solid var(--fs-accent);border-radius:6px;}
+    .fs-skip-link:focus{top:16px;}
     .fs-local-table{overflow:auto;max-height:350px;border:1px solid var(--fs-border);border-radius:9px;}
     .fs-local-table table{width:100%;border-collapse:collapse;font-size:.8rem;color:var(--fs-text);}
     .fs-local-table th{position:sticky;top:0;background:var(--fs-raised);text-align:left;white-space:nowrap;}

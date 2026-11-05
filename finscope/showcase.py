@@ -527,6 +527,8 @@ def explorer():
     a, b = st.columns([2, 1])
     with a:
         query = st.text_input(t("Search fictional examples"), placeholder=t("Industry, company or headline"), max_chars=120, key="explorer_search")
+        if LANGUAGE.get() == "zh-CN":
+            st.caption("按回车键应用搜索；最多输入 120 个字符。")
     with b:
         industry = choice(st.selectbox, t("Example industry"), ("All industries", *SECTORS), key="explorer_industry", format_func=display_formatter())
     rows = sorted([r for r in select(examples(), sectors=() if industry == "All industries" else (industry,))
@@ -649,7 +651,8 @@ def main():
         st.set_page_config(page_title="FinScope | " + t("Product Showcase"), page_icon="◈", layout="wide",
                            menu_items={"Get Help": None, "Report a bug": None, "About": None})
         with st.sidebar:
-            st.markdown(brand(), unsafe_allow_html=True)
+            skip = '<a class="fs-skip-link" href="#stMain">跳到正文</a>' if LANGUAGE.get() == "zh-CN" else ''
+            st.markdown(skip + brand(), unsafe_allow_html=True)
             with st.container(key="fs_preferences"):
                 formatter = display_formatter()
                 choice(st.selectbox, t("Language"), ("en", "zh-CN"), key="showcase_language",
