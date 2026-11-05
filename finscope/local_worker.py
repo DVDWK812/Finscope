@@ -128,7 +128,7 @@ class Worker:
             path=source_store.path
             def save_analysis(self,_):pass
         provider=LMStudioProvider() if c['model']=='Local LM Studio' else OllamaProvider()
-        return provider.analyze(item,Capture(),model=c['model_id'])
+        return provider.analyze(item,Capture(),model=c['model_id'],require_loaded=bool(c.get('sentiment_model_key')))
     def run_one(self):
         task=self.queue.get()
         if not task or task['status']!='queued':return False

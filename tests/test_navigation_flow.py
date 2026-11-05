@@ -368,3 +368,13 @@ class SentimentSelectionTests(unittest.TestCase):
                     self.assertEqual(app.selectbox(key=key).value,'fixture-local')
                     self.assertTrue(any('not ready' in str(v.value) or '尚未就绪' in str(v.value) for v in app.info))
                     self.assertIsNone(self.q.get())
+
+    def test_ollama_unloaded_after_submission_never_dispatches_inference(self):
+        from finscope.model_providers import OllamaProvider,ModelError
+        from unittest.mock import Mock
+        transport=Mock(return_value={'models':[]})
+        provider=OllamaProvider(transport=transport)
+        with patch.object(provider,'installed_models',return_value={'installed':'digest'}):
+            with self.assertRaisesRegex(ModelError,'no longer loaded'):
+                provider.analyze(self.items[0],self.store,model='installed',require_loaded=True)
+        self.assertEqual([call.args[0] for call in transport.call_args_list],['GET'])

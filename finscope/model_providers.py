@@ -215,6 +215,10 @@ class OllamaProvider:
         models=self.installed_models()
         if model not in models:
             raise ModelError("Choose an installed local GGUF model; cloud tags and downloads are not supported")
+        if options.get('require_loaded'):
+            loaded=self.transport('GET',OLLAMA_ORIGIN+'/api/ps',None,None,5).get('models',[])
+            if not any(row.get('digest')==models[model] for row in loaded):
+                raise ModelError('Selected Ollama model is no longer loaded; load it explicitly before resuming',kind='not_loaded')
         details=self.transport("POST",OLLAMA_ORIGIN+"/api/show",{"model":model},None,5)
         if not isinstance(details.get("details"),dict) or not isinstance(details.get("model_info"),dict):
             raise ModelError("Local model metadata could not be validated")
